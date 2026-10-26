@@ -4,12 +4,16 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    branches: [ "main" ] 
+    branches: [ "main" ]
+  release:
+    types: [ "published" ]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Source Tree
@@ -41,3 +45,10 @@ jobs:
         with:
           name: OldTweetDeckChrome
           path: ${{ github.workspace }}/build/OldTweetDeckChrome
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" build/OldTweetDeckChrome.zip build/OldTweetDeckFirefox.zip --clobber --repo "$GITHUB_REPOSITORY"
