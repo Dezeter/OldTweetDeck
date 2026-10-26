@@ -14,8 +14,12 @@ async function openSolver(page, { home, jf, script }) {
     routes[`https://abs.twimg.com${ONDEMAND_PATH}`] = script !== undefined ? page200(script, "text/javascript") : route => route.fulfill({ status: 404, headers: { "access-control-allow-origin": "*" }, body: "" });
     routes["https://x.com/i/tweetdeck"] = page200("<!doctype html><html><head></head><body></body></html>");
     routes["https://x.com/"] = page200(home);
+    // console arguments as text, errors with their message (Firefox gives only "Error" for them in text())
     const logs = [];
-    page.on("console", message => logs.push(message.text()));
+    page.on("console", async message => {
+        const args = await Promise.all(message.args().map(arg => arg.evaluate(v => v instanceof Error ? `${v.name}: ${v.message}` : String(v)).catch(() => "")));
+        logs.push(args.join(" "));
+    });
     await openPage(page, { routes });
     await page.goto("https://x.com/i/tweetdeck");
     await addScripts(page, "src/challenge.js");

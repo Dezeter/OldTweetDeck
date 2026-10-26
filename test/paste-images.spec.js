@@ -19,14 +19,16 @@ async function openComposer(page, storage) {
     });
 }
 
-// a paste event with `images` 1x1 PNGs and optional text in its clipboard data
+// a paste event with `images` 1x1 PNGs and optional text in its clipboard data. Firefox drops files given to
+// the ClipboardEvent constructor, so clipboardData is set on the event the way a real paste has it.
 const paste = (page, selector, { images = 0, text } = {}) => page.evaluate(async ({ selector, images, text }) => {
     window.__added = [];
     const data = new DataTransfer();
     const png = await (await fetch("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")).blob();
     for(let i = 0; i < images; i++) data.items.add(new File([png], "image.png", { type: "image/png" }));
     if(text) data.setData("text/plain", text);
-    const event = new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true });
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: data });
     const target = document.querySelector(selector);
     target.focus();
     target.dispatchEvent(event);

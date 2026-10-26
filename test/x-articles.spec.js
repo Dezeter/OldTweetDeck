@@ -253,7 +253,8 @@ test("articles in another language are translated with Google, with a button bac
 
     // already in Russian: no translation, no button
     await openReader(page, "#a600ru");
-    expect(await reader(page)).toMatchObject({ h1: "Уже по-русски", button: undefined });
+    await expect.poll(async () => (await reader(page)).button).toBeUndefined();
+    expect((await reader(page)).h1).toBe("Уже по-русски");
 });
 
 test("when Google merges lines, that batch is redone line by line", async ({ page }) => {
