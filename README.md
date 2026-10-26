@@ -58,7 +58,7 @@ NOT SUPPORTED
 
 ## Updating
 
-Everything ships with the extension: TweetDeck's own code, the request handling and the signing of requests to X (`x-client-transaction-id`, computed locally in a sandboxed frame). Nothing is downloaded at runtime except from X itself.  
+Everything ships with the extension: TweetDeck's own code, the request handling and the signing of requests to X (`x-client-transaction-id`, computed locally the same way x.com does it). Nothing is downloaded at runtime except from X itself.  
 When a new release is out, OldTweetDeck tells you about it once. Download it from the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and replace the extension files: in Chromium, unzip over the old folder and press the reload button of the extension on `chrome://extensions`.
 
 ## Grok auto-translation
@@ -119,4 +119,5 @@ This can not be fixed. Since Twitter made likes private, the API to retrieve lik
 ## License
 
 MIT, see [LICENSE](LICENSE). Copyright dimden (the original OldTweetDeck) and Dezeter (this fork).  
+The `x-client-transaction-id` algorithm in `src/challenge.js` is ported from [x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id) by Lami (MIT).  
 TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.

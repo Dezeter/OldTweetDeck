@@ -24,10 +24,9 @@ async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
 
-    let [challenge_js, solver_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, ...local_js] =
+    let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, ...local_js] =
         await Promise.allSettled([
             fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/solver.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/vendor.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/bundle.js")).then(r => r.text()),
@@ -44,7 +43,7 @@ async function main() {
         ]);
 
     let challenge_js_script = document.createElement("script");
-    challenge_js_script.innerHTML = challenge_js.value.replace('/*SOLVER_SCRIPT*/""', () => JSON.stringify(solver_js.value));
+    challenge_js_script.innerHTML = challenge_js.value;
     document.head.appendChild(challenge_js_script);
 
     let interception_js_script = document.createElement("script");
