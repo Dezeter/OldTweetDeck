@@ -495,8 +495,9 @@
         .otd-grok-icon svg { display: block; width: 100%; height: 100%; }
         .otd-grok-original .otd-grok-icon,
         .otd-grok-action > a:hover .otd-grok-icon { color: #1da1f2; }
-        .tweet-detail-actions.otd-grok-row { display: flex; }
-        .tweet-detail-actions.otd-grok-row > .tweet-detail-action-item { flex: 1 1 0; width: auto; }
+        /* !important: the dark theme repeats every TweetDeck rule under html.dark, which outranks these */
+        .tweet-detail-actions.otd-grok-row { display: flex !important; }
+        .tweet-detail-actions.otd-grok-row > .tweet-detail-action-item { flex: 1 1 0; width: auto !important; }
         .otd-grok-toggle { display: inline-block; margin-top: 4px; font-size: 12px; }
         .otd-grok-toggle:hover { text-decoration: underline; }
     `;
