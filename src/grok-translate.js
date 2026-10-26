@@ -279,13 +279,22 @@
         node.setAttribute("lang", DST_LANG);
 
         const anchors = [...orig.querySelectorAll("a")];
-        fillInline(node, text, {
+        const ctx = {
             links: linkIndex(orig),
             ext: anchors.filter(a => /^https?:/i.test(a.getAttribute("href") || "") && !/^[@#$]/.test(a.textContent.trim())),
             urlIdx: 0,
             cash: anchors.filter(a => /^\$/.test(a.textContent.trim())),
             cashUsed: new Set(),
-        });
+        };
+        // Paragraphs become blocks with a small gap. With pre-wrap every \n\n would be a whole
+        // empty line, and its height can't be reduced separately from the text.
+        for(const para of text.split(/\n{2,}/)) {
+            if(!para.trim()) continue;
+            const block = document.createElement("span");
+            block.className = "otd-grok-para";
+            fillInline(block, para, ctx);
+            node.append(block);
+        }
         return node;
     }
 
@@ -481,6 +490,8 @@
         .otd-grok-translated:not(.otd-grok-original) .otd-grok-orig,
         .otd-grok-original .otd-grok-tr { display: none !important; }
         .otd-grok-translated .js-translate-call-to-action { display: none; }
+        .otd-grok-para { display: block; }
+        .otd-grok-para + .otd-grok-para { margin-top: 0.45em; }
         .otd-grok-icon svg { display: block; width: 100%; height: 100%; }
         .otd-grok-original .otd-grok-icon,
         .otd-grok-action > a:hover .otd-grok-icon { color: #1da1f2; }
