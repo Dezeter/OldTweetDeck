@@ -1,29 +1,32 @@
-﻿# OldTweetDeck
+# OldTweetDeck
 
-Returns old TweetDeck!  
+Returns old TweetDeck, with translation, X Articles, grouped notifications and other additions.
+
+This is an independently developed fork of [OldTweetDeck by dimden](https://github.com/dimdenGD/OldTweetDeck). It doesn't download anything from the original project and gets its updates through the [releases of this repository](https://github.com/Dezeter/OldTweetDeck/releases). MIT licensed, like the original.
 
 > [!NOTE]
 > Since Twitter made likes private, the Likes tab aren't loading anymore.  
 > This can not be fixed since the API to retrieve the likes is gone. Same thing with Activity column.
 
-> If you're interested in getting 2015-2018 Twitter back, you can also check out [OldTwitter](https://github.com/dimdenGD/OldTwitter) extension.
+## What's added
 
-![Screenshot](https://lune.dimden.dev/9713d947d56.png)
-
-### Other languages
-
-[한국어 README](docs/README_KO.md)  
-[日本語 README](docs/README_JA.md)
+- [Auto-translation](#grok-auto-translation) of tweets with Grok, with a switch and a language in Settings → General
+- [X Articles](#x-articles) in columns and a reader for them, translated with Google Translate
+- [Grouped notifications](#grouped-notifications): likes, retweets and follows like on x.com
+- [Replies to other people hidden](#replies-in-home-columns) in home columns
+- [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
+- [Pasting images](#pasting-images) into the compose box with Ctrl+V
 
 ## Installation
 
-Note: Do not delete the extension files (unzipped archive for Chromium, zip file for Firefox) after installation.
+Note: Do not delete the extension files (unzipped archive for Chromium, zip file for Firefox) after installation.  
+If the original OldTweetDeck is installed, remove or disable it first: both work on the same page.
 
 ### Chromium (Chrome, Edge, Opera, Brave, Etc.)
 
-1. Go to [Release page](https://github.com/dimdenGD/OldTweetDeck/releases) and download `OldTweetDeckChrome.zip`
+1. Go to the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and download `OldTweetDeckChrome.zip`
 2. Unzip the archive
-3. Go to extentions page (`chrome://extensions`)
+3. Go to extensions page (`chrome://extensions`)
 4. Enable developer mode (there should be switch somewhere on that page)
 5. Press "Load unpacked" button
 6. Select folder with unzipped archive
@@ -33,7 +36,7 @@ Note: Do not delete the extension files (unzipped archive for Chromium, zip file
 
 #### Nightly / Developer Edition
 
-1. Go to [Release page](https://github.com/dimdenGD/OldTweetDeck/releases) and download `OldTweetDeckFirefox.zip`
+1. Go to the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and download `OldTweetDeckFirefox.zip`
 2. Go to Firefox Configuration Editor (`about:config`)
 3. Change the preference `xpinstall.signatures.required` to false
 4. Go to addons page(`about:addons`)
@@ -55,8 +58,8 @@ NOT SUPPORTED
 
 ## Updating
 
-If TweetDeck's files were updated, you should receive updated files automatically without having to reinstall after refreshing tab (unless you set `localStorage.OTDalwaysUseLocalFiles = '1'`).  
-If extension files were updated, you have to reinstall extension to get new update.
+Everything ships with the extension: TweetDeck's own code, the request handling and the signing of requests to X (`x-client-transaction-id`, computed locally in a sandboxed frame). Nothing is downloaded at runtime except from X itself.  
+When a new release is out, OldTweetDeck tells you about it once. Download it from the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and replace the extension files: in Chromium, unzip over the old folder and press the reload button of the extension on `chrome://extensions`.
 
 ## Grok auto-translation
 
@@ -99,24 +102,11 @@ Notifications are grouped the way x.com shows them: likes and retweets of the sa
 A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.  
 `localStorage.OTDinstantReplies = '0'` turns this off.
 
-## Better TweetDeck
-
-I've made a fork of BetterTD that works with this extension, you can find it [here](https://github.com/dimdenGD/BetterTweetDeck/releases).  
-Install it the same way as this extension.
-
 ## FAQ
 
 #### Extension stopped working.
 
 Before opening an issue, try to reinstall extension.
-
-#### There is a warning: Manifest version 2 is deprecated, and support will be removed in 2023.
-
-Update to latest OldTweetDeck version.
-
-#### 'Link another account you own' doesn't work.
-
-See https://github.com/dimdenGD/OldTweetDeck/issues/259#issuecomment-2281786253 for a workaround.
 
 #### Some column isn't loading for me.
 
@@ -126,6 +116,7 @@ You're getting rate limited. They'll comeback after some time.
 
 This can not be fixed. Since Twitter made likes private, the API to retrieve likes is gone.
 
+## License
 
-
-
+MIT, see [LICENSE](LICENSE). Copyright dimden (the original OldTweetDeck) and Dezeter (this fork).  
+TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.
