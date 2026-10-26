@@ -21,7 +21,8 @@
         "https://abs.twimg.com/*",
         "https://api.twitter.com/*",
         "https://tweetdeck.com/",
-        "https://oldtd.org/*"
+        "https://oldtd.org/*",
+        "https://translate.googleapis.com/*"
     ],
     "web_accessible_resources": [
         {

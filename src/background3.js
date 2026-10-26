@@ -1,3 +1,5 @@
+importScripts("google-translate.js");
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if(request.action === 'setcookie') {
         chrome.cookies.getAll({url: "https://x.com"}, async cookies => {
@@ -30,6 +32,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.cookies.get({ name: "auth_token", url: "https://x.com" }).then(cookie => {
             sendResponse(cookie);
         });
+        return true;
+    } else if(request.action === 'googleTranslate') {
+        googleTranslate(request.text, request.to).then(sendResponse);
         return true;
     }
 });

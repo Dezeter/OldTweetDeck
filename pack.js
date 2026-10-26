@@ -56,7 +56,7 @@ copyDir('./', './build/OldTweetDeckFirefox').then(async () => {
         content_script.js = content_script.js.filter(js => js !== "src/destroyer.js");
     }
     manifest.background = {
-        scripts: ["src/background.js"],
+        scripts: ["src/google-translate.js", "src/background.js"],
     }
     manifest.web_accessible_resources = manifest.web_accessible_resources[0].resources;
 

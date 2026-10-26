@@ -84,7 +84,8 @@ Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it
 ## X Articles
 
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
-`localStorage.OTDarticles = '0'` turns this off.
+Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
+`localStorage.OTDarticles = '0'` turns articles off, `localStorage.OTDarticlesTranslate = '0'` turns off automatic translation (the button stays).
 
 ## Instant replies
 
