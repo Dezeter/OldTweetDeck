@@ -8,6 +8,12 @@ window.addEventListener('message', async e => {
         });
     } else if(e.data?.action === 'setotdtoken') {
         chrome.storage.local.set({ otd_token: e.data.token });
+    } else if(e.data?.action === 'otdGoogleTranslate') {
+        // x-articles.js -> background script, which may call Google
+        const { id, text, to } = e.data;
+        chrome.runtime.sendMessage({ action: 'googleTranslate', text, to }, response => {
+            window.postMessage({ otdGoogleTranslateResult: { id, response } }, '*');
+        });
     } else if(e.data === 'getotdtoken') {
         chrome.storage.local.get('otd_token', token => {
             window.postMessage({ token: token.otd_token }, '*');

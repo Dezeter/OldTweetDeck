@@ -1,7 +1,10 @@
 // X Articles. A tweet that is an article shows its title and the start of the text in place of the
 // x.com/i/article link, and a click opens the whole article in a reader over most of the screen.
-// Loaded by injection.js after bundle.js.
-//   localStorage.OTDarticles = "0"  turns it off
+// Articles in another language are translated with Google Translate (Grok doesn't take them), through
+// the extension's background script, which isn't bound by CORS. Loaded by injection.js after bundle.js.
+//   localStorage.OTDarticles = "0"           turns it off
+//   localStorage.OTDarticlesTranslate = "0"  no automatic translation, the reader still has the button
+//   localStorage.OTDgrokTranslateLang        target language, shared with tweet translation
 (() => {
     if(localStorage.OTDarticles === "0") return;
 
@@ -11,9 +14,12 @@
     // the set x.com sends with TweetResultByRestId
     const FEATURES = {"creator_subscriptions_tweet_preview_api_enabled":true,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":false,"responsive_web_grok_analyze_post_followups_enabled":true,"rweb_cashtags_composer_attachment_enabled":true,"responsive_web_jetfuel_frame":true,"rweb_sports_post_context_enabled":true,"responsive_web_grok_share_attachment_enabled":true,"responsive_web_grok_annotations_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"rweb_conversational_replies_downvote_enabled":false,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"content_disclosure_indicator_enabled":true,"content_disclosure_ai_generated_indicator_enabled":true,"responsive_web_grok_show_grok_translated_post":true,"responsive_web_grok_analysis_button_from_backend":true,"post_ctas_fetch_enabled":false,"rweb_cashtags_enabled":true,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"responsive_web_profile_redirect_enabled":true,"rweb_tipjar_consumption_enabled":false,"verified_phone_label_enabled":false,"responsive_web_nested_quote_preview_enabled":true,"responsive_web_grok_image_annotation_enabled":true,"responsive_web_grok_imagine_annotation_enabled":true,"responsive_web_grok_community_note_auto_translation_is_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true};
 
+    const DST_LANG = (localStorage.OTDgrokTranslateLang || navigator.language || "en").split("-")[0].toLowerCase();
+    const AUTO_TRANSLATE = localStorage.OTDarticlesTranslate !== "0";
+
     const LABELS = {
-        ru: { read: "Читать статью", open: "Открыть на x.com", close: "Закрыть" },
-        en: { read: "Read article", open: "Open on x.com", close: "Close" },
+        ru: { read: "Читать статью", open: "Открыть на x.com", close: "Закрыть", translate: "Перевести", original: "Показать оригинал", translating: "Перевод…", failed: "Не удалось перевести", via: "Google Переводчик" },
+        en: { read: "Read article", open: "Open on x.com", close: "Close", translate: "Translate", original: "Show original", translating: "Translating…", failed: "Translation failed", via: "Google Translate" },
     };
     const LABEL = LABELS[(navigator.language || "en").split("-")[0]] || LABELS.en;
 
@@ -89,6 +95,107 @@
             articles.set(tweetId, request);
         }
         return articles.get(tweetId);
+    }
+
+    // --- translation ----------------------------------------------------------
+    // content.js passes these to the background script, which calls Google
+    let translateId = 0;
+    const pending = new Map();
+    window.addEventListener("message", e => {
+        const result = e.data?.otdGoogleTranslateResult;
+        if(e.source !== window || !result || !pending.has(result.id)) return;
+        pending.get(result.id)(result.response);
+        pending.delete(result.id);
+    });
+
+    function googleTranslate(text) {
+        return new Promise((resolve, reject) => {
+            const id = ++translateId;
+            const timer = setTimeout(() => {
+                pending.delete(id);
+                reject(new Error("no answer from the extension"));
+            }, 20000);
+            pending.set(id, response => {
+                clearTimeout(timer);
+                if(!response || response.error) reject(new Error(response?.error || "empty response"));
+                else resolve(response);
+            });
+            window.postMessage({ action: "otdGoogleTranslate", id, text, to: DST_LANG }, "*");
+        });
+    }
+
+    // the request is a GET, long urls get rejected well before Google's text limit
+    const MAX_QUERY = 4000;
+    const encodedLength = text => encodeURIComponent(text).length;
+
+    function pieces(text) {
+        if(encodedLength(text) <= MAX_QUERY) return text ? [text] : [];
+        const out = [];
+        let current = "";
+        for(const sentence of text.split(/(?<=[.!?…])\s+/)) {
+            if(current && encodedLength(`${current} ${sentence}`) > MAX_QUERY) {
+                out.push(current);
+                current = "";
+            }
+            current = current ? `${current} ${sentence}` : sentence;
+            // a single sentence that is still too long gets cut where it has to
+            while(encodedLength(current) > MAX_QUERY) {
+                let cut = current.length;
+                while(encodedLength(current.slice(0, cut)) > MAX_QUERY) cut = Math.floor(cut * 0.8);
+                out.push(current.slice(0, cut));
+                current = current.slice(cut);
+            }
+        }
+        if(current) out.push(current);
+        return out;
+    }
+
+    // Translates a list of texts in as few requests as possible: one line per piece, joined with \n.
+    // When Google merges or splits lines, that batch goes again a line at a time.
+    async function translateTexts(texts) {
+        const items = [];
+        texts.forEach((text, i) => pieces(String(text || "").replace(/\s*\n\s*/g, " ").trim()).forEach(piece => items.push({ i, piece })));
+        const out = texts.map(() => []);
+        let lang = null;
+        for(let start = 0; start < items.length;) {
+            let end = start, size = 0;
+            while(end < items.length && (end === start || size + encodedLength(items[end].piece) + 3 <= MAX_QUERY)) {
+                size += encodedLength(items[end].piece) + 3;
+                end++;
+            }
+            const batch = items.slice(start, end);
+            const result = await googleTranslate(batch.map(item => item.piece).join("\n"));
+            lang = lang || result.lang;
+            const lines = result.text.split("\n");
+            if(lines.length === batch.length) batch.forEach((item, n) => out[item.i].push(lines[n].trim()));
+            else for(const item of batch) out[item.i].push((await googleTranslate(item.piece)).text.trim());
+            start = end;
+        }
+        return { lang, texts: out.map(parts => parts.join(" ")) };
+    }
+
+    const isSameLanguage = lang => !lang || lang.split("-")[0].toLowerCase() === DST_LANG;
+
+    // the title and every text block, in this order; empty where there is nothing to translate
+    const translations = new Map();
+    function translateArticle(article, blocks) {
+        const key = article.rest_id || article.title;
+        if(!translations.has(key)) {
+            const texts = [article.title || "", ...blocks.map(b => b.type === "atomic" || b.type === "code-block" ? "" : b.text || "")];
+            const request = translateTexts(texts).then(({ lang, texts }) => ({ lang, title: texts[0], blocks: texts.slice(1) }));
+            // a failed attempt can be retried from the reader
+            request.catch(() => translations.delete(key));
+            translations.set(key, request);
+        }
+        return translations.get(key);
+    }
+
+    // the card needs only the title and the preview, one small request shared by the tweet and its quotes
+    const cardTranslations = new Map();
+    function translateCard(article, preview) {
+        const key = article.rest_id || article.title;
+        if(!cardTranslations.has(key)) cardTranslations.set(key, translateTexts([article.title || "", preview || ""]));
+        return cardTranslations.get(key);
     }
 
     // --- article content ------------------------------------------------------
@@ -169,35 +276,40 @@
 
     const BLOCK_TAGS = { "header-one": "h2", "header-two": "h3", "header-three": "h4", "blockquote": "blockquote", "code-block": "pre" };
 
-    function renderContent(article) {
-        const out = document.createDocumentFragment();
+    // without content_state the plain text becomes paragraphs
+    function blocksOf(article) {
         const blocks = article.content_state?.blocks;
-        if(!Array.isArray(blocks) || !blocks.length) {
-            for(const para of String(article.plain_text || article.preview_text || "").split(/\n+/)) {
-                if(para.trim()) out.append(el("p", "", para));
-            }
-            return out;
-        }
+        if(Array.isArray(blocks) && blocks.length) return blocks;
+        return String(article.plain_text || article.preview_text || "").split(/\n+/).map(text => ({ type: "unstyled", text }));
+    }
 
-        const entities = entityMap(article.content_state.entityMap);
+    // translated: a text per block, rendered plain, since styles and links don't map onto the translation
+    function renderContent(article, blocks, translated) {
+        const out = document.createDocumentFragment();
+        const entities = entityMap(article.content_state?.entityMap);
         const media = new Map((article.media_entities || []).map(m => [String(m.media_id), m]));
+        const fill = (node, block, i) => {
+            if(!translated?.[i]) return fillInline(node, block, entities);
+            node.textContent = translated[i];
+            return node;
+        };
         let list = null;
-        for(const block of blocks) {
+        blocks.forEach((block, i) => {
             const listTag = block.type === "unordered-list-item" ? "UL" : block.type === "ordered-list-item" ? "OL" : null;
             if(listTag) {
                 if(list?.tagName !== listTag) out.append(list = el(listTag));
-                list.append(fillInline(el("li"), block, entities));
-                continue;
+                list.append(fill(el("li"), block, i));
+                return;
             }
             list = null;
             if(block.type === "atomic") {
                 const node = renderAtomic(block, entities, media);
                 if(node) out.append(node);
-                continue;
+                return;
             }
-            if(!block.text?.trim()) continue;
-            out.append(fillInline(el(BLOCK_TAGS[block.type] || "p"), block, entities));
-        }
+            if(!block.text?.trim()) return;
+            out.append(fill(el(BLOCK_TAGS[block.type] || "p"), block, i));
+        });
         return out;
     }
 
@@ -218,14 +330,46 @@
             img.src = cover;
             body.append(img);
         }
-        body.append(el("h1", "", article.title || ""));
+        const title = el("h1", "", article.title || "");
+        body.append(title);
         const date = article.metadata?.first_published_at_secs;
-        body.append(el("div", "otd-article-byline", [
+        const byline = el("div", "otd-article-byline", [
             name,
             screenName && `@${screenName}`,
             date && new Date(date * 1000).toLocaleDateString(),
-        ].filter(Boolean).join(" · ")));
-        body.append(renderContent(article));
+        ].filter(Boolean).join(" · "));
+        const translateButton = el("button", "otd-article-translate", LABEL.translate);
+        byline.append(translateButton);
+        body.append(byline);
+        const content = el("div", "otd-article-content");
+        const blocks = blocksOf(article);
+        content.append(renderContent(article, blocks));
+        body.append(content);
+
+        // null: showing the original
+        let shown = null;
+        function show(translation) {
+            shown = translation;
+            title.textContent = translation?.title || article.title || "";
+            content.replaceChildren(renderContent(article, blocks, translation?.blocks));
+            translateButton.textContent = translation ? `${LABEL.original} · ${LABEL.via}` : LABEL.translate;
+            translateButton.disabled = false;
+        }
+        function translate() {
+            translateButton.textContent = LABEL.translating;
+            translateButton.disabled = true;
+            translateArticle(article, blocks).then(translation => {
+                if(isSameLanguage(translation.lang)) translateButton.remove();
+                else show(translation);
+            }, e => {
+                console.warn("[otd-articles] translation", e.message);
+                translateButton.textContent = `${LABEL.failed} · ${LABEL.translate}`;
+                translateButton.disabled = false;
+            });
+        }
+        translateButton.addEventListener("click", () => shown ? show(null) : translate());
+        if(AUTO_TRANSLATE) translate();
+
         const footer = el("div", "otd-article-footer");
         footer.append(externalLink(href, LABEL.open));
         body.append(footer);
@@ -254,10 +398,20 @@
     // --- tweets ---------------------------------------------------------------
     function buildCard(tweetId, href, data) {
         const card = el("div", "otd-article-card");
-        card.append(el("div", "otd-article-card-title", data.article.title || ""));
+        const title = el("div", "otd-article-card-title", data.article.title || "");
+        card.append(title);
         const preview = data.article.preview_text || String(data.article.plain_text || "").slice(0, 400);
-        if(preview) card.append(el("div", "otd-article-card-preview", preview));
+        const previewNode = el("div", "otd-article-card-preview", preview);
+        if(preview) card.append(previewNode);
         card.append(el("div", "otd-article-card-hint", LABEL.read));
+
+        if(AUTO_TRANSLATE) {
+            translateCard(data.article, preview).then(translation => {
+                if(!translation || isSameLanguage(translation.lang)) return;
+                title.textContent = translation.texts[0] || title.textContent;
+                previewNode.textContent = translation.texts[1] || previewNode.textContent;
+            }, e => console.warn("[otd-articles] card translation", e.message));
+        }
 
         // stream items and quotes are clickable and draggable as a whole
         const stop = e => { e.preventDefault(); e.stopPropagation(); };
@@ -344,6 +498,9 @@
         .otd-article-overlay .otd-article-body b { font-weight: bold; }
         .otd-article-overlay .otd-article-body i { font-style: italic; }
         .otd-article-overlay .otd-article-body .otd-article-byline { margin-bottom: 28px; font-size: 14px; color: #8899a6; }
+        .otd-article-overlay .otd-article-body .otd-article-translate { margin-left: 12px; padding: 0; border: 0; background: none; color: #1da1f2; font: inherit; cursor: pointer; }
+        .otd-article-overlay .otd-article-body .otd-article-translate:hover { text-decoration: underline; }
+        .otd-article-overlay .otd-article-body .otd-article-translate:disabled { color: #8899a6; text-decoration: none; cursor: default; }
         .otd-article-overlay .otd-article-body .otd-article-footer { margin-top: 32px; font-size: 14px; }
     `;
     // injection.js removes the original head/body of x.com once TweetDeck is in, stay on ours

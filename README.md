@@ -61,10 +61,12 @@ If extension files were updated, you have to reinstall extension to get new upda
 ## Grok auto-translation
 
 Tweets and quoted tweets that aren't in your language are translated automatically through Grok, the same endpoint x.com uses for "Show translation". Translated tweets get a translate icon next to reply/retweet/like that switches between the original and the translation.  
-Only tweets that stay on screen are translated, at most 20 per minute, and translations are cached for 7 days. Set these in the browser console on the TweetDeck tab, then reload:
+Only tweets that stay on screen are translated, at most 20 per minute, and translations are cached for 7 days.
+
+Settings → General has a switch for auto-translation (tweets and articles together) and the language to translate to; they apply after a reload. The same settings from the browser console:
 
 - `localStorage.OTDgrokTranslateLang = 'ru'` sets the target language (default is the browser language)
-- `localStorage.OTDgrokTranslate = '0'` turns translation off
+- `localStorage.OTDgrokTranslate = '0'` turns tweet translation off
 
 ## Replies in home columns
 
@@ -84,7 +86,18 @@ Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it
 ## X Articles
 
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
-`localStorage.OTDarticles = '0'` turns this off.
+Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
+`localStorage.OTDarticles = '0'` turns articles off, `localStorage.OTDarticlesTranslate = '0'` turns off automatic translation (the button stays).
+
+## Grouped notifications
+
+Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.  
+`localStorage.OTDgroupNotifications = '0'` turns this off.
+
+## Instant replies
+
+A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.  
+`localStorage.OTDinstantReplies = '0'` turns this off.
 
 ## Better TweetDeck
 
