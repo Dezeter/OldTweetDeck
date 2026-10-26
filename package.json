@@ -4,7 +4,8 @@
   "description": "Returns old TweetDeck! Fork of OldTweetDeck by dimden.",
   "main": "pack.js",
   "scripts": {
-    "build": "node pack.js"
+    "build": "node pack.js",
+    "test": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -28,5 +29,10 @@
   "homepage": "https://github.com/Dezeter/OldTweetDeck#readme",
   "dependencies": {
     "adm-zip": "^0.5.10"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "linkedom": "0.18.14",
+    "x-client-transaction-id": "0.3.2"
   }
 }
