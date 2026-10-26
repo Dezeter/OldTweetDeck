@@ -76,6 +76,11 @@ Home columns hide replies to other people, the way mutes hide tweets. Threads wh
 TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
 `localStorage.OTDloadAllReplies = '0'` turns this off.
 
+## Pasting images
+
+Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".  
+`localStorage.OTDpasteImages = '0'` turns this off.
+
 ## Better TweetDeck
 
 I've made a fork of BetterTD that works with this extension, you can find it [here](https://github.com/dimdenGD/BetterTweetDeck/releases).  
