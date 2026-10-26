@@ -71,6 +71,21 @@ Only tweets that stay on screen are translated, at most 20 per minute, and trans
 Home columns hide replies to other people, the way mutes hide tweets. Threads where the author replies to themselves and retweets of replies still show, and replies stay visible when you open a conversation.  
 `localStorage.OTDhideHomeReplies = '0'` turns this off (reload the tab after changing it).
 
+## All replies in the tweet view
+
+TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
+`localStorage.OTDloadAllReplies = '0'` turns this off.
+
+## Pasting images
+
+Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".  
+`localStorage.OTDpasteImages = '0'` turns this off.
+
+## X Articles
+
+A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
+`localStorage.OTDarticles = '0'` turns this off.
+
 ## Better TweetDeck
 
 I've made a fork of BetterTD that works with this extension, you can find it [here](https://github.com/dimdenGD/BetterTweetDeck/releases).  
