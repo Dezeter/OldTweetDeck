@@ -23,6 +23,9 @@ window.postMessage('cookie', '*');
 async function main() {
     let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
     document.documentElement.innerHTML = html;
+    // for the settings tab, which runs in the page and can't read the manifest itself in Firefox
+    let manifest = await fetch(chrome.runtime.getURL('/manifest.json')).then(r => r.json()).catch(() => null);
+    if(manifest) document.documentElement.dataset.otdVersion = manifest.version;
 
     let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, ...local_js] =
         await Promise.allSettled([
@@ -40,7 +43,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/paste-images.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/x-articles.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/instant-replies.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/translate-settings.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/settings.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/group-notifications.js")).then(r => r.text()),
         ]);
 

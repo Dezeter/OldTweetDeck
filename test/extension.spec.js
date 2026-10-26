@@ -78,6 +78,7 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
 
         // this extension's scripts are all in, otd-common.js before the rest
         expect(await page.evaluate(() => typeof window.OTD?.watch)).toBe("function");
+        expect(await page.evaluate(() => [OTD.VERSION, TD.components.GlobalSettings.prototype.getInfo().tabs.map(t => t.action)])).toEqual([VERSION, ["general", "services", "filter", "oldtweetdeck"]]);
         expect(errors.filter(e => /OTD/.test(e))).toEqual([]);
         expect(await page.locator("iframe[srcdoc]").count()).toBe(0);
         expect(urls.filter(u => /abs\.twimg\.com\/.*vendor\./.test(u))).toEqual([]);

@@ -3,6 +3,8 @@
 // before the other local scripts, as window.OTD.
 (() => {
     const UI_LANG = (navigator.language || "en").split("-")[0].toLowerCase();
+    // injection.js puts the extension's version on <html>
+    const VERSION = document.documentElement.dataset.otdVersion || "";
 
     // Every feature is on unless localStorage[storage] is "0". settings.js shows them as switches, by section.
     const FEATURES = [
@@ -79,5 +81,5 @@
         return () => request([fn]);
     }
 
-    window.OTD = { UI_LANG, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, addStyle, watch };
 })();

@@ -10,12 +10,13 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 
 ## What's added
 
-- [Auto-translation](#grok-auto-translation) of tweets with Grok, with a switch and a language in Settings → General
+- [Auto-translation](#grok-auto-translation) of tweets with Grok, to the language you choose
 - [X Articles](#x-articles) in columns and a reader for them, translated with Google Translate
 - [Grouped notifications](#grouped-notifications): likes, retweets and follows like on x.com
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
+- [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
 
@@ -61,46 +62,63 @@ NOT SUPPORTED
 Everything ships with the extension: TweetDeck's own code, the request handling and the signing of requests to X (`x-client-transaction-id`, computed locally the same way x.com does it). Nothing is downloaded at runtime except from X itself.  
 When a new release is out, OldTweetDeck tells you about it once. Download it from the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and replace the extension files: in Chromium, unzip over the old folder and press the reload button of the extension on `chrome://extensions`.
 
+## Settings
+
+Settings → OldTweetDeck has a switch for every feature below, all on by default, and the language to translate to. Changes apply after a reload; the tab has a link for it.
+
+The same settings are kept in `localStorage`, so they can also be changed from the browser console on the TweetDeck tab (`"0"` turns a feature off, removing the key turns it back on):
+
+| Feature | Key |
+|---|---|
+| Translating tweets with Grok | `OTDgrokTranslate` |
+| Translating articles with Google | `OTDarticlesTranslate` |
+| Language to translate to (default: the browser's) | `OTDgrokTranslateLang`, e.g. `'ru'` |
+| Hiding replies in home columns | `OTDhideHomeReplies` |
+| Grouping notifications | `OTDgroupNotifications` |
+| Loading all replies | `OTDloadAllReplies` |
+| Showing your reply right away | `OTDinstantReplies` |
+| X Articles | `OTDarticles` |
+| Pasting images | `OTDpasteImages` |
+
 ## Grok auto-translation
 
 Tweets and quoted tweets that aren't in your language are translated automatically through Grok, the same endpoint x.com uses for "Show translation". Translated tweets get a translate icon next to reply/retweet/like that switches between the original and the translation.  
 Only tweets that stay on screen are translated, at most 20 per minute, and translations are cached for 7 days.
 
-Settings → General has a switch for auto-translation (tweets and articles together) and the language to translate to; they apply after a reload. The same settings from the browser console:
-
-- `localStorage.OTDgrokTranslateLang = 'ru'` sets the target language (default is the browser language)
-- `localStorage.OTDgrokTranslate = '0'` turns tweet translation off
+The language to translate to is the browser's unless you pick another in [Settings](#settings).
 
 ## Replies in home columns
 
-Home columns hide replies to other people, the way mutes hide tweets. Threads where the author replies to themselves and retweets of replies still show, and replies stay visible when you open a conversation.  
-`localStorage.OTDhideHomeReplies = '0'` turns this off (reload the tab after changing it).
+Home columns hide replies to other people, the way mutes hide tweets. Threads where the author replies to themselves and retweets of replies still show, and replies stay visible when you open a conversation.
 
 ## All replies in the tweet view
 
-TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
-`localStorage.OTDloadAllReplies = '0'` turns this off.
+TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".
 
 ## Pasting images
 
-Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".  
-`localStorage.OTDpasteImages = '0'` turns this off.
+Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
 
 ## X Articles
 
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
 Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
-`localStorage.OTDarticles = '0'` turns articles off, `localStorage.OTDarticlesTranslate = '0'` turns off automatic translation (the button stays).
+With article translation switched off in [Settings](#settings), the reader still has the button to translate.
 
 ## Grouped notifications
 
-Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.  
-`localStorage.OTDgroupNotifications = '0'` turns this off.
+Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.
 
 ## Instant replies
 
-A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.  
-`localStorage.OTDinstantReplies = '0'` turns this off.
+A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.
+
+## Development
+
+`npm install`, then:
+
+- `npm test` runs the tests: TweetDeck's own code with these scripts on stubbed pages, in Chromium and Firefox, and the unpacked extension in Chromium. They need Playwright's browsers once: `npx playwright install chromium firefox`.
+- `npm run build` packs `build/OldTweetDeckChrome.zip` and `build/OldTweetDeckFirefox.zip`. Publishing a release attaches them to it.
 
 ## FAQ
 
