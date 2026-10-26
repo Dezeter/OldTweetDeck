@@ -274,10 +274,9 @@
     function buildNode(orig, text) {
         // an empty clone of the original keeps TweetDeck's typography
         const node = orig.cloneNode(false);
-        node.classList.remove("js-tweet-text", "js-quoted-tweet-text");
+        node.classList.remove("js-tweet-text", "js-quoted-tweet-text", "otd-grok-orig");
         node.classList.add("otd-grok-tr");
         node.setAttribute("lang", DST_LANG);
-        node.style.display = "";
 
         const anchors = [...orig.querySelectorAll("a")];
         fillInline(node, text, {
@@ -290,16 +289,75 @@
         return node;
     }
 
-    function buildToggle(onToggle) {
-        const el = document.createElement("a");
-        el.href = "#";
-        el.className = "otd-grok-toggle txt-mute";
-        el.textContent = `Grok · ${LABEL.original}`;
-        // stream items and quotes are clickable and draggable as a whole
+    // Material "translate" icon, Apache 2.0
+    const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>';
+
+    // stream items and quotes are clickable and draggable as a whole
+    function onActivate(el, handler) {
         const stop = e => { e.preventDefault(); e.stopPropagation(); };
         el.addEventListener("mousedown", stop);
-        el.addEventListener("click", e => { stop(e); onToggle(el); });
-        return el;
+        el.addEventListener("click", e => { stop(e); handler(); });
+    }
+
+    // Original or translation is a class on the host, so one toggle switches
+    // the tweet and its quote together. CSS does the hiding.
+    function toggle(host) {
+        const original = host.classList.toggle("otd-grok-original");
+        const label = original ? LABEL.translation : LABEL.original;
+        for(const a of host.querySelectorAll(".otd-grok-action > a")) a.title = label;
+        for(const a of host.querySelectorAll(".otd-grok-toggle")) a.textContent = `Grok · ${label}`;
+    }
+
+    const currentLabel = host => host.classList.contains("otd-grok-original") ? LABEL.translation : LABEL.original;
+
+    function buildAction(row, host) {
+        const detail = row.classList.contains("tweet-detail-actions");
+        const li = document.createElement("li");
+        li.className = `${detail ? "tweet-detail-action-item" : "tweet-action-item pull-left margin-r--10"} otd-grok-action`;
+        const a = document.createElement("a");
+        a.href = "#";
+        a.className = detail ? "tweet-detail-action" : "tweet-action";
+        a.title = currentLabel(host);
+        a.innerHTML = `<i class="icon txt-center otd-grok-icon">${ICON}</i>`;
+        onActivate(a, () => toggle(host));
+        li.append(a);
+        return li;
+    }
+
+    function buildToggle(host) {
+        const a = document.createElement("a");
+        a.href = "#";
+        a.className = "otd-grok-toggle txt-mute";
+        a.textContent = `Grok · ${currentLabel(host)}`;
+        onActivate(a, () => toggle(host));
+        return a;
+    }
+
+    // Puts the toggle into the stream item's action row, next to reply/retweet/like.
+    // Called on every scan, since TweetDeck can re-render the row.
+    function ensureToggle(unit) {
+        const item = unit.host.closest("article.js-stream-item");
+        const host = item || unit.host;
+        host.classList.add("otd-grok-translated");
+
+        const row = item && [...item.querySelectorAll("ul.js-tweet-actions, ul.tweet-detail-actions")]
+            .find(ul => ul.closest("article.js-stream-item") === item);
+        if(row) {
+            if(row.querySelector(":scope > .otd-grok-action")) return;
+            // detail rows give each item a fixed width share, room is made in CSS
+            row.classList.add("otd-grok-row");
+            const more = row.querySelector(':scope > li > a[rel="actionsMenu"]')?.parentElement;
+            const action = buildAction(row, host);
+            if(more) more.before(action);
+            else row.append(action);
+            return;
+        }
+
+        // no action row (a quote in the composer), fall back to a link under the translation
+        const tr = unit.text.nextElementSibling;
+        if(tr?.classList.contains("otd-grok-tr") && !tr.nextElementSibling?.classList.contains("otd-grok-toggle")) {
+            tr.after(buildToggle(host));
+        }
     }
 
     // the node got reused for another tweet, remove our previous output
@@ -310,8 +368,7 @@
             next.remove();
             next = orig.nextElementSibling;
         }
-        orig.style.display = "";
-        unit.host.classList.remove("otd-grok-translated");
+        orig.classList.remove("otd-grok-orig");
         delete orig.dataset.otdGrok;
         delete orig.dataset.otdGrokDone;
     }
@@ -323,16 +380,9 @@
         // Grok echoes text that is already in the target language
         if(text.trim() === orig.textContent.trim()) return;
 
-        const tr = buildNode(orig, text);
-        const toggle = buildToggle(el => {
-            const showOriginal = orig.style.display === "none";
-            orig.style.display = showOriginal ? "" : "none";
-            tr.style.display = showOriginal ? "none" : "";
-            el.textContent = `Grok · ${showOriginal ? LABEL.translation : LABEL.original}`;
-        });
-        orig.after(tr, toggle);
-        orig.style.display = "none";
-        unit.host.classList.add("otd-grok-translated");
+        orig.after(buildNode(orig, text));
+        orig.classList.add("otd-grok-orig");
+        ensureToggle(unit);
     }
 
     // --- queue ----------------------------------------------------------------
@@ -395,7 +445,10 @@
         for(const unit of collectUnits()) {
             const { text, id } = unit;
             const claimed = text.dataset.otdGrok;
-            if(claimed === id) continue;
+            if(claimed === id) {
+                if(text.classList.contains("otd-grok-orig")) ensureToggle(unit);
+                continue;
+            }
             if(claimed) cleanup(unit);
             if(!needsTranslation(text)) continue;
 
@@ -425,9 +478,16 @@
 
     const style = document.createElement("style");
     style.textContent = `
+        .otd-grok-translated:not(.otd-grok-original) .otd-grok-orig,
+        .otd-grok-original .otd-grok-tr { display: none !important; }
+        .otd-grok-translated .js-translate-call-to-action { display: none; }
+        .otd-grok-icon svg { display: block; width: 100%; height: 100%; }
+        .otd-grok-original .otd-grok-icon,
+        .otd-grok-action > a:hover .otd-grok-icon { color: #1da1f2; }
+        .tweet-detail-actions.otd-grok-row { display: flex; }
+        .tweet-detail-actions.otd-grok-row > .tweet-detail-action-item { flex: 1 1 0; width: auto; }
         .otd-grok-toggle { display: inline-block; margin-top: 4px; font-size: 12px; }
         .otd-grok-toggle:hover { text-decoration: underline; }
-        .otd-grok-translated .js-translate-call-to-action { display: none; }
     `;
     // injection.js removes the original head/body of x.com once TweetDeck is in, stay on ours
     (document.getElementById("injected-head") || document.head).appendChild(style);
