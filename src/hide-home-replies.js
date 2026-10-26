@@ -1,8 +1,7 @@
 // Hides replies to other people in home columns. Threads, where the author replies to themselves, stay,
-// and so do retweets of replies. Loaded by injection.js after bundle.js.
-//   localStorage.OTDhideHomeReplies = "0"  turns it off
+// and so do retweets of replies. Loaded by injection.js after otd-common.js. Switch "hideHomeReplies".
 (() => {
-    if(localStorage.OTDhideHomeReplies === "0") return;
+    if(!OTD.isOn("hideHomeReplies")) return;
 
     const isReplyToOthers = chirp =>
         !!chirp.inReplyToID && !!chirp.user && String(chirp.inReplyToUserID) !== String(chirp.user.id);

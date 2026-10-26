@@ -1,12 +1,11 @@
 // X Articles. A tweet that is an article shows its title and the start of the text in place of the
 // x.com/i/article link, and a click opens the whole article in a reader over most of the screen.
 // Articles in another language are translated with Google Translate (Grok doesn't take them), through
-// the extension's background script, which isn't bound by CORS. Loaded by injection.js after bundle.js.
-//   localStorage.OTDarticles = "0"           turns it off
-//   localStorage.OTDarticlesTranslate = "0"  no automatic translation, the reader still has the button
-//   localStorage.OTDgrokTranslateLang        target language, shared with tweet translation
+// the extension's background script, which isn't bound by CORS. Loaded by injection.js after otd-common.js.
+// Switches "articles" and "articlesTranslate" (off: no automatic translation, the reader still has the
+// button); the target language is shared with tweet translation.
 (() => {
-    if(localStorage.OTDarticles === "0") return;
+    if(!OTD.isOn("articles")) return;
 
     const ARTICLE_RE = /(?:x|twitter)\.com\/i\/article\/(\d+)/;
     const QUERY_PATH = "/i/api/graphql/aZ3tDYsjtdOMi7iarEJuiQ/TweetResultByRestId";
@@ -14,14 +13,14 @@
     // the set x.com sends with TweetResultByRestId
     const FEATURES = {"creator_subscriptions_tweet_preview_api_enabled":true,"premium_content_api_read_enabled":false,"communities_web_enable_tweet_community_results_fetch":true,"c9s_tweet_anatomy_moderator_badge_enabled":true,"responsive_web_grok_analyze_button_fetch_trends_enabled":false,"responsive_web_grok_analyze_post_followups_enabled":true,"rweb_cashtags_composer_attachment_enabled":true,"responsive_web_jetfuel_frame":true,"rweb_sports_post_context_enabled":true,"responsive_web_grok_share_attachment_enabled":true,"responsive_web_grok_annotations_enabled":true,"articles_preview_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"rweb_conversational_replies_downvote_enabled":false,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"content_disclosure_indicator_enabled":true,"content_disclosure_ai_generated_indicator_enabled":true,"responsive_web_grok_show_grok_translated_post":true,"responsive_web_grok_analysis_button_from_backend":true,"post_ctas_fetch_enabled":false,"rweb_cashtags_enabled":true,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":false,"profile_label_improvements_pcf_label_in_post_enabled":true,"responsive_web_profile_redirect_enabled":true,"rweb_tipjar_consumption_enabled":false,"verified_phone_label_enabled":false,"responsive_web_nested_quote_preview_enabled":true,"responsive_web_grok_image_annotation_enabled":true,"responsive_web_grok_imagine_annotation_enabled":true,"responsive_web_grok_community_note_auto_translation_is_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true};
 
-    const DST_LANG = (localStorage.OTDgrokTranslateLang || navigator.language || "en").split("-")[0].toLowerCase();
-    const AUTO_TRANSLATE = localStorage.OTDarticlesTranslate !== "0";
+    const DST_LANG = OTD.targetLang();
+    const AUTO_TRANSLATE = OTD.isOn("articlesTranslate");
 
     const LABELS = {
         ru: { read: "Читать статью", open: "Открыть на x.com", close: "Закрыть", translate: "Перевести", original: "Показать оригинал", translating: "Перевод…", failed: "Не удалось перевести", via: "Google Переводчик" },
         en: { read: "Read article", open: "Open on x.com", close: "Close", translate: "Translate", original: "Show original", translating: "Translating…", failed: "Translation failed", via: "Google Translate" },
     };
-    const LABEL = LABELS[(navigator.language || "en").split("-")[0]] || LABELS.en;
+    const LABEL = OTD.label(LABELS);
 
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     const getCookie = name => document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1] || "";
@@ -452,18 +451,7 @@
         }
     }
 
-    let scheduled = false;
-    function schedule() {
-        if(scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            scan();
-        });
-    }
-
-    const style = document.createElement("style");
-    style.textContent = `
+    OTD.addStyle(`
         .otd-article-link { display: none !important; }
         .otd-article-card { margin: 6px 0 4px; padding: 8px 10px; border: 1px solid rgba(136, 153, 166, .4); border-radius: 12px; cursor: pointer; }
         .otd-article-card:hover { border-color: #1da1f2; }
@@ -502,11 +490,7 @@
         .otd-article-overlay .otd-article-body .otd-article-translate:hover { text-decoration: underline; }
         .otd-article-overlay .otd-article-body .otd-article-translate:disabled { color: #8899a6; text-decoration: none; cursor: default; }
         .otd-article-overlay .otd-article-body .otd-article-footer { margin-top: 32px; font-size: 14px; }
-    `;
-    // injection.js removes the original head/body of x.com once TweetDeck is in, stay on ours
-    (document.getElementById("injected-head") || document.head).appendChild(style);
+    `);
 
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
-    setInterval(schedule, 2000);
-    schedule();
+    OTD.watch(scan);
 })();

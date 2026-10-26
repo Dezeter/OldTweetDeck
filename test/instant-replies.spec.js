@@ -5,7 +5,7 @@ const { openPage, addTweetDeck, addScripts, addAccount } = require("./helpers");
 async function openConversation(page, storage) {
     await openPage(page, { storage });
     await addTweetDeck(page);
-    await addScripts(page, "src/instant-replies.js");
+    await addScripts(page, "src/otd-common.js", "src/instant-replies.js");
     await addAccount(page);
     await page.evaluate(() => {
         const $ = window.__require(0);

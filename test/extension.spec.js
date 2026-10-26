@@ -37,9 +37,11 @@ async function launch(testInfo, { release = VERSION } = {}) {
     });
     const page = await context.newPage();
     const logs = [];
+    const errors = [];
     page.on("console", message => logs.push(message.text()));
+    page.on("pageerror", error => errors.push(error.message));
     await page.goto("https://x.com/i/tweetdeck");
-    return { context, page, urls, apiCalls, logs };
+    return { context, page, urls, apiCalls, logs, errors };
 }
 
 async function referenceAnimationKey() {
@@ -61,7 +63,7 @@ function isValidId(id, method, path, animationKey) {
 }
 
 test("TweetDeck starts and signs its requests to X, loading nothing from elsewhere", async ({}, testInfo) => {
-    const { context, page, urls, apiCalls, logs } = await launch(testInfo);
+    const { context, page, urls, apiCalls, logs, errors } = await launch(testInfo);
     try {
         await expect.poll(() => logs.some(l => l.startsWith("Transaction id solver is ready")), { timeout: 20000 }).toBe(true);
         await expect.poll(() => apiCalls.map(c => c.path), { timeout: 20000 }).toContain("/1.1/account/verify_credentials.json");
@@ -74,6 +76,9 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
         expect(isValidId(ids[0], "GET", "/i/api/graphql/abc/HomeLatestTimeline", animationKey)).toBe(true);
         expect(isValidId(ids[1], "POST", "/1.1/statuses/update.json", animationKey)).toBe(true);
 
+        // this extension's scripts are all in, otd-common.js before the rest
+        expect(await page.evaluate(() => typeof window.OTD?.watch)).toBe("function");
+        expect(errors.filter(e => /OTD/.test(e))).toEqual([]);
         expect(await page.locator("iframe[srcdoc]").count()).toBe(0);
         expect(urls.filter(u => /abs\.twimg\.com\/.*vendor\./.test(u))).toEqual([]);
         expect(urls.filter(u => /dimden|oldtd\.org|raw\.githubusercontent\.com/.test(u))).toEqual([]);

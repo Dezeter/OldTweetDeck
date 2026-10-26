@@ -63,7 +63,7 @@ async function open(page, { dark = false } = {}) {
         document.querySelectorAll("article").forEach(a => a.addEventListener("click", () => window.__clicks++));
         document.addEventListener("keydown", e => window.__keys.push(e.key));
     }, dark);
-    await addScripts(page, "src/x-articles.js");
+    await addScripts(page, "src/otd-common.js", "src/x-articles.js");
     await page.waitForSelector("#a500 .otd-article-card");
 }
 
@@ -154,7 +154,7 @@ test("the reader is styled in both themes", async ({ page }) => {
 test("OTDarticles=0 turns it off", async ({ page }) => {
     await page.addInitScript(() => { window.__calls = []; window.fetch = async url => { window.__calls.push(url); return new Response("{}"); }; });
     await openPage(page, { html: "test/fixtures/articles.html", storage: { OTDarticles: "0" } });
-    await addScripts(page, "src/x-articles.js");
+    await addScripts(page, "src/otd-common.js", "src/x-articles.js");
     await page.waitForTimeout(2500);
     expect(await page.$$(".otd-article-card")).toHaveLength(0);
     expect(await page.evaluate(() => window.__calls)).toHaveLength(0);
@@ -208,7 +208,7 @@ async function openTranslated(page, options = {}) {
     await openPage(page, { html: "test/fixtures/articles.html", storage: options.storage });
     await page.evaluate(() => document.querySelector(".column-scroller").insertAdjacentHTML("beforeend",
         '<article class="stream-item js-stream-item" data-tweet-id="600" id="a600ru"><p class="js-tweet-text tweet-text" lang="zxx"><a href="https://t.co/r" class="url-ext" data-full-url="https://x.com/i/article/31">x.com/i/article/31</a></p></article>'));
-    await addScripts(page, "src/google-translate.js", "src/background3.js", "src/content.js", "src/x-articles.js");
+    await addScripts(page, "src/google-translate.js", "src/background3.js", "src/content.js", "src/otd-common.js", "src/x-articles.js");
     await page.waitForSelector("#a500 .otd-article-card");
 }
 const reader = page => page.evaluate(() => {

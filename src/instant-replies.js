@@ -1,8 +1,8 @@
 // A reply sent from TweetDeck shows up in the open conversation right away, instead of after the
-// next refresh (every 60 s) or reopening the tweet. Loaded by injection.js after bundle.js.
-//   localStorage.OTDinstantReplies = "0"  turns it off
+// next refresh (every 60 s) or reopening the tweet. Loaded by injection.js after otd-common.js.
+// Switch "instantReplies".
 (() => {
-    if(localStorage.OTDinstantReplies === "0") return;
+    if(!OTD.isOn("instantReplies")) return;
 
     // TweetDeck's jQuery: dataTweetSent is a jQuery event, and the conversation pub/sub lives on it too
     let modules;

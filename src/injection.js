@@ -32,6 +32,8 @@ async function main() {
             fetch(chrome.runtime.getURL("/files/bundle.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/bundle.css")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/files/twitter-text.js")).then(r => r.text()),
+            // otd-common.js first: the others use window.OTD
+            fetch(chrome.runtime.getURL("/src/otd-common.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/grok-translate.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/hide-home-replies.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/conversation-replies.js")).then(r => r.text()),

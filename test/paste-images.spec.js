@@ -5,7 +5,7 @@ const { openPage, addTweetDeck, addScripts } = require("./helpers");
 async function openComposer(page, storage) {
     await openPage(page, { storage });
     await addTweetDeck(page);
-    await addScripts(page, "src/paste-images.js");
+    await addScripts(page, "src/otd-common.js", "src/paste-images.js");
     await page.evaluate(() => {
         const require = window.__require;
         const $ = require(0);

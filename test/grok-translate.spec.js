@@ -34,7 +34,7 @@ async function open(page, { responses = RESPONSES, rateLimitFirst = false, stora
     }, { responses, rateLimitFirst });
     await openPage(page, { html: "test/fixtures/columns.html", storage });
     await page.evaluate(() => document.querySelectorAll("article").forEach(a => a.addEventListener("click", () => window.__articleClicks++)));
-    await addScripts(page, "src/grok-translate.js");
+    await addScripts(page, "src/otd-common.js", "src/grok-translate.js");
 }
 const calls = page => page.evaluate(() => window.__calls);
 const requestedIds = async page => (await calls(page)).map(c => c.body.id).sort();

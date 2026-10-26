@@ -1,8 +1,7 @@
 // Ctrl+V of an image in a compose box attaches it, as if it was picked with "Add image".
-// Loaded by injection.js after bundle.js.
-//   localStorage.OTDpasteImages = "0"  turns it off
+// Loaded by injection.js after otd-common.js. Switch "pasteImages".
 (() => {
-    if(localStorage.OTDpasteImages === "0") return;
+    if(!OTD.isOn("pasteImages")) return;
 
     // the nearest upload input, there is one in the docked composer
     function uploadInput(from) {

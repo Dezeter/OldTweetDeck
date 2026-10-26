@@ -2,16 +2,15 @@
 // with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet
 // is cut to a few lines without media. TweetDeck makes an item of every single action (interception.js
 // unpacks X's grouped notifications for it), so this regroups them on the page.
-// Loaded by injection.js after bundle.js.
-//   localStorage.OTDgroupNotifications = "0"  turns it off
+// Loaded by injection.js after otd-common.js. Switch "groupNotifications".
 (() => {
-    if(localStorage.OTDgroupNotifications === "0") return;
+    if(!OTD.isOn("groupNotifications")) return;
 
     const LABELS = {
         ru: { favorite: "лайкнули", retweet: "ретвитнули", follow: "подписались на вас", and: "и", more: n => `и ещё ${n}` },
         en: { favorite: "liked", retweet: "retweeted", follow: "followed you", and: "and", more: n => `and ${n} ${n === 1 ? "other" : "others"}` },
     };
-    const LABEL = LABELS[(navigator.language || "en").split("-")[0]] || LABELS.en;
+    const LABEL = OTD.label(LABELS);
     const MAX_AVATARS = 10;
 
     // TweetDeck action -> what it is about; actions on your retweets and mentions count as likes / retweets too
@@ -145,18 +144,7 @@
         }
     }
 
-    let scheduled = false;
-    function schedule() {
-        if(scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            scan();
-        });
-    }
-
-    const style = document.createElement("style");
-    style.textContent = `
+    OTD.addStyle(`
         .otd-notif-hidden { display: none !important; }
         /* in a follow group the avatar row stands in for the first follower's card */
         .otd-notif-group .account-summary { display: none !important; }
@@ -169,11 +157,7 @@
         .otd-notif-compact .tweet-text .otd-grok-para { display: inline; margin: 0; }
         .otd-notif-compact .tweet-text .otd-grok-para::after { content: " "; }
         .otd-notif-compact .js-media, .otd-notif-compact .js-media-preview-container, .otd-notif-compact .js-card-container, .otd-notif-compact .js-quote-detail { display: none !important; }
-    `;
-    // injection.js removes the original head/body of x.com once TweetDeck is in, stay on ours
-    (document.getElementById("injected-head") || document.head).appendChild(style);
+    `);
 
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
-    setInterval(schedule, 2000);
-    schedule();
+    OTD.watch(scan);
 })();

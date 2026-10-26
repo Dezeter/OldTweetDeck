@@ -34,7 +34,7 @@ async function open(page, storage, routes) {
         };
     }, PAGES);
     // interception.js routes TweetDeck's XHRs; conversation-replies.js changes its conversation route
-    await addScripts(page, "src/interception.js", "files/vendor.js", "files/bundle.js", "src/conversation-replies.js");
+    await addScripts(page, "src/interception.js", "files/vendor.js", "files/bundle.js", "src/otd-common.js", "src/conversation-replies.js");
 }
 
 const rawConversation = page => page.evaluate(() => new Promise(resolve => {

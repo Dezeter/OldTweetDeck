@@ -1,10 +1,10 @@
 // Loads all replies in the tweet detail view. TweetDeck reads only the first page of
 // /2/timeline/conversation and skips its cursors: the next page and the replies X hides behind
 // "Show more replies" / "Show probable spam". This follows them and hands TweetDeck one merged response.
-// Loaded by injection.js after interception.js and builds on its route, which is fetched from upstream.
-//   localStorage.OTDloadAllReplies = "0"  turns it off
+// Loaded by injection.js after interception.js and otd-common.js, and builds on interception.js's route.
+// Switch "loadAllReplies".
 (() => {
-    if(localStorage.OTDloadAllReplies === "0") return;
+    if(!OTD.isOn("loadAllReplies")) return;
     if(typeof proxyRoutes === "undefined") return;
 
     const route = proxyRoutes.find(r => r && r.path instanceof RegExp && r.path.source.includes("timeline\\/conversation"));

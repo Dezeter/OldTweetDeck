@@ -36,7 +36,7 @@ async function openColumn(page, storage) {
         };
         [act("favorite", U.a, T.t1), act("follow", U.e, U.me), act("follow", U.f, U.me), act("follow", U.g, U.me), act("favorite", U.b, T.t1), act("favorite", U.d, T.t2), act("favorite", U.c, T.t1)].forEach(c => addChirp(c));
     }, ["#e0245e", "#17bf63", "#1da1f2", "#ffad1f", "#794bc4", "#f45d22"].map(avatar));
-    await addScripts(page, "src/group-notifications.js");
+    await addScripts(page, "src/otd-common.js", "src/group-notifications.js");
     await page.waitForTimeout(400);
 }
 

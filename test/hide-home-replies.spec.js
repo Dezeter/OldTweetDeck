@@ -25,7 +25,7 @@ test("home columns hide replies to other people, keep threads and retweets of re
     await openPage(page);
     await addTweetDeck(page);
     await page.evaluate(() => { window.__original = TD.vo.Column.prototype.filterAllowedChirps; });
-    await addScripts(page, "src/hide-home-replies.js");
+    await addScripts(page, "src/otd-common.js", "src/hide-home-replies.js");
     // patched synchronously, before TweetDeck loads any column
     expect(await page.evaluate(() => TD.vo.Column.prototype.filterAllowedChirps !== window.__original)).toBe(true);
 
@@ -37,6 +37,6 @@ test("home columns hide replies to other people, keep threads and retweets of re
 test("OTDhideHomeReplies=0 leaves TweetDeck untouched", async ({ page }) => {
     await openPage(page, { storage: { OTDhideHomeReplies: "0" } });
     await addTweetDeck(page);
-    await addScripts(page, "src/hide-home-replies.js");
+    await addScripts(page, "src/otd-common.js", "src/hide-home-replies.js");
     expect((await filterHome(page)).home).toHaveLength(5);
 });
