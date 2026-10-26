@@ -18,6 +18,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
+- [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -77,6 +78,8 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Language to translate to (default: the browser's) | `OTDgrokTranslateLang`, e.g. `'ru'` |
 | Hiding replies in home columns | `OTDhideHomeReplies` |
 | Grouping notifications | `OTDgroupNotifications` |
+| Holding a column under the pointer | `OTDpauseOnHover` |
+| Unread in the tab title | `OTDtabTitle` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
@@ -126,6 +129,12 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 Ð
 A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 
 The "â€¦" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.
+
+## Columns
+
+A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
+
+The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
 ## Instant replies
 

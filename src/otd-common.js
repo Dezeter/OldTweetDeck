@@ -7,7 +7,7 @@
     const VERSION = document.documentElement.dataset.otdVersion || "";
 
     // A feature is on by default unless it says default: false; localStorage[storage] "0" or "1" overrides that.
-    // settings.js shows them as switches, by section.
+    // settings.js shows them as switches, by section, in this order.
     const FEATURES = [
         { key: "grokTranslate", storage: "OTDgrokTranslate", section: "translation",
             label: { ru: "Переводить твиты через Grok", en: "Translate tweets with Grok" } },
@@ -17,6 +17,10 @@
             label: { ru: "Скрывать в домашних колонках ответы другим людям", en: "Hide replies to other people in home columns" } },
         { key: "groupNotifications", storage: "OTDgroupNotifications", section: "columns",
             label: { ru: "Группировать лайки, ретвиты и подписки в уведомлениях", en: "Group likes, retweets and follows in notifications" } },
+        { key: "pauseOnHover", storage: "OTDpauseOnHover", section: "columns",
+            label: { ru: "Не сдвигать колонку новыми твитами, пока над ней курсор", en: "Don't push a column down with new tweets while the pointer is over it" } },
+        { key: "tabTitle", storage: "OTDtabTitle", section: "columns",
+            label: { ru: "Непрочитанное в заголовке вкладки: «(3) TweetDeck»", en: "Unread in the tab title: \"(3) TweetDeck\"" } },
         { key: "loadAllReplies", storage: "OTDloadAllReplies", section: "tweets",
             label: { ru: "Загружать все ответы при просмотре твита", en: "Load all replies when viewing a tweet" } },
         { key: "instantReplies", storage: "OTDinstantReplies", section: "tweets",
@@ -92,6 +96,19 @@
         }
     }
 
+    // TweetDeck's jQuery, the one its events (dataTweetSent, uiReadStateChange…) and $.publish live on
+    let jquery;
+    function jQuery() {
+        if(jquery !== undefined) return jquery;
+        let modules = {};
+        try {
+            window.webpackJsonp.push([["otd-common"], { "otd-common": (module, exports, require) => { modules = require.c; } }, [["otd-common"]]]);
+        } catch(e) {
+            console.warn("[otd] no webpack runtime", e);
+        }
+        return jquery = Object.values(modules).map(m => m.exports).find(x => x?.fn?.jquery && typeof x.publish === "function") || null;
+    }
+
     function addStyle(css) {
         const style = document.createElement("style");
         style.textContent = css;
@@ -132,5 +149,5 @@
         return () => request([fn]);
     }
 
-    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, jQuery, addStyle, watch };
 })();
