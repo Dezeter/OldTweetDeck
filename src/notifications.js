@@ -40,60 +40,40 @@ function createModal(html, className, onclose, canclose) {
     return modal;
 }
 
-async function getNotifications() {
-    let notifs = await fetch('https://oldtd.org/notifications.json?t='+Date.now()).then(r => r.json());
-    let readNotifs = localStorage.getItem('readNotifications') ? JSON.parse(localStorage.getItem('readNotifications')) : [];
-    let notifsToDisplay = notifs.filter(notif => !readNotifs.includes(notif.id));
-
-    return notifsToDisplay;
-}
-function maxVersionCheck(ver, maxVer) {
-    let verArr = ver.split('.');
-    let maxVerArr = maxVer.split('.');
-    for(let i = 0; i < verArr.length; i++) {
-        if(parseInt(verArr[i]) > parseInt(maxVerArr[i])) return false;
-        if(parseInt(verArr[i]) < parseInt(maxVerArr[i])) return true;
-    }
-    return true;
-}
+// ver is at least minVer ("5.0.1" vs "5.0.0"), missing parts count as 0
 function minVersionCheck(ver, minVer) {
     let verArr = ver.split('.');
     let minVerArr = minVer.split('.');
-    for(let i = 0; i < verArr.length; i++) {
-        if(parseInt(verArr[i]) < parseInt(minVerArr[i])) return false;
-        if(parseInt(verArr[i]) > parseInt(minVerArr[i])) return true;
+    for(let i = 0; i < Math.max(verArr.length, minVerArr.length); i++) {
+        let a = parseInt(verArr[i] || 0), b = parseInt(minVerArr[i] || 0);
+        if(a < b) return false;
+        if(a > b) return true;
     }
     return true;
 }
 
-async function showNotifications() {
-    let notifsToDisplay = await getNotifications();
-    if(notifsToDisplay.length === 0) return;
+const RELEASES_API = 'https://api.github.com/repos/Dezeter/OldTweetDeck/releases/latest';
+
+// Tells about a new release of this fork, once per version.
+async function checkForUpdate() {
+    let release = await fetch(RELEASES_API).then(r => r.ok ? r.json() : null).catch(() => null);
+    let latest = String(release?.tag_name || '').replace(/^v/, '');
+    if(!/^\d+(\.\d+)*$/.test(latest)) return;
     let manifest = await fetch(chrome.runtime.getURL('/manifest.json')).then(r => r.json());
-    let currentVersion = manifest.version;
-   
-    for(let notif of notifsToDisplay) {
-        if(!localStorage.OTDnotifsReadOnce && notif.ignoreOnInstall) {
-            let readNotifs = localStorage.getItem('readNotifications') ? JSON.parse(localStorage.getItem('readNotifications')) : [];
-            if(readNotifs.includes(notif.id)) continue;
-            readNotifs.push(notif.id);
-            localStorage.setItem('readNotifications', JSON.stringify(readNotifs));
-            continue;
-        }
-        if(notif.maxVersion && !maxVersionCheck(currentVersion, notif.maxVersion)) continue;
-        if(notif.minVersion && !minVersionCheck(currentVersion, notif.minVersion)) continue;
-        if(document.querySelector('.otd-notification-modal')) continue;
-        let notifHTML = `<div class="otd-notification otd-notification-${notif.type}"><div class="otd-notification-content">${notif.text}</div></div>`;
-        let shown = Date.now();
-        createModal(notifHTML, 'otd-notification-modal', () => {
-            if(!notif.dismissable) return;
-            let readNotifs = localStorage.getItem('readNotifications') ? JSON.parse(localStorage.getItem('readNotifications')) : [];
-            if(readNotifs.includes(notif.id)) return;
-            readNotifs.push(notif.id);
-            localStorage.setItem('readNotifications', JSON.stringify(readNotifs));
-        }, () => Date.now() - shown > 3000);
-    }
-    localStorage.OTDnotifsReadOnce = '1';
+    if(minVersionCheck(manifest.version, latest)) return;
+    if(localStorage.OTDupdateNotified === latest || document.querySelector('.otd-notification-modal')) return;
+
+    let ru = (navigator.language || '').startsWith('ru');
+    let modal = createModal(`<div class="otd-notification otd-notification-info"><div class="otd-notification-content"></div></div>`, 'otd-notification-modal', () => {
+        localStorage.OTDupdateNotified = latest;
+    });
+    let content = modal.querySelector('.otd-notification-content');
+    let link = document.createElement('a');
+    link.href = `https://github.com/Dezeter/OldTweetDeck/releases/tag/${encodeURIComponent(release.tag_name)}`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = ru ? 'что нового и скачать' : 'release notes and download';
+    content.append(ru ? `Вышла OldTweetDeck ${latest} (у вас ${manifest.version}): ` : `OldTweetDeck ${latest} is out (you have ${manifest.version}): `, link);
 }
 
 let style = document.createElement('style');
@@ -170,5 +150,5 @@ html.dark .otd-modal-content {
 setTimeout(() => {
     document.head.appendChild(style);
 }, 1000);
-setTimeout(showNotifications, 2000);
-setInterval(showNotifications, 60000 * 60);
+setTimeout(checkForUpdate, 5000);
+setInterval(checkForUpdate, 60000 * 60 * 6);
