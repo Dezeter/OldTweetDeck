@@ -86,6 +86,11 @@ Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
 `localStorage.OTDarticles = '0'` turns this off.
 
+## Instant replies
+
+A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.  
+`localStorage.OTDinstantReplies = '0'` turns this off.
+
 ## Better TweetDeck
 
 I've made a fork of BetterTD that works with this extension, you can find it [here](https://github.com/dimdenGD/BetterTweetDeck/releases).  
