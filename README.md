@@ -89,6 +89,11 @@ A tweet that is an X Article shows the title and the start of the text instead o
 Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
 `localStorage.OTDarticles = '0'` turns articles off, `localStorage.OTDarticlesTranslate = '0'` turns off automatic translation (the button stays).
 
+## Grouped notifications
+
+Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.  
+`localStorage.OTDgroupNotifications = '0'` turns this off.
+
 ## Instant replies
 
 A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.  
