@@ -42,6 +42,7 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/hide-home-replies.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/conversation-replies.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/paste-images.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/x-articles.js")).then(r => r.text()),
         ]);
     if (!localStorage.getItem("OTDalwaysUseLocalFiles")) {
         const [
