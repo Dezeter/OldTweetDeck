@@ -11,15 +11,13 @@ solverIframe.style.border = 'none';
 solverIframe.style.opacity = 0;
 solverIframe.style.pointerEvents = 'none';
 solverIframe.tabIndex = -1;
-solverIframe.src = "https://tweetdeck.dimden.dev/solver.html?4"; // check source code of that page to make sure its safe if u dont trust it
-fetch(solverIframe.src).catch(() => {
-    console.error("Cannot load solver iframe");
-    solverErrored = true;
-    for(let id in solveCallbacks) {
-        solveCallbacks[id].reject('Solver errored');
-        delete solveCallbacks[id];
-    }
-});
+// The solver runs X's signing code in a sandboxed iframe: opaque origin, no access to x.com's cookies
+// or the extension. Its script is src/solver.js, put in by injection.js.
+let solverScript = /*SOLVER_SCRIPT*/"";
+solverIframe.sandbox = 'allow-scripts';
+solverIframe.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta name="twitter-site-verification" content=""></head><body><div id="anims"></div><script>${solverScript}<\/script></body></html>`;
+// srcdoc starts out as about:blank, messages sent before it loads get lost
+let solverLoaded = new Promise(resolve => solverIframe.addEventListener('load', resolve, { once: true }));
 let injectedBody = document.getElementById('injected-body');
 if(injectedBody) injectedBody.appendChild(solverIframe);
 else {
@@ -91,23 +89,7 @@ function solveChallenge(path, method) {
         }
         let id = solveId++;
         solveCallbacks[id] = { resolve, reject, time: Date.now() };
-        if(!solverIframe.contentWindow) {
-            solverIframe.addEventListener('load', () => {
-                solverIframe.contentWindow.postMessage({ action: 'solve', id, path, method }, '*');
-                setTimeout(() => {
-                    if(solveCallbacks[id]) {
-                        // try again
-                        solverIframe.contentWindow.postMessage({ action: 'solve', id, path, method }, '*');
-                    }
-                }, 5000);
-                setTimeout(() => {
-                    if(solveCallbacks[id]) {
-                        solveCallbacks[id].reject('Solver timed out');
-                        delete solveCallbacks[id];
-                    }
-                }, 20000);
-            });
-        } else {
+        solverLoaded.then(() => {
             solverIframe.contentWindow.postMessage({ action: 'solve', id, path, method }, '*');
             setTimeout(() => {
                 if(solveCallbacks[id]) {
@@ -121,7 +103,7 @@ function solveChallenge(path, method) {
                     delete solveCallbacks[id];
                 }
             }, 20000);
-        }
+        });
     });
 }
 
@@ -190,21 +172,13 @@ window.addEventListener('message', e => {
                 verificationCode: dom.querySelector('meta[name="twitter-site-verification"]').content,
             }, '*');
         }
-        if(solverIframe.contentWindow) {
-            sendInit();
-            setTimeout(() => {
-                if(!ready) {
-                    sendInit();
-                }
-            }, 2500);
-        } else {
-            setTimeout(() => {
-                if(!ready) {
-                    sendInit();
-                }
-            }, 2500);
-            solverIframe.addEventListener('load', () => sendInit());
-        }
+        await solverLoaded;
+        sendInit();
+        setTimeout(() => {
+            if(!ready) {
+                sendInit();
+            }
+        }, 2500);
     } catch (e) {
         console.error(`Error during challenge:`);
         console.error(e);
