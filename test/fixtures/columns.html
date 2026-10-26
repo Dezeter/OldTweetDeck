@@ -1,0 +1,89 @@
+<!doctype html>
+<html><head id="injected-head"><meta charset="utf-8">
+<link rel="stylesheet" href="bundle.css">
+<style>
+.column-scroller{height:420px;width:330px;overflow-y:auto;display:inline-block;vertical-align:top;border:1px solid #ccc;background:#fff}
+article{border-bottom:1px solid #eee;padding:8px 10px}
+.spacer{height:900px}
+.icon:before{font-family:sans-serif !important;font-weight:bold;line-height:1;display:block}
+.icon-reply:before{content:"R" !important}.icon-retweet:before{content:"T" !important}.icon-favorite:before{content:"L" !important}.icon-more:before{content:"M" !important}
+article{overflow:hidden}
+</style></head>
+<body id="injected-body">
+<div class="column-scroller" id="col1">
+  <article class="stream-item js-stream-item is-actionable" data-key="100" data-tweet-id="100" id="a100">
+    <div class="tweet-body">
+      <p class="js-tweet-text tweet-text with-linebreaks" lang="en" dir="ltr">Hello <a href="https://x.com/jack" class="link-complex" rel="user" data-user-name="jack">@jack</a>, see <a href="https://t.co/abc123" rel="url" class="url-ext" data-full-url="https://example.com/page">example.com/page</a> &amp; <a href="https://x.com/hashtag/news" class="hashtag" rel="hashtag">#news</a>
+second line</p>
+      <div class="js-quote-detail quoted-tweet is-actionable" data-tweet-id="200" rel="viewDetails" id="q200">
+        <p class="js-quoted-tweet-text with-linebreaks">This is a quoted English tweet</p>
+      </div>
+      <a class="js-translate-call-to-action txt-mute" href="#" rel="translateTweet">Translate Tweet</a>
+    </div>
+    <footer class="tweet-footer cf"><ul class="js-tweet-actions tweet-actions full-width is-visible">
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-reply-action tweet-action position-rel" href="#" rel="reply"><i class="icon icon-reply txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="tweet-action" href="#" rel="retweet"><i class="js-icon-retweet icon icon-retweet icon-retweet-toggle txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-show-tip tweet-action position-rel" href="#" rel="favorite" title="Like"><i class="js-icon-favorite icon icon-favorite icon-favorite-toggle txt-center"></i></a></li>
+<li class="tweet-action-item position-rel pull-left margin-r--10"><a class="tweet-action" href="#" rel="actionsMenu"><i class="icon icon-more txt-right"></i></a></li>
+</ul></footer>
+  </article>
+  <article class="stream-item js-stream-item" data-key="101" data-tweet-id="101" id="a101">
+    <p class="js-tweet-text tweet-text with-linebreaks" lang="ru">Привет, это уже по-русски</p>
+    <div class="js-quote-detail quoted-tweet" data-tweet-id="201" id="q201">
+      <p class="js-quoted-tweet-text with-linebreaks">Цитата на русском языке</p>
+    </div>
+    <footer class="tweet-footer cf"><ul class="js-tweet-actions tweet-actions full-width is-visible">
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-reply-action tweet-action position-rel" href="#" rel="reply"><i class="icon icon-reply txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="tweet-action" href="#" rel="retweet"><i class="js-icon-retweet icon icon-retweet icon-retweet-toggle txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-show-tip tweet-action position-rel" href="#" rel="favorite" title="Like"><i class="js-icon-favorite icon icon-favorite icon-favorite-toggle txt-center"></i></a></li>
+<li class="tweet-action-item position-rel pull-left margin-r--10"><a class="tweet-action" href="#" rel="actionsMenu"><i class="icon icon-more txt-right"></i></a></li>
+</ul></footer>
+  </article>
+  <article class="stream-item js-stream-item" data-key="104" data-tweet-id="104" id="a104">
+    <p class="js-tweet-text tweet-text with-linebreaks" lang="ru">Только цитата не по-русски</p>
+    <div class="js-quote-detail quoted-tweet" data-tweet-id="204" id="q204">
+      <p class="js-quoted-tweet-text with-linebreaks">Only the quote is English here</p>
+    </div>
+    <footer class="tweet-footer cf"><ul class="js-tweet-actions tweet-actions full-width is-visible">
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-reply-action tweet-action position-rel" href="#" rel="reply"><i class="icon icon-reply txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="tweet-action" href="#" rel="retweet"><i class="js-icon-retweet icon icon-retweet icon-retweet-toggle txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-show-tip tweet-action position-rel" href="#" rel="favorite" title="Like"><i class="js-icon-favorite icon icon-favorite icon-favorite-toggle txt-center"></i></a></li>
+<li class="tweet-action-item position-rel pull-left margin-r--10"><a class="tweet-action" href="#" rel="actionsMenu"><i class="icon icon-more txt-right"></i></a></li>
+</ul></footer>
+  </article>
+  <article class="stream-item js-stream-item" data-key="102" data-tweet-id="102" id="a102">
+    <p class="js-tweet-text tweet-text with-linebreaks" lang="zxx"><a href="https://t.co/media">pic.x.com/xyz</a></p>
+  </article>
+  <div class="spacer"></div>
+  <article class="stream-item js-stream-item" data-key="103" data-tweet-id="103" id="a103">
+    <p class="js-tweet-text tweet-text with-linebreaks" lang="ja">今日はいい天気ですね</p>
+    <footer class="tweet-footer cf"><ul class="js-tweet-actions tweet-actions full-width is-visible">
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-reply-action tweet-action position-rel" href="#" rel="reply"><i class="icon icon-reply txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="tweet-action" href="#" rel="retweet"><i class="js-icon-retweet icon icon-retweet icon-retweet-toggle txt-center"></i></a></li>
+<li class="tweet-action-item pull-left margin-r--10"><a class="js-show-tip tweet-action position-rel" href="#" rel="favorite" title="Like"><i class="js-icon-favorite icon icon-favorite icon-favorite-toggle txt-center"></i></a></li>
+<li class="tweet-action-item position-rel pull-left margin-r--10"><a class="tweet-action" href="#" rel="actionsMenu"><i class="icon icon-more txt-right"></i></a></li>
+</ul></footer>
+  </article>
+</div>
+<div class="column-scroller" id="col2">
+  <article class="stream-item js-stream-item" data-key="999" data-tweet-id="" id="dm">
+    <p class="js-tweet-text tweet-text">direct message text</p>
+  </article>
+  <article class="stream-item js-stream-item" data-key="300" data-tweet-id="300" id="d300">
+    <div class="js-tweet tweet-detail">
+      <p class="js-tweet-text tweet-text txt-size-variable--18 margin-b--10 with-linebreaks" lang="es">Hola a todos, buenos días</p>
+      <ul class="tweet-detail-actions without-tweet-drag-handles">
+<li class="tweet-detail-action-item margin-ln"><a class="js-reply-action tweet-detail-action position-rel" href="#" rel="reply"><i class="icon icon-reply"></i></a></li>
+<li class="tweet-detail-action-item"><a class="tweet-detail-action" href="#" rel="retweet"><i class="js-icon-retweet icon icon-retweet icon-retweet-toggle"></i></a></li>
+<li class="tweet-detail-action-item"><a class="js-show-tip tweet-detail-action position-rel" href="#" rel="favorite"><i class="js-icon-favorite icon icon-favorite icon-favorite-toggle txt-center"></i></a></li>
+<li class="tweet-detail-action-item position-rel"><a class="js-tweet-detail-action tweet-detail-action" href="#" rel="actionsMenu"><i class="icon icon-more"></i></a></li>
+</ul>
+    </div>
+  </article>
+  <div class="compose-quote" id="compose">
+    <div class="js-quote-detail quoted-tweet" data-tweet-id="400" id="q400">
+      <p class="js-quoted-tweet-text with-linebreaks">Quote in the composer</p>
+    </div>
+  </div>
+</div>
+</body></html>

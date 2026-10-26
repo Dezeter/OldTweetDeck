@@ -5,11 +5,14 @@ const fs = require('fs');
 const path = require('path');
 const AdmZip = require('adm-zip');
 
+// not part of the extension
+const SKIP = ['.git', '.github', '_metadata', 'node_modules', 'build', 'test', 'test-results', 'playwright-report', 'playwright.config.js'];
+
 async function copyDir(src, dest) {
     const entries = await fsp.readdir(src, { withFileTypes: true });
     await fsp.mkdir(dest);
     for (let entry of entries) {
-        if(entry.name === '.git' || entry.name === '.github' || entry.name === '_metadata' || entry.name === 'node_modules' || entry.name === 'build') continue;
+        if(SKIP.includes(entry.name)) continue;
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
         if (entry.isDirectory()) {

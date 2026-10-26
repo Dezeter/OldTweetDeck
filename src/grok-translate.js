@@ -1,11 +1,9 @@
 // Automatic translation of tweets through Grok, the same endpoint x.com uses for "Show translation".
-// Loaded by injection.js after bundle.js. Settings (localStorage):
-//   OTDgrokTranslate = "0"       turns it off
-//   OTDgrokTranslateLang = "ru"  target language (defaults to the browser language)
+// Loaded by injection.js after otd-common.js. Switch "grokTranslate", target language OTD.targetLang().
 (() => {
-    if(localStorage.OTDgrokTranslate === "0") return;
+    if(!OTD.isOn("grokTranslate")) return;
 
-    const DST_LANG = (localStorage.OTDgrokTranslateLang || navigator.language || "en").split("-")[0].toLowerCase();
+    const DST_LANG = OTD.targetLang();
     const DELAY_MS = 600;     // pause between requests
     const MAX_PER_MIN = 20;   // soft cap, X's rate limit is shared with the rest of the session
     const DWELL_MS = 700;     // a tweet is translated only if it stayed on screen this long
@@ -21,7 +19,7 @@
         ru: { original: "Показать оригинал", translation: "Показать перевод" },
         en: { original: "Show original", translation: "Show translation" },
     };
-    const LABEL = LABELS[DST_LANG] || LABELS.en;
+    const LABEL = OTD.label(LABELS, DST_LANG);
 
     // X's language codes for tweets without linguistic content (media only, hashtags only, etc.)
     const NO_TEXT_LANGS = ["zxx", "qme", "qam", "qct", "qht", "qst", "art"];
@@ -475,18 +473,7 @@
         drain();
     }
 
-    let scheduled = false;
-    function schedule() {
-        if(scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            scan();
-        });
-    }
-
-    const style = document.createElement("style");
-    style.textContent = `
+    OTD.addStyle(`
         .otd-grok-translated:not(.otd-grok-original) .otd-grok-orig,
         .otd-grok-original .otd-grok-tr { display: none !important; }
         .otd-grok-translated .js-translate-call-to-action { display: none; }
@@ -500,15 +487,11 @@
         .tweet-detail-actions.otd-grok-row > .tweet-detail-action-item { flex: 1 1 0; width: auto !important; }
         .otd-grok-toggle { display: inline-block; margin-top: 4px; font-size: 12px; }
         .otd-grok-toggle:hover { text-decoration: underline; }
-    `;
-    // injection.js removes the original head/body of x.com once TweetDeck is in, stay on ours
-    (document.getElementById("injected-head") || document.head).appendChild(style);
+    `);
 
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+    const schedule = OTD.watch(scan);
     // scroll doesn't bubble, columns scroll on their own elements
     document.addEventListener("scroll", schedule, { capture: true, passive: true });
-    setInterval(schedule, 2000);
-    schedule();
 
     console.log(`[grok-tr] active, dst=${DST_LANG}`);
 })();
