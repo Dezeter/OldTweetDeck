@@ -40,6 +40,7 @@ async function main() {
             // local only: not part of upstream, so there is no remote copy to prefer
             fetch(chrome.runtime.getURL("/src/grok-translate.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/hide-home-replies.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/conversation-replies.js")).then(r => r.text()),
         ]);
     if (!localStorage.getItem("OTDalwaysUseLocalFiles")) {
         const [
