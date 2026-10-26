@@ -66,6 +66,11 @@ Only tweets that stay on screen are translated, at most 20 per minute, and trans
 - `localStorage.OTDgrokTranslateLang = 'ru'` sets the target language (default is the browser language)
 - `localStorage.OTDgrokTranslate = '0'` turns translation off
 
+## Replies in home columns
+
+Home columns hide replies to other people, the way mutes hide tweets. Threads where the author replies to themselves and retweets of replies still show, and replies stay visible when you open a conversation.  
+`localStorage.OTDhideHomeReplies = '0'` turns this off (reload the tab after changing it).
+
 ## Better TweetDeck
 
 I've made a fork of BetterTD that works with this extension, you can find it [here](https://github.com/dimdenGD/BetterTweetDeck/releases).  
