@@ -3,8 +3,9 @@
 // before the other local scripts, as window.OTD.
 (() => {
     const UI_LANG = (navigator.language || "en").split("-")[0].toLowerCase();
-    // injection.js puts the extension's version on <html>
+    // injection.js puts the extension's version and the address of its files on <html>
     const VERSION = document.documentElement.dataset.otdVersion || "";
+    const BASE_URL = document.documentElement.dataset.otdBase || "";
 
     // A feature is on by default unless it says default: false; localStorage[storage] "0" or "1" overrides that.
     // settings.js shows them as switches, by section, in this order.
@@ -37,6 +38,10 @@
             label: { ru: "«Скачать медиа» в меню твита", en: "\"Download media\" in the tweet menu" } },
         { key: "pasteImages", storage: "OTDpasteImages", section: "compose",
             label: { ru: "Вставлять картинки по Ctrl+V", en: "Paste images with Ctrl+V" } },
+        { key: "emojiPicker", storage: "OTDemojiPicker", section: "compose",
+            label: { ru: "Кнопка «Эмодзи» в окне твита", en: "\"Emoji\" button in the tweet box" } },
+        { key: "gifPicker", storage: "OTDgifPicker", section: "compose",
+            label: { ru: "Кнопка «GIF» в окне твита: поиск GIF на X", en: "\"GIF\" button in the tweet box: X's GIF search" } },
     ];
     // the language tweets and articles are translated to
     const LANG_STORAGE = "OTDgrokTranslateLang";
@@ -96,6 +101,86 @@
         }
     }
 
+    // Attaches files to the tweet a compose box belongs to, the way picking them with "Add image" does:
+    // TweetDeck checks type, size and count, shows its own errors, and an inline reply moves to the docked
+    // composer to show them. False when there's no upload input for that box.
+    function attachFiles(box, files) {
+        let input = null;
+        for(let el = box; el && !input; el = el.parentElement) input = el.querySelector("input.js-media-upload");
+        if(!input || !files.length) return false;
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+    }
+
+    // A button in the docked composer, after "Add image" and the buttons added before it, styled like it,
+    // and its panel, shown under the buttons and toggled by it; one panel is open at a time. build(composer)
+    // makes the panel's content once, open(panel, composer) runs every time it opens. TweetDeck renders the
+    // composer again now and then, so the button is put back by the shared watcher.
+    let composerStyle = false;
+    function addComposerButton({ name, icon, label, build, open }) {
+        if(!composerStyle) {
+            composerStyle = true;
+            addStyle(`
+                .otd-compose-button .otd-compose-icon { display: inline-block; box-sizing: border-box; width: 18px; margin-right: 3px; font-size: 16px; font-style: normal; line-height: 18px; text-align: center; vertical-align: -3px; }
+                .otd-compose-panel { margin: -4px 0 12px; border-radius: 8px; background: #fff; color: #14171a; overflow: hidden; }
+                html.dark .otd-compose-panel { background: #15202b; color: #fff; }
+                .otd-compose-panel[hidden] { display: none; }
+                .otd-compose-panel .otd-picker-search { display: block; box-sizing: border-box; width: calc(100% - 16px); margin: 8px; padding: 6px 8px; border: 1px solid rgba(136, 153, 166, .5); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
+                .otd-compose-panel .otd-picker-body { height: 260px; overflow-y: auto; padding: 0 6px 6px; position: relative; }
+                .otd-compose-panel .otd-picker-note { padding: 16px 8px; text-align: center; color: #8899a6; }
+                .otd-compose-panel .otd-picker-heading { margin: 8px 2px 4px; font-size: 12px; font-weight: bold; color: #8899a6; }
+            `);
+        }
+        watch(() => {
+            for(const addImage of document.querySelectorAll(".js-docked-compose .js-add-image-button")) {
+                const composer = addImage.closest(".js-docked-compose");
+                if(composer.querySelector(`.otd-compose-button[data-otd-button="${name}"]`)) continue;
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "otd-compose-button btn btn-on-blue full-width txt-left margin-b--12 padding-v--6 padding-h--12";
+                button.dataset.otdButton = name;
+                const glyph = document.createElement("i");
+                glyph.className = "otd-compose-icon";
+                glyph.textContent = icon;
+                const text = document.createElement("span");
+                text.className = "label padding-ls";
+                text.textContent = label;
+                button.append(glyph, text);
+                let after = addImage;
+                while(after.nextElementSibling?.classList.contains("otd-compose-button")) after = after.nextElementSibling;
+                after.after(button);
+
+                let panel = null;
+                button.addEventListener("click", e => {
+                    e.preventDefault();
+                    const wasOpen = panel && !panel.hidden;
+                    composer.querySelectorAll(".otd-compose-panel").forEach(other => { other.hidden = true; });
+                    if(wasOpen) return;
+                    if(!panel) {
+                        panel = document.createElement("div");
+                        panel.className = `otd-compose-panel otd-${name}-panel`;
+                        panel.addEventListener("keydown", e => {
+                            // Esc closes the panel, not the composer
+                            if(e.key !== "Escape") return;
+                            e.stopPropagation();
+                            panel.hidden = true;
+                            button.focus();
+                        });
+                        build(panel, composer);
+                    }
+                    let last = button;
+                    while(last.nextElementSibling?.classList.contains("otd-compose-button")) last = last.nextElementSibling;
+                    last.after(panel);
+                    panel.hidden = false;
+                    open?.(panel, composer);
+                });
+            }
+        });
+    }
+
     // TweetDeck's jQuery, the one its events (dataTweetSent, uiReadStateChange…) and $.publish live on
     let jquery;
     function jQuery() {
@@ -149,5 +234,5 @@
         return () => request([fn]);
     }
 
-    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, jQuery, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, attachFiles, addComposerButton, jQuery, addStyle, watch };
 })();

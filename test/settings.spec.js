@@ -31,6 +31,7 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["mediaAspect", true], ["downloadMedia", true], ["pasteImages", false],
+        ["emojiPicker", true], ["gifPicker", true],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
     expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("OldTweetDeck 5.1.0 · Релизы и обновления");

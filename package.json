@@ -5,7 +5,8 @@
   "main": "pack.js",
   "scripts": {
     "build": "node pack.js",
-    "test": "playwright test"
+    "test": "playwright test",
+    "emoji": "node scripts/build-emoji.js"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "emojibase-data": "18.0.0",
     "linkedom": "0.18.14",
     "x-client-transaction-id": "0.3.2"
   }

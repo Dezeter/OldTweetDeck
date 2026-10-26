@@ -19,6 +19,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
 - [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
+- [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -88,6 +89,8 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Whole images in columns | `OTDmediaAspect` |
 | "Download media" in the tweet menu | `OTDdownloadMedia` |
 | Pasting images | `OTDpasteImages` |
+| "Emoji" button | `OTDemojiPicker` |
+| "Find a GIF" button | `OTDgifPicker` |
 
 ## Grok auto-translation
 
@@ -107,6 +110,15 @@ TweetDeck only shows the first page of replies when you open a tweet. OldTweetDe
 ## Pasting images
 
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
+
+## Emoji and GIFs
+
+The tweet box has two more buttons under "Add image":
+
+- **Emoji** opens a panel with every emoji by group, a search by name in Russian or English, and the ones you used recently at the top. A click puts the emoji where the cursor is.
+- **Find a GIF** searches GIFs with x.com's own GIF search and attaches the one you click, like an image added with "Add image".
+
+The emoji list is `files/emoji.json`, built from [emojibase](https://emojibase.dev) (MIT) by `npm run emoji`.
 
 ## X Articles
 
