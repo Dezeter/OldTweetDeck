@@ -6,7 +6,8 @@
     // injection.js puts the extension's version on <html>
     const VERSION = document.documentElement.dataset.otdVersion || "";
 
-    // Every feature is on unless localStorage[storage] is "0". settings.js shows them as switches, by section.
+    // A feature is on by default unless it says default: false; localStorage[storage] "0" or "1" overrides that.
+    // settings.js shows them as switches, by section.
     const FEATURES = [
         { key: "grokTranslate", storage: "OTDgrokTranslate", section: "translation",
             label: { ru: "Переводить твиты через Grok", en: "Translate tweets with Grok" } },
@@ -22,6 +23,10 @@
             label: { ru: "Показывать свой ответ сразу после отправки", en: "Show your reply right after sending it" } },
         { key: "articles", storage: "OTDarticles", section: "tweets",
             label: { ru: "X Articles: заголовок и начало вместо ссылки, чтение в окне", en: "X Articles: title and beginning instead of the link, a reader" } },
+        { key: "cleanLinks", storage: "OTDcleanLinks", section: "tweets",
+            label: { ru: "Ссылки ведут прямо на сайт, а не через t.co", en: "Links go straight to the site, not through t.co" } },
+        { key: "absoluteTime", storage: "OTDabsoluteTime", section: "tweets", default: false,
+            label: { ru: "Время твита: «14:05» и дата вместо «5m»", en: "Tweet time: \"2:05 PM\" and the date instead of \"5m\"" } },
         { key: "pasteImages", storage: "OTDpasteImages", section: "compose",
             label: { ru: "Вставлять картинки по Ctrl+V", en: "Paste images with Ctrl+V" } },
     ];
@@ -33,13 +38,54 @@
         if(!found) throw new Error(`no OldTweetDeck feature ${key}`);
         return found;
     }
-    const isOn = key => localStorage[feature(key).storage] !== "0";
+    function isOn(key) {
+        const f = feature(key);
+        const value = localStorage[f.storage];
+        return value === undefined ? f.default !== false : value !== "0";
+    }
+    // the key is removed when the value is the default
     function setOn(key, on) {
-        if(on) localStorage.removeItem(feature(key).storage);
-        else localStorage[feature(key).storage] = "0";
+        const f = feature(key);
+        if(on === (f.default !== false)) localStorage.removeItem(f.storage);
+        else localStorage[f.storage] = on ? "1" : "0";
     }
     const targetLang = () => (localStorage[LANG_STORAGE] || navigator.language || "en").split("-")[0].toLowerCase();
     const label = (labels, lang = UI_LANG) => labels[lang] || labels.en;
+
+    const cookie = name => document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1] || "";
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Headers of a request to X's API as x.com sends them, with x-client-transaction-id when the solver
+    // gives one within 5 s. extra adds or overrides headers.
+    const BEARER = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
+    async function xHeaders(path, method, extra = {}) {
+        const headers = {
+            "authorization": BEARER,
+            "x-csrf-token": cookie("ct0"),
+            "x-twitter-auth-type": "OAuth2Session",
+            "x-twitter-active-user": "yes",
+            "x-twitter-client-language": UI_LANG,
+            ...extra,
+        };
+        if(localStorage.device_id) headers["x-client-uuid"] = localStorage.device_id;
+        if(typeof solveChallenge === "function") {
+            const id = await Promise.race([solveChallenge(path, method).catch(() => null), sleep(5000).then(() => null)]);
+            if(id) headers["x-client-transaction-id"] = id;
+        }
+        return headers;
+    }
+
+    // The chirp TweetDeck rendered an element of a column from: the item's data-key in its column
+    function chirpFor(element) {
+        const item = element.closest("[data-key]");
+        const section = element.closest("[data-column]");
+        if(!item || !section || !window.TD?.controller?.columnManager) return null;
+        try {
+            return TD.controller.columnManager.get(section.dataset.column)?.findChirp(item.dataset.key) || null;
+        } catch(e) {
+            return null;
+        }
+    }
 
     function addStyle(css) {
         const style = document.createElement("style");
@@ -81,5 +127,5 @@
         return () => request([fn]);
     }
 
-    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, addStyle, watch };
 })();

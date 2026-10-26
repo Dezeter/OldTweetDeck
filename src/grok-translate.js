@@ -13,7 +13,6 @@
 
     const ENDPOINT_PATH = "/2/grok/translation.json";
     const ENDPOINT = `https://api.${location.hostname}${ENDPOINT_PATH}`;
-    const BEARER = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 
     const LABELS = {
         ru: { original: "Показать оригинал", translation: "Показать перевод" },
@@ -26,8 +25,7 @@
     // When TweetDeck gives no lang (quoted tweets) or "und", guess by script
     const CYRILLIC_LANGS = ["ru", "uk", "be", "bg", "sr", "mk", "kk"];
 
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    const getCookie = name => document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))?.[1] || "";
+    const sleep = OTD.sleep;
 
     const cache = (() => {
         const KEY = `OTDgrokCache_${DST_LANG}`;
@@ -145,29 +143,13 @@
         return decoder.value;
     }
 
-    async function transactionId() {
-        if(typeof solveChallenge !== "function") return null;
-        try {
-            return await Promise.race([solveChallenge(ENDPOINT_PATH, "POST"), sleep(5000).then(() => null)]);
-        } catch(e) {
-            return null;
-        }
-    }
-
     async function translate(id, retry = false) {
         if(!retry && cache.has(id)) return cache.get(id);
 
-        const headers = {
-            "authorization": BEARER,
-            "x-csrf-token": getCookie("ct0"),
-            "x-twitter-auth-type": "OAuth2Session",
-            "x-twitter-active-user": "yes",
+        const headers = await OTD.xHeaders(ENDPOINT_PATH, "POST", {
             "x-twitter-client-language": DST_LANG,
             "content-type": "text/plain;charset=UTF-8",
-        };
-        if(localStorage.device_id) headers["x-client-uuid"] = localStorage.device_id;
-        const tid = await transactionId();
-        if(tid) headers["x-client-transaction-id"] = tid;
+        });
 
         const res = await fetch(ENDPOINT, {
             method: "POST",
