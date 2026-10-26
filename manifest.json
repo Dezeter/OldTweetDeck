@@ -1,14 +1,13 @@
 {
     "name": "OldTweetDeck",
     "description": "Returns old TweetDeck!",
-    "version": "4.4.0",
+    "version": "5.0.0",
     "manifest_version": 3,
-    "homepage_url": "https://github.com/dimdenGD/OldTweetDeck",
+    "homepage_url": "https://github.com/Dezeter/OldTweetDeck",
     "permissions": [
         "webNavigation",
         "cookies",
-        "declarativeNetRequest",
-        "storage"
+        "declarativeNetRequest"
     ],
     "background": {
         "service_worker": "src/background3.js"
@@ -21,12 +20,11 @@
         "https://abs.twimg.com/*",
         "https://api.twitter.com/*",
         "https://tweetdeck.com/",
-        "https://oldtd.org/*",
         "https://translate.googleapis.com/*"
     ],
     "web_accessible_resources": [
         {
-            "resources": ["images/*", "files/*", "src/*", "solver.html", "manifest.json"],
+            "resources": ["images/*", "files/*", "src/*", "manifest.json"],
             "matches": ["<all_urls>"]
         }
     ],

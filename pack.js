@@ -40,12 +40,11 @@ copyDir('./', './build/OldTweetDeckFirefox').then(async () => {
     let manifest = JSON.parse(await fsp.readFile('./build/OldTweetDeckTempChrome/manifest.json', 'utf8'));
     manifest.browser_specific_settings = {
         gecko: {
-            id: "oldtweetdeck@dimden.dev",
+            id: "oldtweetdeck@dezeter",
             strict_min_version: "90.0"
         }
     };
     manifest.manifest_version = 2;
-    manifest.host_permissions.push("https://tweetdeck.dimden.dev/*", "https://raw.githubusercontent.com/*");
     delete manifest.declarative_net_request;
     manifest.permissions.push("webRequest", "webRequestBlocking", ...manifest.host_permissions);
     delete manifest.host_permissions;
