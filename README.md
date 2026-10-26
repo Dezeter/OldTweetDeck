@@ -16,6 +16,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
+- [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -78,6 +79,8 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
+| Links straight to the site | `OTDcleanLinks` |
+| Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
 | Pasting images | `OTDpasteImages` |
 
 ## Grok auto-translation
@@ -108,6 +111,12 @@ With article translation switched off in [Settings](#settings), the reader still
 ## Grouped notifications
 
 Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.
+
+## Links and time
+
+Links in tweets and the website in a profile lead straight to the site instead of through t.co. Hovering a link shows where it goes.
+
+Tweet times can show the time and date instead of "5m": "14:05" for today, "26 окт., 14:05" this year, "26.10.2025" before, in your browser's language. This one is off by default, switch it on in [Settings](#settings).
 
 ## Instant replies
 
