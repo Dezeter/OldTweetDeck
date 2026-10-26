@@ -60,7 +60,7 @@ If extension files were updated, you have to reinstall extension to get new upda
 
 ## Grok auto-translation
 
-Tweets and quoted tweets that aren't in your language are translated automatically through Grok, the same endpoint x.com uses for "Show translation". Translated tweets get a "Grok · Show original" link to switch back.  
+Tweets and quoted tweets that aren't in your language are translated automatically through Grok, the same endpoint x.com uses for "Show translation". Translated tweets get a translate icon next to reply/retweet/like that switches between the original and the translation.  
 Only tweets that stay on screen are translated, at most 20 per minute, and translations are cached for 7 days. Set these in the browser console on the TweetDeck tab, then reload:
 
 - `localStorage.OTDgrokTranslateLang = 'ru'` sets the target language (default is the browser language)
