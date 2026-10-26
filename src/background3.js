@@ -33,6 +33,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse(cookie);
         });
         return true;
+    } else if(request.action === 'download') {
+        // from download-media.js through content.js
+        if(/^https:\/\/(pbs|video)\.twimg\.com\//.test(request.url)) chrome.downloads.download({ url: request.url, filename: request.filename, conflictAction: 'uniquify' });
     } else if(request.action === 'googleTranslate') {
         googleTranslate(request.text, request.to).then(sendResponse);
         return true;

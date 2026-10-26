@@ -47,6 +47,8 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/group-notifications.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/clean-links.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/absolute-time.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/media-aspect.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/download-media.js")).then(r => r.text()),
         ]);
 
     let challenge_js_script = document.createElement("script");

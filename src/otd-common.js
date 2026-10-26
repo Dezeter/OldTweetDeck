@@ -27,6 +27,10 @@
             label: { ru: "Ссылки ведут прямо на сайт, а не через t.co", en: "Links go straight to the site, not through t.co" } },
         { key: "absoluteTime", storage: "OTDabsoluteTime", section: "tweets", default: false,
             label: { ru: "Время твита: «14:05» и дата вместо «5m»", en: "Tweet time: \"2:05 PM\" and the date instead of \"5m\"" } },
+        { key: "mediaAspect", storage: "OTDmediaAspect", section: "media",
+            label: { ru: "Одиночные картинки в колонке целиком, без обрезки", en: "Single images in columns whole, not cropped" } },
+        { key: "downloadMedia", storage: "OTDdownloadMedia", section: "media",
+            label: { ru: "«Скачать медиа» в меню твита", en: "\"Download media\" in the tweet menu" } },
         { key: "pasteImages", storage: "OTDpasteImages", section: "compose",
             label: { ru: "Вставлять картинки по Ctrl+V", en: "Paste images with Ctrl+V" } },
     ];
@@ -75,9 +79,10 @@
         return headers;
     }
 
-    // The chirp TweetDeck rendered an element of a column from: the item's data-key in its column
+    // The chirp TweetDeck rendered an element of a column from: the item's data-key in its column. Inside an
+    // item, its media has the key of the tweet the media is from, so the stream item comes first.
     function chirpFor(element) {
-        const item = element.closest("[data-key]");
+        const item = element.closest(".js-stream-item[data-key]") || element.closest("[data-key]");
         const section = element.closest("[data-column]");
         if(!item || !section || !window.TD?.controller?.columnManager) return null;
         try {

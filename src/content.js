@@ -6,6 +6,10 @@ window.addEventListener('message', async e => {
         chrome.runtime.sendMessage({ action: "getcookie" }, cookie => {
             window.postMessage({ cookie }, '*');
         });
+    } else if(e.data?.action === 'otdDownload' && e.source === window) {
+        // download-media.js -> background script, which saves the file; only X's media hosts
+        const { url, filename } = e.data;
+        if(/^https:\/\/(pbs|video)\.twimg\.com\//.test(url)) chrome.runtime.sendMessage({ action: 'download', url, filename });
     } else if(e.data?.action === 'otdGoogleTranslate') {
         // x-articles.js -> background script, which may call Google
         const { id, text, to } = e.data;

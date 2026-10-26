@@ -26,11 +26,11 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
     await tab(page, "OldTweetDeck");
     expect(await page.$("#general_settings")).toBeNull();
     expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("OldTweetDeck");
-    expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Перевод", "Колонки", "Твиты", "Написание"]);
+    expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Перевод", "Колонки", "Твиты", "Медиа", "Написание"]);
     expect(await switches(page)).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["loadAllReplies", true], ["instantReplies", true], ["articles", true], ["cleanLinks", true], ["absoluteTime", false],
-        ["pasteImages", false],
+        ["mediaAspect", true], ["downloadMedia", true], ["pasteImages", false],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
     expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("OldTweetDeck 5.1.0 · Релизы и обновления");
@@ -92,7 +92,7 @@ test.describe("in English", () => {
     test("labels follow the browser language", async ({ page }) => {
         await openSettings(page, { dark: true });
         await tab(page, "OldTweetDeck");
-        expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Translation", "Columns", "Tweets", "Composing"]);
+        expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Translation", "Columns", "Tweets", "Media", "Composing"]);
         expect(await page.textContent('#otd-settings [data-feature="pasteImages"]')).toBe(" Paste images with Ctrl+V");
         expect(await page.locator("#otd-settings .otd-settings-lang select option").first().textContent()).toBe("English (browser language)");
     });

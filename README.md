@@ -17,6 +17,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
+- [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -81,6 +82,8 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | X Articles | `OTDarticles` |
 | Links straight to the site | `OTDcleanLinks` |
 | Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
+| Whole images in columns | `OTDmediaAspect` |
+| "Download media" in the tweet menu | `OTDdownloadMedia` |
 | Pasting images | `OTDpasteImages` |
 
 ## Grok auto-translation
@@ -117,6 +120,12 @@ Notifications are grouped the way x.com shows them: likes and retweets of the sa
 Links in tweets and the website in a profile lead straight to the site instead of through t.co. Hovering a link shows where it goes.
 
 Tweet times can show the time and date instead of "5m": "14:05" for today, "26 окт., 14:05" this year, "26.10.2025" before, in your browser's language. This one is off by default, switch it on in [Settings](#settings).
+
+## Media
+
+A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
+
+The "…" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.
 
 ## Instant replies
 
