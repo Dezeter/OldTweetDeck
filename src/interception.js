@@ -2785,6 +2785,30 @@ const proxyRoutes = [
             return {"versions":{"feature_switches":"a6da3a3fb61e9c1423276a8df0da3258980b42cf","experiments":"a6da3a3fb61e9c1423276a8df0da3258980b42cf","settings":"a88b5266c59f52ccf8a8f1fd85f2b92a"},"config":{"live_engagement_in_column_8020":{"value":"live_engagement_enabled"},"tweetdeck_activity_streaming":{"value":false},"tweetdeck_content_render_search_tweets":{"value":true},"tweetdeck_live_engagements":{"value":true},"tweetdeck_scheduled_new_api":{"value":true},"tweetdeck_trends_column":{"value":true},"twitter_text_emoji_counting_enabled":{"value":true}},"impression_pointers":{}};
         },
     },
+    // X answers 410 Gone since October 2026. TweetDeck falls back on its own defaults then; they are answered
+    // here instead, the values compose counts characters with, without asking.
+    {
+        path: "/1.1/help/configuration.json",
+        method: "GET",
+        openHandler: () => {},
+        sendHandler: emulateResponse,
+        afterRequest: (xhr) => {
+            return {
+                dm_text_character_limit: 10000,
+                characters_reserved_per_media: 23,
+                max_media_per_upload: 1,
+                photo_size_limit: 3145728,
+                photo_sizes: {
+                    thumb: { h: 150, resize: "crop", w: 150 },
+                    small: { h: 480, resize: "fit", w: 340 },
+                    medium: { h: 1200, resize: "fit", w: 600 },
+                    large: { h: 2048, resize: "fit", w: 1024 },
+                },
+                short_url_length: 23,
+                transformedURLLength: 23,
+            };
+        },
+    },
     {
         path: "/i/jot",
         method: "GET",
@@ -2796,10 +2820,50 @@ const proxyRoutes = [
     },
 ];
 
+// X is retiring api.x.com: an address there it stopped answering is asked at x.com's own /i/api from then on,
+// as x.com itself asks (replies were the first, October 2026). Learned from X's answers: 410, a 404 without
+// X's JSON errors, or twice no answer at all (its errors come without CORS headers) move an address; 404 or
+// 410 at /i/api moves it back. Kept in localStorage.OTDmovedApi, by path with ids as {id}.
+const movedApi = new Set();
+try {
+    JSON.parse(localStorage.OTDmovedApi || "[]").forEach(key => movedApi.add(key));
+} catch (e) {}
+const unansweredApi = {};
+const stuckApi = new Set();
+function oldApiKey(url) {
+    try {
+        let u = new URL(url);
+        if (!/^api\.(x|twitter)\.com$/.test(u.hostname) || !/^\/(1\.1|2)\//.test(u.pathname)) return null;
+        return u.pathname.replace(/\d{5,}/g, "{id}");
+    } catch (e) {
+        return null;
+    }
+}
+function learnApi(key, moved, status, body) {
+    let gone = status === 410 || (status === 404 && !/"errors"\s*:/.test(body || "")) || status === 0;
+    if (!gone) {
+        delete unansweredApi[key];
+        return;
+    }
+    if (moved) {
+        if (status === 0) return;
+        movedApi.delete(key);
+        stuckApi.add(key);
+    } else {
+        if (status === 0 && (unansweredApi[key] = (unansweredApi[key] || 0) + 1) < 2) return;
+        if (stuckApi.has(key) || movedApi.has(key)) return;
+        movedApi.add(key);
+    }
+    localStorage.OTDmovedApi = JSON.stringify([...movedApi]);
+    console.warn(`[otd] ${key} ${moved ? "isn't at x.com/i/api either, back to api.x.com" : "is gone from api.x.com, asking x.com/i/api"}`);
+    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "moved", key, moved: !moved }) }));
+}
+
 // wrap the XMLHttpRequest
 XMLHttpRequest = function () {
     return new Proxy(new OriginalXHR(), {
-        open(method, url, async, username = null, password = null) {
+        // async is true when it isn't given, as XMLHttpRequest has it; passing undefined on would make it false
+        open(method, url, async = true, username = null, password = null) {
             this.modMethod = method;
             this.modUrl = url;
             this.originalUrl = url;
@@ -2823,6 +2887,22 @@ XMLHttpRequest = function () {
             }
             if (this.proxyRoute && this.proxyRoute.beforeRequest) {
                 this.proxyRoute.beforeRequest(this);
+            }
+            this.apiKey = oldApiKey(this.modUrl);
+            this.apiMoved = !!this.apiKey && movedApi.has(this.apiKey);
+            if (this.apiMoved) {
+                let u = new URL(this.modUrl);
+                this.modUrl = `https://${location.hostname}/i/api${u.pathname}${u.search}`;
+            }
+            if (this.apiKey) {
+                this.addEventListener("load", () => {
+                    let body = "";
+                    try {
+                        body = this.responseText;
+                    } catch (e) {}
+                    learnApi(this.apiKey, this.apiMoved, this.status, body);
+                });
+                this.addEventListener("error", () => learnApi(this.apiKey, this.apiMoved, 0));
             }
             // for the load watchdog (watchdog.js): how X answered, without the query
             if (/^https:\/\/([a-z]+\.)?(x|twitter)\.com\//.test(url)) {

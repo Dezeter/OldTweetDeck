@@ -17,7 +17,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
-- [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) or copying its links from the tweet menu
+- [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
 - [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
@@ -92,6 +92,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | "Mute #hashtag" and "Mute tweets from …" in the tweet menu | `OTDmuteFromMenu` |
 | Mute and Block buttons under tweets (off by default, `'1'` turns it on) | `OTDrowMuteBlock` |
 | Whole images in columns | `OTDmediaAspect` |
+| Videos playing in the tweet | `OTDinlineVideo` |
 | "Download media" in the tweet menu | `OTDdownloadMedia` |
 | "Copy links to media" in the tweet menu | `OTDcopyMediaLinks` |
 | Pasting images | `OTDpasteImages` |
@@ -148,6 +149,8 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 
+A click on a video plays it right in the tweet instead of TweetDeck's media window: in its own proportions, no taller than half the screen, with the browser's controls and full screen. One video plays at a time, it pauses when scrolled away, and the volume is remembered. Ctrl+click or a middle click opens TweetDeck's window as before; GIFs play in place as TweetDeck has them.
+
 The "…" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.  
 "Copy links to media" next to it copies the same addresses, one per line.
 
@@ -174,6 +177,16 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 If TweetDeck hasn't started 20 seconds after the page opened (5 seconds when the extension's scripts were blocked), a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, script errors.  
 "Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, and X's answers without their parameters. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
+
+## When X retires an address
+
+X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 2026 `help/configuration` started answering "410 Gone", and replies stopped answering at all; x.com's own `x.com/i/api` still answers the same requests.
+
+- `help/configuration`, which only holds the values compose counts characters with, is answered by the extension with TweetDeck's own defaults.
+- Replies are asked at `x.com/i/api`.
+- Any other address X stops answering at `api.x.com` (410, a 404 without X's error message, or no answer twice in a row) is asked at `x.com/i/api` from then on. One request fails, the next ones work. If it isn't there either, it goes back. The moved addresses are kept in `localStorage.OTDmovedApi`; removing the key starts over.
+
+["Copy diagnostics"](#when-tweetdeck-doesnt-load) lists the addresses still asked at `api.x.com` and the moved ones.
 
 ## Development
 

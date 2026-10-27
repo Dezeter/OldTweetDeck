@@ -63,6 +63,7 @@ async function main() {
             load("/src/clean-links.js"),
             load("/src/absolute-time.js"),
             load("/src/media-aspect.js"),
+            load("/src/inline-video.js"),
             load("/src/download-media.js"),
             load("/src/pause-on-hover.js"),
             load("/src/tab-title.js"),
