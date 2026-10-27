@@ -3,9 +3,22 @@ if (chrome.webRequest.OnHeadersReceivedOptions.hasOwnProperty("EXTRA_HEADERS")) 
     extraInfoSpec.push("extraHeaders");
 }
 
+// x.com's policies for its own app, which would block TweetDeck: its CSP blocks the scripts injection.js adds,
+// and with cross-origin isolation (COOP / COEP, sent since late October 2026) Firefox switches the page to a new
+// process and keeps the CSP. Location: x.com redirects /i/tweetdeck elsewhere.
+const STRIPPED_HEADERS = [
+    'content-security-policy',
+    'content-security-policy-report-only',
+    'cross-origin-opener-policy',
+    'cross-origin-opener-policy-report-only',
+    'cross-origin-embedder-policy',
+    'cross-origin-embedder-policy-report-only',
+    'location',
+];
+
 chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
-        let headers = details.responseHeaders.filter(header => header.name.toLowerCase() !== 'content-security-policy' && header.name.toLowerCase() !== 'location');
+        let headers = details.responseHeaders.filter(header => !STRIPPED_HEADERS.includes(header.name.toLowerCase()));
         return {
             responseHeaders: headers
         }

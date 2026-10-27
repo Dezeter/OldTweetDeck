@@ -12,6 +12,26 @@
                 {
                     "header": "x-frame-options",
                     "operation": "remove"
+                },
+                {
+                    "header": "content-security-policy-report-only",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-opener-policy",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-opener-policy-report-only",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-embedder-policy",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-embedder-policy-report-only",
+                    "operation": "remove"
                 }
             ]
         },
@@ -32,6 +52,26 @@
                 },
                 {
                     "header": "x-frame-options",
+                    "operation": "remove"
+                },
+                {
+                    "header": "content-security-policy-report-only",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-opener-policy",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-opener-policy-report-only",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-embedder-policy",
+                    "operation": "remove"
+                },
+                {
+                    "header": "cross-origin-embedder-policy-report-only",
                     "operation": "remove"
                 }
             ]
