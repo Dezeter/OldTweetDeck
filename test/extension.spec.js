@@ -137,6 +137,8 @@ test("when x.com's page policy gets through, the page says so instead of loading
         const panel = page.locator("#otd-watchdog");
         await expect(panel).toBeVisible({ timeout: 15000 });
         await expect(panel.locator(".findings li").first()).toContainText("Content-Security-Policy");
+        // it reloaded once first, which a policy route.fulfill gives every time can't fix
+        await expect(panel.locator(".findings li").last()).toContainText("reloaded automatically already");
         expect(await page.locator(".js-app:not(.is-hidden), .js-login-form").count()).toBe(0);
     } finally {
         await context.close();
