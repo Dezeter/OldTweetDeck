@@ -4,15 +4,8 @@
 (() => {
     if(!OTD.isOn("instantReplies")) return;
 
-    // TweetDeck's jQuery: dataTweetSent is a jQuery event, and the conversation pub/sub lives on it too
-    let modules;
-    try {
-        window.webpackJsonp.push([["otd-instant-replies"], { "otd-instant-replies": (module, exports, require) => { modules = require.c; } }, [["otd-instant-replies"]]]);
-    } catch(e) {
-        console.warn("[otd-instant-replies] no webpack runtime", e);
-        return;
-    }
-    const $ = Object.values(modules || {}).map(m => m.exports).find(x => x?.fn?.jquery && typeof x.publish === "function");
+    // dataTweetSent is a jQuery event, and the conversation pub/sub lives on TweetDeck's jQuery too
+    const $ = OTD.jQuery();
     if(!$) return;
 
     $(document).on("dataTweetSent", (e, data) => {

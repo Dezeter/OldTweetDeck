@@ -16,6 +16,10 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
+- [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
+- [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
+- [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
+- [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -75,10 +79,18 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Language to translate to (default: the browser's) | `OTDgrokTranslateLang`, e.g. `'ru'` |
 | Hiding replies in home columns | `OTDhideHomeReplies` |
 | Grouping notifications | `OTDgroupNotifications` |
+| Holding a column under the pointer | `OTDpauseOnHover` |
+| Unread in the tab title | `OTDtabTitle` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
+| Links straight to the site | `OTDcleanLinks` |
+| Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
+| Whole images in columns | `OTDmediaAspect` |
+| "Download media" in the tweet menu | `OTDdownloadMedia` |
 | Pasting images | `OTDpasteImages` |
+| "Emoji" button | `OTDemojiPicker` |
+| "Find a GIF" button | `OTDgifPicker` |
 
 ## Grok auto-translation
 
@@ -99,6 +111,15 @@ TweetDeck only shows the first page of replies when you open a tweet. OldTweetDe
 
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
 
+## Emoji and GIFs
+
+The tweet box has two more buttons under "Add image":
+
+- **Emoji** opens a panel with every emoji by group, a search by name in Russian or English, and the ones you used recently at the top. A click puts the emoji where the cursor is.
+- **Find a GIF** searches GIFs with x.com's own GIF search and attaches the one you click, like an image added with "Add image".
+
+The emoji list is `files/emoji.json`, built from [emojibase](https://emojibase.dev) (MIT) by `npm run emoji`.
+
 ## X Articles
 
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
@@ -108,6 +129,24 @@ With article translation switched off in [Settings](#settings), the reader still
 ## Grouped notifications
 
 Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.
+
+## Links and time
+
+Links in tweets and the website in a profile lead straight to the site instead of through t.co. Hovering a link shows where it goes.
+
+Tweet times can show the time and date instead of "5m": "14:05" for today, "26 окт., 14:05" this year, "26.10.2025" before, in your browser's language. This one is off by default, switch it on in [Settings](#settings).
+
+## Media
+
+A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
+
+The "…" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.
+
+## Columns
+
+A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
+
+The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
 ## Instant replies
 

@@ -26,6 +26,8 @@ async function main() {
     // for the settings tab, which runs in the page and can't read the manifest itself in Firefox
     let manifest = await fetch(chrome.runtime.getURL('/manifest.json')).then(r => r.json()).catch(() => null);
     if(manifest) document.documentElement.dataset.otdVersion = manifest.version;
+    // for files the page loads when needed (files/emoji.json); in Firefox it can't build the address itself
+    document.documentElement.dataset.otdBase = chrome.runtime.getURL('/');
 
     let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, ...local_js] =
         await Promise.allSettled([
@@ -45,6 +47,14 @@ async function main() {
             fetch(chrome.runtime.getURL("/src/instant-replies.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/settings.js")).then(r => r.text()),
             fetch(chrome.runtime.getURL("/src/group-notifications.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/clean-links.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/absolute-time.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/media-aspect.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/download-media.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/pause-on-hover.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/tab-title.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/emoji-picker.js")).then(r => r.text()),
+            fetch(chrome.runtime.getURL("/src/gif-picker.js")).then(r => r.text()),
         ]);
 
     let challenge_js_script = document.createElement("script");

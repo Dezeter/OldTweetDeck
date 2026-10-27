@@ -9,9 +9,9 @@
     const RELEASES = "https://github.com/Dezeter/OldTweetDeck/releases";
     const LABEL = OTD.label({
         ru: { lang: "Переводить на", browser: "язык браузера", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
-            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", compose: "Написание" } },
+            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание" } },
         en: { lang: "Translate to", browser: "browser language", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
-            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", compose: "Composing" } },
+            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing" } },
     });
     const LANGUAGES = ["ru", "en", "uk", "be", "kk", "de", "fr", "es", "it", "pt", "pl", "cs", "nl", "sv", "fi", "tr", "ar", "fa", "he", "hi", "id", "vi", "th", "ja", "ko", "zh"];
 

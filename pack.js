@@ -6,7 +6,7 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 
 // not part of the extension
-const SKIP = ['.git', '.github', '_metadata', 'node_modules', 'build', 'test', 'test-results', 'playwright-report', 'playwright.config.js'];
+const SKIP = ['.git', '.github', '_metadata', 'node_modules', 'build', 'scripts', 'test', 'test-results', 'playwright-report', 'playwright.config.js'];
 
 async function copyDir(src, dest) {
     const entries = await fsp.readdir(src, { withFileTypes: true });

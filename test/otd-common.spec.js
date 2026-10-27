@@ -12,9 +12,50 @@ test("switches read and write the same localStorage keys as before", async ({ pa
     });
     expect(result.before).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
-        ["loadAllReplies", true], ["instantReplies", true], ["articles", true], ["pasteImages", false],
+        ["pauseOnHover", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
+        ["cleanLinks", true], ["absoluteTime", false], ["mediaAspect", true], ["downloadMedia", true], ["pasteImages", false],
+        ["emojiPicker", true], ["gifPicker", true],
     ]);
     expect(result).toMatchObject({ paste: null, group: "0", unknown: "no OldTweetDeck feature nope" });
+});
+
+test("a feature that is off by default is switched on with \"1\" and its key goes when it's off again", async ({ page }) => {
+    await openPage(page);
+    await addScripts(page, "src/otd-common.js");
+    const steps = await page.evaluate(() => {
+        const state = () => [OTD.isOn("absoluteTime"), localStorage.OTDabsoluteTime ?? null];
+        const steps = [state()];
+        OTD.setOn("absoluteTime", true);
+        steps.push(state());
+        OTD.setOn("absoluteTime", false);
+        steps.push(state());
+        localStorage.OTDabsoluteTime = "0";
+        steps.push(state());
+        // a feature that is on by default and was set to "1" by hand is on
+        localStorage.OTDcleanLinks = "1";
+        steps.push([OTD.isOn("cleanLinks"), localStorage.OTDcleanLinks]);
+        return steps;
+    });
+    expect(steps).toEqual([[false, null], [true, "1"], [false, null], [false, "0"], [true, "1"]]);
+});
+
+test("xHeaders: x.com's headers and the transaction id, which a failing solver leaves out", async ({ page }) => {
+    await openPage(page);
+    await addScripts(page, "src/otd-common.js");
+    const result = await page.evaluate(async () => {
+        document.cookie = "ct0=csrf123";
+        localStorage.device_id = "dev-1";
+        window.solveChallenge = async (path, method) => `tid:${method}:${path}`;
+        const signed = await OTD.xHeaders("/1.1/x.json", "GET", { "content-type": "application/json" });
+        window.solveChallenge = () => Promise.reject(new Error("solver down"));
+        const failed = await OTD.xHeaders("/1.1/x.json", "GET");
+        return { signed, failed: "x-client-transaction-id" in failed };
+    });
+    expect(result.signed).toMatchObject({
+        "authorization": expect.stringMatching(/^Bearer /), "x-csrf-token": "csrf123", "x-twitter-auth-type": "OAuth2Session",
+        "x-client-uuid": "dev-1", "x-client-transaction-id": "tid:GET:/1.1/x.json", "content-type": "application/json",
+    });
+    expect(result.failed).toBe(false);
 });
 
 test.describe("target language", () => {

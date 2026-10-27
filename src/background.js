@@ -138,6 +138,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             sendResponse(cookies);
         });
         return true;
+    } else if(request.action === 'download') {
+        // from download-media.js through content.js
+        if(/^https:\/\/(pbs|video)\.twimg\.com\//.test(request.url)) chrome.downloads.download({ url: request.url, filename: request.filename, conflictAction: 'uniquify' });
     } else if(request.action === 'googleTranslate') {
         // this listener is async, so Firefox takes the returned value as the response
         const response = await googleTranslate(request.text, request.to);

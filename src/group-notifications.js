@@ -23,13 +23,8 @@
     const actor = chirp => chirp.sourceUser || chirp.following;
 
     function itemsOf(section) {
-        const column = TD.controller.columnManager.get(section.dataset.column);
-        if(!column) return [];
         return [...section.querySelectorAll(".js-chirp-container > article.js-stream-item[data-key]")].map(el => {
-            let chirp = null;
-            try {
-                chirp = column.findChirp(el.dataset.key);
-            } catch(e) {}
+            const chirp = OTD.chirpFor(el);
             return { el, chirp, kind: KIND[chirp?.action] };
         });
     }
