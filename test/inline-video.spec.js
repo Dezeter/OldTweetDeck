@@ -38,6 +38,7 @@ async function openColumn(page, storage) {
         document.body.insertAdjacentHTML("beforeend", '<section class="js-column column" data-column="c1" style="width:340px;display:block"><div class="js-column-scroller column-scroller" style="height:880px;overflow-y:auto"><div class="js-chirp-container chirp-container"></div></div></section>');
         const container = document.querySelector(".js-chirp-container");
         for(const chirp of chirps) container.insertAdjacentHTML("beforeend", chirp.render({ mediaPreviewSize: "medium" }));
+        container.insertAdjacentHTML("beforeend", '<div style="height:2000px"></div>');
         // TweetDeck's own click on a preview opens its media window; here it's counted, and links don't navigate
         window.__windows = 0;
         document.addEventListener("click", e => {
@@ -82,12 +83,24 @@ test("one video plays at a time, and the volume carries over", async ({ page }) 
         first.volume = 0.3;
         first.dispatchEvent(new Event("volumechange"));
     });
-    expect(await page.evaluate(() => window.__paused)).toEqual(["1"]);
+    // the first one, perhaps also as it was pushed out of sight; never the one that plays
+    const paused = await page.evaluate(() => window.__paused);
+    expect(paused).toContain("1");
+    expect(paused).not.toContain("2");
     expect(await page.evaluate(() => JSON.parse(localStorage.OTDvideoVolume))).toEqual({ volume: 0.3, muted: false });
     await page.reload();
     await openColumn(page);
     await preview(page, "100").click();
     expect(await player(page, "100").evaluate(v => v.volume)).toBe(0.3);
+});
+
+test("a video scrolled out of sight pauses", async ({ page }) => {
+    await openColumn(page);
+    await preview(page, "100").click();
+    await page.evaluate(() => Object.defineProperty(document.querySelector("video.otd-inline-video"), "paused", { value: false }));
+    expect(await page.evaluate(() => window.__paused)).toEqual([]);
+    await page.evaluate(() => { document.querySelector(".js-column-scroller").scrollTop = 1500; });
+    await expect.poll(() => page.evaluate(() => window.__paused)).toEqual(["1"]);
 });
 
 test("Ctrl+click, a photo and the switch off leave TweetDeck's window", async ({ page }) => {
