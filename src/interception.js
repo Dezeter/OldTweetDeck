@@ -2821,6 +2821,12 @@ XMLHttpRequest = function () {
             if (this.proxyRoute && this.proxyRoute.beforeRequest) {
                 this.proxyRoute.beforeRequest(this);
             }
+            // for the load watchdog (watchdog.js): how X answered, without the query
+            if (/^https:\/\/([a-z]+\.)?(x|twitter)\.com\//.test(url)) {
+                this.addEventListener("loadend", () => {
+                    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", method, url: String(url).split("?")[0], status: this.status }) }));
+                });
+            }
 
             // both handlers must be set, because if openHandler never opens the request 'send' will always error
             if(this.proxyRoute && this.proxyRoute.openHandler && this.proxyRoute.sendHandler) {
@@ -2863,6 +2869,7 @@ XMLHttpRequest = function () {
                     } catch (e) {
                         // if(localStorage.secureRequests) {
                             console.error(`Challenge error for ${method} ${parsedUrl.pathname}:`, e);
+                            document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", method, url: `${parsedUrl.origin}${parsedUrl.pathname}`, status: 0, error: String(e) }) }));
                             throw e;
                         // }
                     }

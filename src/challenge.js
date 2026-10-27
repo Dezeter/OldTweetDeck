@@ -194,11 +194,20 @@ async function initSolver() {
     let frames = dom.querySelectorAll('[id^="loading-x-anim"]');
     let animationKey = getAnimationKey(keyBytes, indices, frames);
     console.log(`Transaction id solver is ready (${ondemandUrl.split('/').pop()})`);
+    reportSolver(true, ondemandUrl.split('/').pop());
     return { keyBytes, animationKey };
 }
 
+// for the load watchdog (watchdog.js)
+function reportSolver(ok, text) {
+    document.dispatchEvent(new CustomEvent('otd-diagnostic', { detail: JSON.stringify({ kind: 'solver', ok, text }) }));
+}
+
 let solverInit = initSolver();
-solverInit.catch(e => console.error('Solver init error:', e));
+solverInit.catch(e => {
+    console.error('Solver init error:', e);
+    reportSolver(false, String(e));
+});
 
 async function solveChallenge(path, method) {
     let solver, timeout;

@@ -12,7 +12,7 @@ const ONDEMAND = ondemand([3, 2, 13, 41]);
 const VERSION = JSON.parse(read("manifest.json")).version;
 const NEXT_VERSION = VERSION.replace(/\d+$/, n => Number(n) + 1);
 
-async function launch(testInfo, { release = VERSION } = {}) {
+async function launch(testInfo, { release = VERSION, pageHeaders = {} } = {}) {
     const context = await chromium.launchPersistentContext(testInfo.outputPath("profile"), {
         channel: "chromium",
         args: [`--disable-extensions-except=${ROOT}`, `--load-extension=${ROOT}`],
@@ -25,7 +25,7 @@ async function launch(testInfo, { release = VERSION } = {}) {
         const url = new URL(request.url());
         const cors = { "access-control-allow-origin": "*" };
         if(url.protocol === "chrome-extension:" || url.protocol === "data:") return route.continue();
-        if(url.hostname === "x.com" && url.pathname === "/i/tweetdeck") return route.fulfill({ contentType: "text/html", body: "<!doctype html><html><head></head><body>x</body></html>" });
+        if(url.hostname === "x.com" && url.pathname === "/i/tweetdeck") return route.fulfill({ contentType: "text/html", headers: pageHeaders, body: "<!doctype html><html><head></head><body>x</body></html>" });
         if(url.hostname === "x.com" && url.pathname === "/") return route.fulfill({ contentType: "text/html", body: HOME });
         if(url.hostname === "abs.twimg.com" && url.pathname === ONDEMAND_PATH) return route.fulfill({ contentType: "text/javascript", headers: cors, body: ONDEMAND });
         if(url.hostname === "api.github.com") return route.fulfill({ contentType: "application/json", headers: cors, body: JSON.stringify({ tag_name: `v${release}` }) });
@@ -85,6 +85,23 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
         expect(await page.locator("iframe[srcdoc]").count()).toBe(0);
         expect(urls.filter(u => /abs\.twimg\.com\/.*vendor\./.test(u))).toEqual([]);
         expect(urls.filter(u => /dimden|oldtd\.org|raw\.githubusercontent\.com/.test(u))).toEqual([]);
+
+        // logged out (X answers 401 here), TweetDeck shows its login form, and the load watchdog stays away
+        await expect(page.locator(".js-login-form")).toBeVisible();
+        const report = await page.evaluate(() => {
+            let report = "";
+            document.addEventListener("otd-diagnostic-report", e => { report = e.detail; });
+            document.dispatchEvent(new CustomEvent("otd-diagnostic-request"));
+            return report;
+        });
+        expect(report).toMatch(/\nTweetDeck: started at \d+ s\n/);
+        expect(report).toMatch(/\nSteps: extension \d+ s, page \d+ s, scripts \d+ s; TD yes, OTD yes\n/);
+        expect(report).toMatch(/\nSolver: ready at \d+ s \(ondemand\.s\.[\w-]+\.js\)\n/);
+        expect(report).toContain("\nBlocked by Content-Security-Policy: nothing\n");
+        expect(report).toMatch(/\n {2}GET api\.x\.com\/1\.1\/account\/verify_credentials\.json — 401 ×\d+, first at \d+ s\n/);
+        // TweetDeck's own, with where it happened
+        expect(report).toMatch(/\n {2}TypeError: .*id_str.* \((src|files)\/[\w-]+\.js:\d+\) ×\d+, first at \d+ s/);
+        expect(await page.locator("#otd-watchdog").count()).toBe(0);
     } finally {
         await context.close();
     }
@@ -108,6 +125,19 @@ test("the current release is not announced", async ({}, testInfo) => {
         await expect.poll(() => urls.some(u => u.startsWith("https://api.github.com/repos/Dezeter/OldTweetDeck/releases/latest")), { timeout: 20000 }).toBe(true);
         await page.waitForTimeout(1000);
         expect(await page.locator(".otd-notification-modal").count()).toBe(0);
+    } finally {
+        await context.close();
+    }
+});
+
+test("when x.com's page policy gets through, the page says so instead of loading forever", async ({}, testInfo) => {
+    // route.fulfill skips the extension's rules, x.com's policy stays on the page as it would if they failed
+    const { context, page } = await launch(testInfo, { pageHeaders: { "content-security-policy": "script-src 'nonce-abc' https://abs.twimg.com" } });
+    try {
+        const panel = page.locator("#otd-watchdog");
+        await expect(panel).toBeVisible({ timeout: 15000 });
+        await expect(panel.locator(".findings li").first()).toContainText("Content-Security-Policy");
+        expect(await page.locator(".js-app:not(.is-hidden), .js-login-form").count()).toBe(0);
     } finally {
         await context.close();
     }

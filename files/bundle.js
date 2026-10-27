@@ -47964,6 +47964,9 @@ document.body.addEventListener("click", function (e) {
         }
         var f = i(855),
             p = (function (e) {
+                // OldTweetDeck: the "new TweetDeck" button is gone; a component that draws nothing, or React
+                // calls the empty class as a function and logs "Cannot call a class as a function" at every start
+                (0, o.default)(t, e);
                 function t() {
                     return (
                         (0, s.default)(this, t),
@@ -47973,7 +47976,12 @@ document.body.addEventListener("click", function (e) {
                         )
                     );
                 }
-                return t;
+                return (
+                    (t.prototype.render = function () {
+                        return null;
+                    }),
+                    t
+                );
             })(l.default.Component);
         t.default = (0, u.reactToUiBase)(p);
         t.GryphonBetaBtnReact = p;

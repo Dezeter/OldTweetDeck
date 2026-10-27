@@ -21,8 +21,21 @@ window.postMessage('extensionId', '*');
 window.postMessage('cookie', '*');
 
 async function main() {
-    let html = await fetch(chrome.runtime.getURL('/files/index.html')).then(r => r.text());
+    // for the load watchdog (watchdog.js): how far this got, and the extension's files that didn't load
+    let otdDiagnostic = entry => document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify(entry) }));
+    // scripts are named after their file, for errors and the browser's developer tools
+    let load = path => fetch(chrome.runtime.getURL(path)).then(r => {
+        if(!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+    }).then(text => path.endsWith(".js") ? `${text}\n//# sourceURL=${chrome.runtime.getURL(path)}` : text).catch(e => {
+        otdDiagnostic({ kind: "file", path, error: String(e) });
+        throw e;
+    });
+    otdDiagnostic({ kind: "step", step: "extension" });
+
+    let html = await load('/files/index.html');
     document.documentElement.innerHTML = html;
+    otdDiagnostic({ kind: "step", step: "page" });
     // for the settings tab, which runs in the page and can't read the manifest itself in Firefox
     let manifest = await fetch(chrome.runtime.getURL('/manifest.json')).then(r => r.json()).catch(() => null);
     if(manifest) document.documentElement.dataset.otdVersion = manifest.version;
@@ -31,30 +44,31 @@ async function main() {
 
     let [challenge_js, interception_js, vendor_js, bundle_js, bundle_css, twitter_text, ...local_js] =
         await Promise.allSettled([
-            fetch(chrome.runtime.getURL("/src/challenge.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/interception.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/files/vendor.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/files/bundle.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/files/bundle.css")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/files/twitter-text.js")).then(r => r.text()),
+            load("/src/challenge.js"),
+            load("/src/interception.js"),
+            load("/files/vendor.js"),
+            load("/files/bundle.js"),
+            load("/files/bundle.css"),
+            load("/files/twitter-text.js"),
             // otd-common.js first: the others use window.OTD
-            fetch(chrome.runtime.getURL("/src/otd-common.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/grok-translate.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/hide-home-replies.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/conversation-replies.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/paste-images.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/x-articles.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/instant-replies.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/settings.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/group-notifications.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/clean-links.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/absolute-time.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/media-aspect.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/download-media.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/pause-on-hover.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/tab-title.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/emoji-picker.js")).then(r => r.text()),
-            fetch(chrome.runtime.getURL("/src/gif-picker.js")).then(r => r.text()),
+            load("/src/otd-common.js"),
+            load("/src/grok-translate.js"),
+            load("/src/hide-home-replies.js"),
+            load("/src/conversation-replies.js"),
+            load("/src/paste-images.js"),
+            load("/src/x-articles.js"),
+            load("/src/instant-replies.js"),
+            load("/src/settings.js"),
+            load("/src/group-notifications.js"),
+            load("/src/clean-links.js"),
+            load("/src/absolute-time.js"),
+            load("/src/media-aspect.js"),
+            load("/src/download-media.js"),
+            load("/src/pause-on-hover.js"),
+            load("/src/tab-title.js"),
+            load("/src/emoji-picker.js"),
+            load("/src/gif-picker.js"),
+            load("/src/tweet-actions.js"),
         ]);
 
     let challenge_js_script = document.createElement("script");
@@ -87,6 +101,7 @@ async function main() {
         local_script.innerHTML = local_script_js.value;
         document.head.appendChild(local_script);
     }
+    otdDiagnostic({ kind: "step", step: "scripts" });
 
     let int = setTimeout(function() {
         let badBody = document.querySelector('body:not(#injected-body)');
