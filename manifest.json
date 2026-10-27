@@ -1,7 +1,7 @@
 {
     "name": "OldTweetDeck",
     "description": "Returns old TweetDeck!",
-    "version": "5.5.1",
+    "version": "5.6.0",
     "manifest_version": 3,
     "homepage_url": "https://github.com/Dezeter/OldTweetDeck",
     "permissions": [
@@ -51,7 +51,7 @@
         },
         {
             "matches": ["https://twitter.com/i/tweetdeck", "https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*"],
-            "js": ["src/destroyer.js", "src/notifications.js", "src/injection.js"],
+            "js": ["src/destroyer.js", "src/notifications.js", "src/watchdog.js", "src/injection.js"],
             "all_frames": true,
             "run_at": "document_start",
             "world": "MAIN"

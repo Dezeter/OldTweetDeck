@@ -20,6 +20,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
 - [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
+- [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -91,6 +92,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
+| Telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
 ## Grok auto-translation
 
@@ -105,7 +107,8 @@ Home columns hide replies to other people, the way mutes hide tweets. Threads wh
 
 ## All replies in the tweet view
 
-TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".
+TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
+TweetDeck asks for an open tweet's replies again every minute; the extra pages are kept for 5 minutes and only the first page is asked for again, so X's rate limit lasts longer. When X's answer gets lost or comes back empty, it's asked for once more.
 
 ## Pasting images
 
@@ -152,6 +155,11 @@ The tab title shows what's unread: "(3) TweetDeck" for three unread direct messa
 
 A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.
 
+## When TweetDeck doesn't load
+
+If TweetDeck hasn't started 20 seconds after the page opened (5 seconds when the extension's scripts were blocked), a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, script errors.  
+"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, and X's answers without their parameters. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
+
 ## Development
 
 `npm install`, then:
@@ -163,7 +171,7 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 #### Extension stopped working.
 
-Before opening an issue, try to reinstall extension.
+Before opening an issue, try to reinstall extension. If it still doesn't work, attach the report from ["Copy diagnostics"](#when-tweetdeck-doesnt-load) to the issue.
 
 #### Some column isn't loading for me.
 

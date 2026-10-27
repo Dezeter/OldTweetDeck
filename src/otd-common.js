@@ -42,6 +42,8 @@
             label: { ru: "Кнопка «Эмодзи» в окне твита", en: "\"Emoji\" button in the tweet box" } },
         { key: "gifPicker", storage: "OTDgifPicker", section: "compose",
             label: { ru: "Кнопка «GIF» в окне твита: поиск GIF на X", en: "\"GIF\" button in the tweet box: X's GIF search" } },
+        { key: "loadWatchdog", storage: "OTDloadWatchdog", section: "other",
+            label: { ru: "Если TweetDeck не загрузился, объяснять почему", en: "If TweetDeck doesn't load, tell why" } },
     ];
     // the language tweets and articles are translated to
     const LANG_STORAGE = "OTDgrokTranslateLang";

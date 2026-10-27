@@ -9,9 +9,11 @@
     const RELEASES = "https://github.com/Dezeter/OldTweetDeck/releases";
     const LABEL = OTD.label({
         ru: { lang: "Переводить на", browser: "язык браузера", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
-            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание" } },
+            diagnostics: "Скопировать диагностику", copied: "Скопировано",
+            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
         en: { lang: "Translate to", browser: "browser language", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
-            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing" } },
+            diagnostics: "Copy diagnostics", copied: "Copied",
+            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
     });
     const LANGUAGES = ["ru", "en", "uk", "be", "kk", "de", "fr", "es", "it", "pt", "pl", "cs", "nl", "sv", "fi", "tr", "ar", "fa", "he", "hi", "id", "vi", "th", "ja", "ko", "zh"];
 
@@ -107,6 +109,26 @@
         releases.target = "_blank";
         releases.rel = "noopener noreferrer";
         about.append(releases);
+        // the load watchdog's report (watchdog.js), for an issue about something that doesn't work
+        const diagnostics = el("a", "otd-settings-diagnostics", LABEL.diagnostics);
+        diagnostics.href = "#";
+        diagnostics.addEventListener("click", async e => {
+            e.preventDefault();
+            let report = "";
+            const take = e => { report = e.detail; };
+            document.addEventListener("otd-diagnostic-report", take);
+            document.dispatchEvent(new CustomEvent("otd-diagnostic-request"));
+            document.removeEventListener("otd-diagnostic-report", take);
+            if(!report) return;
+            try {
+                await navigator.clipboard.writeText(report);
+            } catch(err) {
+                return;
+            }
+            diagnostics.textContent = LABEL.copied;
+            setTimeout(() => { diagnostics.textContent = LABEL.diagnostics; }, 2000);
+        });
+        about.append(" · ", diagnostics);
         fieldset.append(note, about);
         return fieldset;
     }

@@ -14,6 +14,8 @@ const PAGES = {
     "100:BOTTOM1": timeline([tweet("202", "20", "100")], [thread("202"), cursor("showMoreThreadsPrompt", "SPAM1")]),
     "100:SPAM1": timeline([tweet("202", "20", "100"), tweet("203", "20", "100")], [thread("202"), thread("203")]),
 };
+// one X loses the first time it's asked for
+PAGES["500:"] = timeline([tweet("500", "10"), tweet("501", "20", "500")], [tweetEntry("500"), thread("501")]);
 // a conversation that never ends
 for(let i = 0; i < 10; i++) PAGES[`300:${i ? `C${i}` : ""}`] = timeline([tweet("300", "10"), tweet(String(310 + i), "20", "300")], [...(i ? [] : [tweetEntry("300")]), thread(String(310 + i)), cursor("bottom", `C${i + 1}`)]);
 
@@ -29,6 +31,13 @@ async function open(page, storage, routes) {
             window.__calls.push({ url, headers: init.headers });
             if(!match) return new Response("", { status: 404 });
             if(match[1] === "400") return new Response('{"errors":[{"code":131}]}', { status: 500 });
+            if(match[1] === "500" && !window.__lost) {
+                window.__lost = true;
+                throw new TypeError("NetworkError when attempting to fetch resource.");
+            }
+            // X's answers with nothing in them
+            if(match[1] === "600") return new Response("", { status: 404 });
+            if(match[1] === "700") return new Response("", { status: 429 });
             const body = PAGES[`${match[1]}:${u.searchParams.get("cursor") || ""}`];
             return new Response(body || "{}", { status: body ? 200 : 404 });
         };
@@ -37,13 +46,14 @@ async function open(page, storage, routes) {
     await addScripts(page, "src/interception.js", "files/vendor.js", "files/bundle.js", "src/otd-common.js", "src/conversation-replies.js");
 }
 
-const rawConversation = page => page.evaluate(() => new Promise(resolve => {
+const rawConversation = (page, id = "100") => page.evaluate(id => new Promise(resolve => {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", "https://api.x.com/2/timeline/conversation/100.json?include_reply_count=true&ext=mediaStats");
+    xhr.open("GET", `https://api.x.com/2/timeline/conversation/${id}.json?include_reply_count=true&ext=mediaStats`);
     xhr.setRequestHeader("X-Csrf-Token", "csrf123");
     xhr.onload = () => resolve({ status: xhr.status, readyState: xhr.readyState, text: xhr.responseText, calls: window.__calls.splice(0) });
     xhr.send();
-}));
+}), id);
+const entryIds = raw => JSON.parse(raw.text).timeline.instructions[0].addEntries.entries.map(e => e.entryId);
 
 test("the conversation route follows bottom and show-more cursors and merges the pages", async ({ page }) => {
     await open(page);
@@ -96,7 +106,8 @@ test("TweetDeck sees all replies, at most 3 extra pages, and errors as before", 
     expect(result["100"]).toMatchObject({ root: "100", descendants: ["201", "202", "203"] });
     expect(result["300"]).toMatchObject({ calls: 4 });
     expect(result["300"].descendants).toHaveLength(4);
-    expect(result["400"]).toEqual({ root: null, descendants: [], calls: 1 });
+    // X's 500 is asked again once
+    expect(result["400"]).toEqual({ root: null, descendants: [], calls: 2 });
 });
 
 test("OTDloadAllReplies=0 leaves TweetDeck's request alone", async ({ page }) => {
@@ -112,4 +123,64 @@ test("OTDloadAllReplies=0 leaves TweetDeck's request alone", async ({ page }) =>
     expect(raw.calls).toHaveLength(0);
     expect(requests).toHaveLength(1);
     expect(JSON.parse(raw.text).timeline.instructions[0].addEntries.entries.map(e => e.entryId)).toContain("cursor-bottom-BOTTOM1");
+});
+
+test("an answer that got lost or came empty is asked for once more, and an error reaches TweetDeck as JSON with X's status", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => {
+        window.__reports = [];
+        document.addEventListener("otd-diagnostic", e => window.__reports.push(JSON.parse(e.detail)));
+        // interception.js logs what it can't parse
+        window.__errors = [];
+        const error = console.error;
+        console.error = (...args) => {
+            window.__errors.push(args.map(String).join(" "));
+            error.apply(console, args);
+        };
+    });
+
+    const lost = await rawConversation(page, "500");
+    expect(lost.status).toBe(200);
+    expect(lost.calls).toHaveLength(2);
+    expect(entryIds(lost)).toEqual(["tweet-500", "conversationThread-501"]);
+
+    const empty = await rawConversation(page, "600");
+    expect(empty.status).toBe(404);
+    expect(empty.calls).toHaveLength(2);
+    expect(JSON.parse(empty.text)).toEqual({ errors: [{ code: 404, message: "X answered 404 with nothing" }] });
+
+    // a rate limit isn't asked again
+    const limited = await rawConversation(page, "700");
+    expect(limited.status).toBe(429);
+    expect(limited.calls).toHaveLength(1);
+
+    expect(await page.evaluate(() => window.__errors.filter(e => /SyntaxError|JSON/.test(e)))).toEqual([]);
+    // the load watchdog hears of X's answers
+    expect(await page.evaluate(() => window.__reports.map(r => `${r.status} ${r.url}${r.error ? ` ${r.error}` : ""}`))).toEqual([
+        "0 https://api.x.com/2/timeline/conversation/500.json TypeError: NetworkError when attempting to fetch resource.",
+        "200 https://api.x.com/2/timeline/conversation/500.json",
+        "404 https://api.x.com/2/timeline/conversation/600.json",
+        "404 https://api.x.com/2/timeline/conversation/600.json",
+        "429 https://api.x.com/2/timeline/conversation/700.json",
+    ]);
+});
+
+test("a conversation asked for again within 5 minutes keeps its extra pages without asking X for them", async ({ page }) => {
+    await open(page);
+    const first = await rawConversation(page);
+    expect(first.calls).toHaveLength(3);
+
+    // TweetDeck's poll a minute later
+    const again = await rawConversation(page);
+    expect(again.calls).toHaveLength(1);
+    expect(entryIds(again)).toEqual(entryIds(first));
+    expect(Object.keys(JSON.parse(again.text).globalObjects.tweets).sort()).toEqual(["100", "201", "202", "203"]);
+
+    await page.evaluate(() => {
+        const now = Date.now;
+        Date.now = () => now() + 5 * 60 * 1000;
+    });
+    const later = await rawConversation(page);
+    expect(later.calls).toHaveLength(3);
+    expect(entryIds(later)).toEqual(entryIds(first));
 });
