@@ -68,6 +68,9 @@
     const csp = new Map();
     const errors = new Map();
     const failed = new Map();
+    // the addresses still asked at api.x.com that answered, X retires them one by one
+    const oldApi = new Map();
+    const moves = [];
     let answered = 0;
     let solver = null;
     let startedAt = 0;
@@ -81,10 +84,15 @@
         }
         if(entry.kind === "step") steps[entry.step] ??= Date.now();
         else if(entry.kind === "file") files.push(String(entry.path));
+        else if(entry.kind === "moved") moves.push({ key: String(entry.key), moved: !!entry.moved, at: Date.now() });
         else if(entry.kind === "solver") solver = { ok: !!entry.ok, text: String(entry.text || ""), at: Date.now() };
         else if(entry.kind === "response") {
             const status = Number(entry.status);
-            if(status >= 200 && status < 400) answered++;
+            if(status >= 200 && status < 400) {
+                answered++;
+                const old = clean(entry.url).match(/^api\.(?:x|twitter)\.com(\/.*)/)?.[1];
+                if(old) tally(oldApi, old.replace(/\d{5,}/g, "{id}"), {});
+            }
             else tally(failed, `${entry.method} ${clean(entry.url)} ${status || entry.error || ""}`, { method: String(entry.method), url: clean(entry.url), status, error: entry.error ? String(entry.error) : "" });
         }
     });
@@ -113,6 +121,15 @@
         }
         tally(errors, text, { text });
     });
+
+    // interception.js keeps what it moved
+    const movedApi = () => {
+        try {
+            return JSON.parse(localStorage.OTDmovedApi || "[]").map(String);
+        } catch(e) {
+            return [];
+        }
+    };
 
     const pageWindow = () => window.wrappedJSObject || window;
     const has = name => {
@@ -170,6 +187,9 @@
             ...[...csp.values()].map(v => `  ${v.directive} ${v.blocked}${v.where} ×${v.count}, first at ${seconds(v.at)}`),
             `X: ${answered} answered fine${failed.size ? ", errors:" : ""}`,
             ...[...failed.values()].map(r => `  ${describe(r)} ×${r.count}, first at ${seconds(r.at)}`),
+            `Still asked at api.x.com and answered: ${[...oldApi].map(([path, v]) => `${path} ×${v.count}`).join(", ") || "nothing"}`,
+            `Moved to x.com/i/api: ${movedApi().join(", ") || "nothing"}`,
+            ...moves.map(m => `  ${m.key} ${m.moved ? "moved" : "moved back"} at ${seconds(m.at)}`),
             `Script errors: ${errors.size ? "" : "none"}`,
             ...[...errors.values()].map(v => `  ${v.text} ×${v.count}, first at ${seconds(v.at)}`),
         ];

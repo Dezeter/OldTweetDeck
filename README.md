@@ -175,6 +175,16 @@ A reply you send shows up in the open conversation right away, instead of after 
 If TweetDeck hasn't started 20 seconds after the page opened (5 seconds when the extension's scripts were blocked), a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, script errors.  
 "Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, and X's answers without their parameters. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
 
+## When X retires an address
+
+X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 2026 `help/configuration` started answering "410 Gone", and replies stopped answering at all; x.com's own `x.com/i/api` still answers the same requests.
+
+- `help/configuration`, which only holds the values compose counts characters with, is answered by the extension with TweetDeck's own defaults.
+- Replies are asked at `x.com/i/api`.
+- Any other address X stops answering at `api.x.com` (410, a 404 without X's error message, or no answer twice in a row) is asked at `x.com/i/api` from then on. One request fails, the next ones work. If it isn't there either, it goes back. The moved addresses are kept in `localStorage.OTDmovedApi`; removing the key starts over.
+
+["Copy diagnostics"](#when-tweetdeck-doesnt-load) lists the addresses still asked at `api.x.com` and the moved ones.
+
 ## Development
 
 `npm install`, then:
