@@ -2829,6 +2829,7 @@ try {
     JSON.parse(localStorage.OTDmovedApi || "[]").forEach(key => movedApi.add(key));
 } catch (e) {}
 const unansweredApi = {};
+let otdRequests = 0;
 const stuckApi = new Set();
 function oldApiKey(url) {
     try {
@@ -2904,10 +2905,11 @@ XMLHttpRequest = function () {
                 });
                 this.addEventListener("error", () => learnApi(this.apiKey, this.apiMoved, 0));
             }
-            // for the load watchdog (watchdog.js): how X answered, without the query
+            // for the load watchdog (watchdog.js): what went to X and how X answered, without the query
             if (/^https:\/\/([a-z]+\.)?(x|twitter)\.com\//.test(url)) {
+                this.otdId = ++otdRequests;
                 this.addEventListener("loadend", () => {
-                    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", method, url: String(url).split("?")[0], status: this.status }) }));
+                    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", id: this.otdId, method, url: String(url).split("?")[0], status: this.status }) }));
                 });
             }
 
@@ -2952,7 +2954,7 @@ XMLHttpRequest = function () {
                     } catch (e) {
                         // if(localStorage.secureRequests) {
                             console.error(`Challenge error for ${method} ${parsedUrl.pathname}:`, e);
-                            document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", method, url: `${parsedUrl.origin}${parsedUrl.pathname}`, status: 0, error: String(e) }) }));
+                            document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", id: this.otdId, method, url: `${parsedUrl.origin}${parsedUrl.pathname}`, status: 0, error: String(e) }) }));
                             throw e;
                         // }
                     }
@@ -2976,6 +2978,9 @@ XMLHttpRequest = function () {
             if(this.proxyRoute && this.proxyRoute.sendHandler) {
                 this.proxyRoute.sendHandler(this, body);
             } else {
+                if (this.otdId) {
+                    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "request", id: this.otdId, method, url: `${parsedUrl.origin}${parsedUrl.pathname}` }) }));
+                }
                 this.send(body);
             }
         },

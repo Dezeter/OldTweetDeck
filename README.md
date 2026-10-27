@@ -98,7 +98,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
-| Telling why TweetDeck didn't load | `OTDloadWatchdog` |
+| Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
 ## Grok auto-translation
 
@@ -175,8 +175,8 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 ## When TweetDeck doesn't load
 
-If TweetDeck hasn't started 20 seconds after the page opened (5 seconds when the extension's scripts were blocked), a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, script errors.  
-"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, and X's answers without their parameters. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
+If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
+"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters. After an automatic reload it also has the report of the page that got stuck. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
 
 ## When X retires an address
 

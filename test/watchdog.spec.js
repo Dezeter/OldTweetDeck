@@ -8,7 +8,8 @@ test.use({ locale: "en-US" });
 
 const X_POLICY = "script-src 'nonce-abc'";
 
-async function openWatched(page, { headers, routes } = {}) {
+// reloaded: as if the watchdog had reloaded the page a moment ago, so it doesn't again
+async function openWatched(page, { headers, routes, reloaded } = {}) {
     // the page's time stands still between the test's steps
     const now = Date.now();
     await page.clock.install({ time: now });
@@ -21,7 +22,18 @@ async function openWatched(page, { headers, routes } = {}) {
     // the page itself with x.com's headers
     if(headers) routes = { ...routes, "http://otd.test/i/tweetdeck": route => route.fulfill({ headers: { "content-type": "text/html", ...headers }, body: read("files/index.html") }) };
     await openPage(page, { routes });
+    if(reloaded) await page.evaluate(() => { sessionStorage.OTDautoReloadAt = String(Date.now()); });
 }
+const diagnostic = (page, ...entries) => page.evaluate(entries => {
+    for(const entry of entries) document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify(entry) }));
+}, entries);
+const askReport = page => page.evaluate(() => {
+    let report = "";
+    document.addEventListener("otd-diagnostic-report", e => { report = e.detail; });
+    document.dispatchEvent(new CustomEvent("otd-diagnostic-request"));
+    return report;
+});
+const RELOADED = "The page was reloaded automatically already, it didn't help.";
 // the steps injection.js reports, and its first inline script
 const inject = page => page.evaluate(() => {
     for(const step of ["extension", "page"]) document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "step", step }) }));
@@ -56,14 +68,43 @@ test("when x.com's policy blocks the extension's scripts, the panel says so afte
     expect(report).toContain("Steps: extension 0 s, page 0 s, scripts 0 s; TD no, OTD no\n");
     expect(report).toMatch(/\n {2}script-src-elem inline\b.* ×1, first at 0 s\n/);
 
-    // hidden for good
+    // hidden for good, and no reload: it wouldn't help
+    await page.evaluate(() => { window.__same = true; });
     await panel(page).getByRole("button", { name: "Hide" }).click();
     await page.clock.runFor(30000);
     await expect(panel(page)).toHaveCount(0);
+    expect(await page.evaluate(() => window.__same)).toBe(true);
 });
 
-test("without errors it waits 20 s, and goes away when TweetDeck starts after all", async ({ page }) => {
+test("stuck with nothing to explain it, the page reloads once and keeps the stuck one's report; stuck again, the panel", async ({ page }) => {
     await openWatched(page);
+    await inject(page);
+    // TweetDeck got as far as logging in, and X never answered
+    await diagnostic(page, { kind: "startup", key: "startup:start" }, { kind: "startup", key: "startup:do-login" },
+        { kind: "request", id: 1, method: "GET", url: "https://api.x.com/1.1/account/verify_credentials.json" },
+        { kind: "request", id: 2, method: "GET", url: "https://api.x.com/1.1/help/settings.json" }, { kind: "response", id: 2, method: "GET", url: "https://api.x.com/1.1/help/settings.json", status: 200 });
+    await page.clock.runFor(15000);
+    expect(await askReport(page)).toMatch(/\nTweetDeck's steps: startup:start 0 s, startup:do-login 0 s\n[^]*\nWaiting for X: \n {2}GET api\.x\.com\/1\.1\/account\/verify_credentials\.json for 15 s\n/);
+    const reload = page.waitForEvent("load");
+    await page.clock.runFor(6000);
+    await reload;
+
+    // the next page: stuck again, it shows the panel and says the reload didn't help
+    await inject(page);
+    await diagnostic(page, { kind: "request", id: 1, method: "GET", url: "https://api.x.com/1.1/account/verify_credentials.json" });
+    await page.clock.runFor(21000);
+    await expect(panel(page)).toBeVisible();
+    expect(await findings(page)).toEqual([
+        "X doesn't answer TweetDeck's requests: GET api.x.com/1.1/account/verify_credentials.json (waiting 21 s). A reload usually helps.",
+        RELOADED,
+    ]);
+    const report = await askReport(page);
+    expect(report).toMatch(/\n\nBefore the automatic reload at \d{4}-\d\d-\d\dT[\d:.]+Z:\nOldTweetDeck diagnostics\n/);
+    expect(report.split("Before the automatic reload")[1]).toContain("\nWaiting for X: \n  GET api.x.com/1.1/account/verify_credentials.json for 20 s\n");
+});
+
+test("after a reload, without errors it waits 20 s, and goes away when TweetDeck starts after all", async ({ page }) => {
+    await openWatched(page, { reloaded: true });
     await inject(page);
     expect(await page.evaluate(() => window.__ran)).toBe(true);
 
@@ -71,7 +112,7 @@ test("without errors it waits 20 s, and goes away when TweetDeck starts after al
     await expect(panel(page)).toHaveCount(0);
     await page.clock.runFor(6000);
     await expect(panel(page)).toBeVisible();
-    expect(await findings(page)).toEqual(["No errors in sight: X may be slow to answer. Wait or reload the page."]);
+    expect(await findings(page)).toEqual(["No errors in sight: X may be slow to answer. Wait or reload the page.", RELOADED]);
 
     await page.evaluate(() => document.querySelector(".js-app").classList.remove("is-hidden"));
     await page.clock.runFor(1000);
@@ -98,9 +139,9 @@ test("the extension that never started, files that didn't load, the solver and X
         "https://upload.x.com/i/ok": route => route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: "{}" }),
         "https://upload.x.com/": route => route.fulfill({ status: 401, headers: cors, contentType: "application/json", body: "{}" }),
         "https://upload.twitter.com/": route => route.fulfill({ status: 503, headers: cors, contentType: "application/json", body: "{}" }),
-    } });
+    }, reloaded: true });
     await page.clock.runFor(21000);
-    expect(await findings(page)).toEqual(["The extension didn't start on the page: its script got no answer. Reload the page; if that doesn't help, restart the browser or reinstall the extension."]);
+    expect(await findings(page)).toEqual(["The extension didn't start on the page: its script got no answer. Reload the page; if that doesn't help, restart the browser or reinstall the extension.", RELOADED]);
 
     // the real reporters: injection.js's file loader is in its main(), so a file is reported by hand
     await page.evaluate(() => document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "file", path: "/src/settings.js", error: "TypeError: NetworkError" }) })));
@@ -126,7 +167,7 @@ test("the extension that never started, files that didn't load, the solver and X
     }), urls);
     await page.clock.runFor(1000);
     const list = await findings(page);
-    expect(list).toHaveLength(5);
+    expect(list).toHaveLength(6);
     expect(list[1]).toBe("The extension's files didn't load: /src/settings.js. Reinstall the extension and keep its files after installing.");
     expect(list[2]).toMatch(/^x-client-transaction-id can't be computed, and X refuses some requests without it: TypeError: /);
     expect(list[3]).toBe("X answers 401/403: you're probably not logged in to x.com in this browser or the session expired. Open x.com, log in and reload this page.");
@@ -141,9 +182,11 @@ test("the extension that never started, files that didn't load, the solver and X
     expect(report).toContain("\nX: 1 answered fine, errors:\n");
     expect(report).toMatch(/\n {2}GET upload\.x\.com\/1\.1\/media\/upload\.json — 401 ×1, first at \d+ s\n/);
     expect(report).not.toMatch(/command=|media_id|include_email/);
+    // all answered, or never sent
+    expect(report).toContain("\nWaiting for X: nothing\n");
 });
 
-test("switched off, the panel stays away; the report is still there", async ({ page }) => {
+test("switched off, no reload and no panel; the report is still there", async ({ page }) => {
     await openWatched(page);
     await page.evaluate(() => { localStorage.OTDloadWatchdog = "0"; });
     await page.clock.runFor(30000);

@@ -107,3 +107,18 @@ test("notify shows a message in TweetDeck's notifications, an error as its error
     await expect(page.locator(".Notification-body", { hasText: "Links to media copied" })).toBeVisible();
     await expect(page.locator(".Notification-body", { hasText: "Couldn't copy the links" })).toBeVisible();
 });
+
+test("TweetDeck's startup steps go to the load watchdog", async ({ page }) => {
+    await openPage(page);
+    await addTweetDeck(page);
+    await addScripts(page, "src/otd-common.js");
+    const steps = await page.evaluate(() => {
+        const steps = [];
+        document.addEventListener("otd-diagnostic", e => steps.push(JSON.parse(e.detail)));
+        TD.util.metric("startup:start");
+        TD.util.metric("timing:controller:init:do-login", [12], "metric");
+        TD.util.metric("column:ui:scroll");
+        return steps;
+    });
+    expect(steps).toEqual([{ kind: "startup", key: "startup:start" }, { kind: "startup", key: "timing:controller:init:do-login" }]);
+});

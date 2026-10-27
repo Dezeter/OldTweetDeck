@@ -53,7 +53,7 @@
         { key: "gifPicker", storage: "OTDgifPicker", section: "compose",
             label: { ru: "Кнопка «GIF» в окне твита: поиск GIF на X", en: "\"GIF\" button in the tweet box: X's GIF search" } },
         { key: "loadWatchdog", storage: "OTDloadWatchdog", section: "other",
-            label: { ru: "Если TweetDeck не загрузился, объяснять почему", en: "If TweetDeck doesn't load, tell why" } },
+            label: { ru: "Если TweetDeck не загрузился: перезагрузить страницу один раз, потом объяснить, что не так", en: "If TweetDeck doesn't load: reload the page once, then tell what's wrong" } },
     ];
     // the language tweets and articles are translated to
     const LANG_STORAGE = "OTDgrokTranslateLang";
@@ -299,6 +299,12 @@
         request([fn]);
         return () => request([fn]);
     }
+
+    // for the load watchdog (watchdog.js): TweetDeck's steps as it starts, which it reports as metrics
+    jQuery()?.(document).on("metric", (e, data) => {
+        const key = String(data?.key || "");
+        if(/^(startup:|timing:controller:init:)/.test(key)) document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "startup", key }) }));
+    });
 
     // Items this extension adds to TweetDeck's menus look like its own, which it styles by data-action
     addStyle(`
