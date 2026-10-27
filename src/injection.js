@@ -68,6 +68,7 @@ async function main() {
             load("/src/tab-title.js"),
             load("/src/emoji-picker.js"),
             load("/src/gif-picker.js"),
+            load("/src/tweet-actions.js"),
         ]);
 
     let challenge_js_script = document.createElement("script");

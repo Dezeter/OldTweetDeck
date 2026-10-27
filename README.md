@@ -17,7 +17,8 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
-- [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) from the tweet menu
+- [Whole images](#media) in columns instead of cropped strips, and [downloading media](#media) or copying its links from the tweet menu
+- [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
 - [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
@@ -87,8 +88,12 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | X Articles | `OTDarticles` |
 | Links straight to the site | `OTDcleanLinks` |
 | Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
+| "Redraft" in your tweet's menu | `OTDredraft` |
+| "Mute #hashtag" and "Mute tweets from …" in the tweet menu | `OTDmuteFromMenu` |
+| Mute and Block buttons under tweets (off by default, `'1'` turns it on) | `OTDrowMuteBlock` |
 | Whole images in columns | `OTDmediaAspect` |
 | "Download media" in the tweet menu | `OTDdownloadMedia` |
+| "Copy links to media" in the tweet menu | `OTDcopyMediaLinks` |
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
@@ -143,7 +148,17 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 
-The "…" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.
+The "…" menu of a tweet with media has "Download media": photos are saved at their original size, videos and GIFs as MP4 at the best quality, named after the author and the tweet (`alice_1234567890.jpg`). For this the extension asks for the permission to download files.  
+"Copy links to media" next to it copies the same addresses, one per line.
+
+## Tweet menu
+
+The "…" menu of a tweet has more, after [Better TweetDeck](https://github.com/eramdam/BetterTweetDeck):
+
+- **Redraft** on your own tweet deletes it and opens it in the tweet box as it was typed: the text with full links instead of t.co, its photos and videos attached again, the same quoted tweet, a reply to the same tweet. Correct it and send it again. Image descriptions aren't carried over, and a GIF comes back as a video.
+- **Mute #hashtag** for each hashtag of the tweet and **Mute tweets from "Twitter for iPhone"** for the app it was sent from, next to "Mute @user". They go to TweetDeck's own Settings → Mute, where they can be removed.
+
+Under other people's tweets there can be **Mute** and **Block** buttons, next to reply, retweet and like. Both ask before doing it. They're off by default; switch them on in [Settings](#settings).
 
 ## Columns
 

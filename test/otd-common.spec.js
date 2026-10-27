@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { openPage, addScripts } = require("./helpers");
+const { openPage, addScripts, addTweetDeck } = require("./helpers");
 
 test("switches read and write the same localStorage keys as before", async ({ page }) => {
     await openPage(page, { storage: { OTDpasteImages: "0" } });
@@ -13,7 +13,8 @@ test("switches read and write the same localStorage keys as before", async ({ pa
     expect(result.before).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
-        ["cleanLinks", true], ["absoluteTime", false], ["mediaAspect", true], ["downloadMedia", true], ["pasteImages", false],
+        ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
+        ["mediaAspect", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
         ["emojiPicker", true], ["gifPicker", true], ["loadWatchdog", true],
     ]);
     expect(result).toMatchObject({ paste: null, group: "0", unknown: "no OldTweetDeck feature nope" });
@@ -93,4 +94,16 @@ test("watchers share one observer and frame, and one failing doesn't stop the ot
     expect(runs.first).toEqual({ a: 1, b: 1, broken: 1 });
     expect(runs.afterChanges).toEqual({ a: 2, b: 2, broken: 2 });
     expect(runs.own).toEqual({ a: 3, b: 2, broken: 2 });
+});
+
+test("notify shows a message in TweetDeck's notifications, an error as its error", async ({ page }) => {
+    await openPage(page);
+    await addTweetDeck(page, { css: true });
+    await addScripts(page, "src/otd-common.js");
+    await page.evaluate(() => {
+        OTD.notify("Links to media copied");
+        OTD.notify("Couldn't copy the links", true);
+    });
+    await expect(page.locator(".Notification-body", { hasText: "Links to media copied" })).toBeVisible();
+    await expect(page.locator(".Notification-body", { hasText: "Couldn't copy the links" })).toBeVisible();
 });

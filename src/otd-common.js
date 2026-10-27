@@ -32,10 +32,18 @@
             label: { ru: "Ссылки ведут прямо на сайт, а не через t.co", en: "Links go straight to the site, not through t.co" } },
         { key: "absoluteTime", storage: "OTDabsoluteTime", section: "tweets", default: false,
             label: { ru: "Время твита: «14:05» и дата вместо «5m»", en: "Tweet time: \"2:05 PM\" and the date instead of \"5m\"" } },
+        { key: "redraft", storage: "OTDredraft", section: "tweets",
+            label: { ru: "«Переписать» в меню своего твита: удалить его и открыть заново в окне твита", en: "\"Redraft\" in your tweet's menu: delete it and open it again in the tweet box" } },
+        { key: "muteFromMenu", storage: "OTDmuteFromMenu", section: "tweets",
+            label: { ru: "«Игнорировать #хэштег» и «Игнорировать твиты из …» в меню твита", en: "\"Mute #hashtag\" and \"Mute tweets from …\" in the tweet menu" } },
+        { key: "rowMuteBlock", storage: "OTDrowMuteBlock", section: "tweets", default: false,
+            label: { ru: "Кнопки «Игнорировать» и «Заблокировать» под твитами", en: "\"Mute\" and \"Block\" buttons under tweets" } },
         { key: "mediaAspect", storage: "OTDmediaAspect", section: "media",
             label: { ru: "Одиночные картинки в колонке целиком, без обрезки", en: "Single images in columns whole, not cropped" } },
         { key: "downloadMedia", storage: "OTDdownloadMedia", section: "media",
             label: { ru: "«Скачать медиа» в меню твита", en: "\"Download media\" in the tweet menu" } },
+        { key: "copyMediaLinks", storage: "OTDcopyMediaLinks", section: "media",
+            label: { ru: "«Скопировать ссылки на медиа» в меню твита", en: "\"Copy links to media\" in the tweet menu" } },
         { key: "pasteImages", storage: "OTDpasteImages", section: "compose",
             label: { ru: "Вставлять картинки по Ctrl+V", en: "Paste images with Ctrl+V" } },
         { key: "emojiPicker", storage: "OTDemojiPicker", section: "compose",
@@ -183,6 +191,60 @@
         });
     }
 
+    // The chirp of a tweet's action row, found the way TweetDeck finds the one of its "…" menu: from the
+    // attributes of the row's "…" button
+    function actionsChirp(element) {
+        const button = element.closest?.('[rel="actionsMenu"]') || element.closest?.(".js-tweet-actions, .tweet-detail-actions")?.querySelector('[rel="actionsMenu"]');
+        if(!button || !window.TD?.controller?.columnManager) return null;
+        try {
+            const chirp = TD.controller.columnManager.findChirpByAccountKey({
+                chirpId: button.getAttribute("data-parent-chirp-id") || button.getAttribute("data-chirp-id"),
+                accountKey: button.getAttribute("data-account-key"),
+                columnKey: button.closest(".js-column")?.getAttribute("data-column"),
+            });
+            return chirp?.getRelatedTweet?.() || chirp || null;
+        } catch(e) {
+            return null;
+        }
+    }
+    // the one whose "…" menu is open, as the menu opens, before TweetDeck renders it
+    let menuChirp = null;
+    document.addEventListener("click", e => {
+        if(e.target.closest?.('[rel="actionsMenu"]')) menuChirp = actionsChirp(e.target);
+    }, true);
+    const openMenuChirp = () => menuChirp;
+
+    // A tweet's media at its best: photos at the original size, the mp4 with the highest bitrate of videos
+    // and GIFs. [{ url, ext, type }], type being the entity's: photo, video or animated_gif.
+    function mediaFiles(chirp) {
+        const files = [];
+        for(const media of chirp?.getMedia?.() || []) {
+            const entity = media.entity;
+            if(entity?.type === "photo" && entity.media_url_https) {
+                const [, base, ext] = entity.media_url_https.match(/^(.*)\.(\w+)$/) || [];
+                if(base) files.push({ url: `${base}?format=${ext}&name=orig`, ext, type: entity.type });
+            } else if((entity?.type === "video" || entity?.type === "animated_gif") && media.chooseVideoVariant) {
+                const url = media.chooseVideoVariant()?.url;
+                if(url) files.push({ url, ext: "mp4", type: entity.type });
+            }
+        }
+        return files;
+    }
+
+    // A message in TweetDeck's notification corner, like its own "Muted @alice"
+    let notifications;
+    function notify(message, error = false) {
+        if(notifications === undefined) {
+            let modules = {};
+            try {
+                window.webpackJsonp.push([["otd-notify"], { "otd-notify": (module, exports, require) => { modules = require.c; } }, [["otd-notify"]]]);
+            } catch(e) {}
+            notifications = Object.values(modules).map(m => m.exports).find(x => typeof x?.showNotification === "function" && typeof x.showErrorNotification === "function") || null;
+        }
+        if(notifications) notifications[error ? "showErrorNotification" : "showNotification"]({ message });
+        else if(error) alert(message);
+    }
+
     // TweetDeck's jQuery, the one its events (dataTweetSent, uiReadStateChange…) and $.publish live on
     let jquery;
     function jQuery() {
@@ -236,5 +298,11 @@
         return () => request([fn]);
     }
 
-    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, attachFiles, addComposerButton, jQuery, addStyle, watch };
+    // Items this extension adds to TweetDeck's menus look like its own, which it styles by data-action
+    addStyle(`
+        .dropdown-menu [data-otd-action] { display: block; padding: 5px 20px; color: #38444d; text-shadow: none; cursor: pointer; text-decoration: none; }
+        html.dark .dropdown-menu [data-otd-action], .dropdown-menu .is-selected [data-otd-action] { color: #fff; }
+    `);
+
+    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
 })();

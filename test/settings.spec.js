@@ -30,7 +30,8 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
     expect(await switches(page)).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
-        ["cleanLinks", true], ["absoluteTime", false], ["mediaAspect", true], ["downloadMedia", true], ["pasteImages", false],
+        ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
+        ["mediaAspect", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
         ["emojiPicker", true], ["gifPicker", true], ["loadWatchdog", true],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
