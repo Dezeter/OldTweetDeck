@@ -40,6 +40,8 @@
             label: { ru: "Кнопки «Игнорировать» и «Заблокировать» под твитами", en: "\"Mute\" and \"Block\" buttons under tweets" } },
         { key: "mediaAspect", storage: "OTDmediaAspect", section: "media",
             label: { ru: "Одиночные картинки в колонке целиком, без обрезки", en: "Single images in columns whole, not cropped" } },
+        { key: "inlineVideo", storage: "OTDinlineVideo", section: "media",
+            label: { ru: "Видео играют прямо в твите, а не в отдельном окне", en: "Videos play right in the tweet, not in a separate window" } },
         { key: "downloadMedia", storage: "OTDdownloadMedia", section: "media",
             label: { ru: "«Скачать медиа» в меню твита", en: "\"Download media\" in the tweet menu" } },
         { key: "copyMediaLinks", storage: "OTDcopyMediaLinks", section: "media",
