@@ -69,8 +69,10 @@ test("the conversation route follows bottom and show-more cursors and merges the
     expect(raw.calls[1].url).toContain("cursor=BOTTOM1");
     expect(raw.calls[2].url).toContain("cursor=SPAM1");
     expect(raw.calls[0].url).not.toContain("ext=");
+    // x.com's own /i/api on the page's origin (here otd.test): api.x.com doesn't answer this any more
+    expect(raw.calls[0].url).toMatch(/^https:\/\/otd\.test\/i\/api\/2\/timeline\/conversation\/100\.json\?/);
     const headers = raw.calls[1].headers;
-    expect(headers["x-client-transaction-id"]).toBe("tid:GET:/2/timeline/conversation/100.json");
+    expect(headers["x-client-transaction-id"]).toBe("tid:GET:/i/api/2/timeline/conversation/100.json");
     expect(headers["X-Client-UUID"]).toBe("dev-1");
     expect(headers["X-Csrf-Token"]).toBe("csrf123");
     expect(headers["Authorization"]).toMatch(/^Bearer /);
@@ -114,7 +116,7 @@ test("OTDloadAllReplies=0 leaves TweetDeck's request alone", async ({ page }) =>
     // without the module the upstream route sends the XHR itself
     const requests = [];
     await open(page, { OTDloadAllReplies: "0" }, {
-        "https://api.x.com/": route => {
+        "https://otd.test/i/api/": route => {
             requests.push(route.request().url());
             return route.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: PAGES["100:"] });
         },
@@ -157,11 +159,11 @@ test("an answer that got lost or came empty is asked for once more, and an error
     expect(await page.evaluate(() => window.__errors.filter(e => /SyntaxError|JSON/.test(e)))).toEqual([]);
     // the load watchdog hears of X's answers
     expect(await page.evaluate(() => window.__reports.map(r => `${r.status} ${r.url}${r.error ? ` ${r.error}` : ""}`))).toEqual([
-        "0 https://api.x.com/2/timeline/conversation/500.json TypeError: NetworkError when attempting to fetch resource.",
-        "200 https://api.x.com/2/timeline/conversation/500.json",
-        "404 https://api.x.com/2/timeline/conversation/600.json",
-        "404 https://api.x.com/2/timeline/conversation/600.json",
-        "429 https://api.x.com/2/timeline/conversation/700.json",
+        "0 https://otd.test/i/api/2/timeline/conversation/500.json TypeError: NetworkError when attempting to fetch resource.",
+        "200 https://otd.test/i/api/2/timeline/conversation/500.json",
+        "404 https://otd.test/i/api/2/timeline/conversation/600.json",
+        "404 https://otd.test/i/api/2/timeline/conversation/600.json",
+        "429 https://otd.test/i/api/2/timeline/conversation/700.json",
     ]);
 });
 

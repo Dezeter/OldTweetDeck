@@ -2382,6 +2382,9 @@ const proxyRoutes = [
             params.delete("include_ext_sensitive_media_warning");
             params.delete("include_ext_media_color");
 
+            // api.x.com doesn't answer this any more (October 2026); x.com's own /i/api does, on the page's origin
+            originalUrl.hostname = location.hostname;
+            originalUrl.pathname = `/i/api${originalUrl.pathname}`;
             originalUrl.search = params.toString();
 
             xhr.modUrl = originalUrl.toString();
