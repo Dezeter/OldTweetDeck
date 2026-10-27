@@ -57,7 +57,9 @@
         });
         // a click on the controls stays with the video, not the tweet under it
         video.addEventListener("click", e => e.stopPropagation());
+        // inline and important: TweetDeck's .block is display: block !important, and outranks a class in the dark theme
         link.classList.add("otd-inline-video-link");
+        link.style.setProperty("display", "none", "important");
         link.after(video);
         // the ones TweetDeck has rendered away are let go
         for(const old of videos) if(!old.isConnected) videos.delete(old);
@@ -79,7 +81,6 @@
     }, true);
 
     OTD.addStyle(`
-        .otd-inline-video-link { display: none !important; }
         .otd-inline-video { display: block; width: 100%; max-height: 50vh; aspect-ratio: var(--otd-video-aspect, 16 / 9); border-radius: 8px; background: #000; object-fit: contain; }
     `);
 })();

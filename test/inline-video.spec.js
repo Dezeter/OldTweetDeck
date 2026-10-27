@@ -103,6 +103,14 @@ test("a video scrolled out of sight pauses", async ({ page }) => {
     await expect.poll(() => page.evaluate(() => window.__paused)).toEqual(["1"]);
 });
 
+test("the preview goes in the dark theme too, whose .block outranks ordinary rules", async ({ page }) => {
+    await openColumn(page);
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    await preview(page, "100").click();
+    await expect(player(page, "100")).toBeVisible();
+    await expect(preview(page, "100")).toBeHidden();
+});
+
 test("Ctrl+click, a photo and the switch off leave TweetDeck's window", async ({ page }) => {
     await openColumn(page);
     await preview(page, "100").click({ modifiers: ["Control"] });

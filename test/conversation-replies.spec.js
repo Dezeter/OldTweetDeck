@@ -131,7 +131,10 @@ test("an answer that got lost or came empty is asked for once more, and an error
     await open(page);
     await page.evaluate(() => {
         window.__reports = [];
-        document.addEventListener("otd-diagnostic", e => window.__reports.push(JSON.parse(e.detail)));
+        document.addEventListener("otd-diagnostic", e => {
+            const entry = JSON.parse(e.detail);
+            if(entry.kind === "response") window.__reports.push(entry);
+        });
         // interception.js logs what it can't parse
         window.__errors = [];
         const error = console.error;

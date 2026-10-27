@@ -1,11 +1,12 @@
-// Load watchdog: when TweetDeck hasn't started 20 s after the page opened, a panel says what went wrong instead
-// of the endless spinner and copies a report for an issue. It hears what the page shows (scripts blocked by
-// Content-Security-Policy, script errors) and what the other scripts tell it on "otd-diagnostic" events: the
-// steps of injection.js and the extension files that didn't load, the transaction id solver, X's answers.
+// Load watchdog: when TweetDeck hasn't started 20 s after the page opened, it reloads the page once, when that
+// may help, and then a panel says what went wrong instead of the endless spinner and copies a report for an
+// issue. It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the
+// other scripts tell it on "otd-diagnostic" events: the steps of injection.js and the extension files that
+// didn't load, the transaction id solver, TweetDeck's own steps as it starts, the requests to X and X's answers.
 // A content script that runs before injection.js, so it works when everything injection.js adds is blocked; in
 // Firefox it's in the extension's own world and sees the page's through wrappedJSObject.
 // The settings tab asks it for the report with an "otd-diagnostic-request" event.
-// Switch "loadWatchdog" (the panel only; the report is always there).
+// Switch "loadWatchdog" (the reload and the panel; the report is always there).
 (() => {
     if(window.top !== window) return;
 
@@ -13,6 +14,10 @@
     const DEADLINE = 20000;
     // when the extension's scripts are blocked or missing, TweetDeck won't start, there's no need to wait long
     const DEADLINE_BROKEN = 5000;
+    // one automatic reload, and not again for a while if TweetDeck is stuck after it too
+    const RELOAD_AT = "OTDautoReloadAt";
+    const RELOAD_REPORT = "OTDautoReloadReport";
+    const RELOAD_AGAIN_AFTER = 120000;
     const ISSUES = "https://github.com/Dezeter/OldTweetDeck/issues";
     const RU = (navigator.language || "en").toLowerCase().startsWith("ru");
     const T = RU ? {
@@ -25,10 +30,12 @@
         limit: "X отвечает 429: слишком много запросов. Подождите несколько минут.",
         responses: list => `X отвечает ошибками: ${list}.`,
         errors: (text, more) => `Ошибка в скриптах: ${text}${more ? ` (и ещё ${more})` : ""}.`,
+        waiting: list => `X не отвечает на запросы TweetDeck: ${list}. Обычно помогает перезагрузка страницы.`,
+        reloaded: "Страница уже перезагружалась сама, это не помогло.",
         nothing: "Явных ошибок не видно: возможно, X отвечает медленно. Подождите или перезагрузите страницу.",
         privacy: "В диагностике нет cookies и токенов, её можно приложить к issue.",
         copy: "Скопировать диагностику", copied: "Скопировано", reload: "Перезагрузить", report: "Сообщить о проблеме", close: "Скрыть",
-        notSent: "не отправлен", noAnswer: "нет ответа",
+        notSent: "не отправлен", noAnswer: "нет ответа", waitingFor: n => `ждём ${n} с`,
     } : {
         title: "TweetDeck hasn't loaded",
         noExtension: "The extension didn't start on the page: its script got no answer. Reload the page; if that doesn't help, restart the browser or reinstall the extension.",
@@ -39,10 +46,12 @@
         limit: "X answers 429: too many requests. Wait a few minutes.",
         responses: list => `X answers with errors: ${list}.`,
         errors: (text, more) => `A script error: ${text}${more ? ` (and ${more} more)` : ""}.`,
+        waiting: list => `X doesn't answer TweetDeck's requests: ${list}. A reload usually helps.`,
+        reloaded: "The page was reloaded automatically already, it didn't help.",
         nothing: "No errors in sight: X may be slow to answer. Wait or reload the page.",
         privacy: "The report has no cookies or tokens, it can go into an issue.",
         copy: "Copy diagnostics", copied: "Copied", reload: "Reload", report: "Report a problem", close: "Hide",
-        notSent: "not sent", noAnswer: "no answer",
+        notSent: "not sent", noAnswer: "no answer", waitingFor: n => `waiting ${n} s`,
     };
 
     const seconds = at => `${Math.round((at - START) / 1000)} s`;
@@ -71,6 +80,9 @@
     // the addresses still asked at api.x.com that answered, X retires them one by one
     const oldApi = new Map();
     const moves = [];
+    // the requests sent to X with no answer yet, and TweetDeck's steps as it starts
+    const pending = new Map();
+    const startup = [];
     let answered = 0;
     let solver = null;
     let startedAt = 0;
@@ -85,8 +97,11 @@
         if(entry.kind === "step") steps[entry.step] ??= Date.now();
         else if(entry.kind === "file") files.push(String(entry.path));
         else if(entry.kind === "moved") moves.push({ key: String(entry.key), moved: !!entry.moved, at: Date.now() });
+        else if(entry.kind === "startup" && startup.length < 20) startup.push({ key: String(entry.key), at: Date.now() });
+        else if(entry.kind === "request") pending.set(entry.id, { method: String(entry.method), url: clean(entry.url), at: Date.now() });
         else if(entry.kind === "solver") solver = { ok: !!entry.ok, text: String(entry.text || ""), at: Date.now() };
         else if(entry.kind === "response") {
+            pending.delete(entry.id);
             const status = Number(entry.status);
             if(status >= 200 && status < 400) {
                 answered++;
@@ -159,12 +174,28 @@
         if(responses.some(r => r.status === 429)) list.push(T.limit);
         const other = responses.filter(r => ![401, 403, 429].includes(r.status));
         if(other.length) list.push(T.responses(other.slice(0, 3).map(describe).join("; ")));
+        const waiting = waitingFor(10000);
+        if(waiting.length) list.push(T.waiting(waiting.slice(0, 3).map(r => `${r.method} ${r.url} (${T.waitingFor(r.seconds)})`).join("; ")));
         const errs = [...errors.values()];
         if(errs.length) list.push(T.errors(errs[0].text, errs.length - 1));
         if(!list.length) list.push(T.nothing);
+        if(reloadedRecently()) list.push(T.reloaded);
         return list;
     }
     const describe = r => `${r.method} ${r.url} — ${r.status || (r.error ? `${T.notSent} (${r.error})` : T.noAnswer)}`;
+    // requests X hasn't answered for at least `ms`, the longest waiting first
+    const waitingFor = ms => [...pending.values()].filter(r => Date.now() - r.at >= ms).sort((a, b) => a.at - b.at)
+        .map(r => ({ ...r, seconds: Math.round((Date.now() - r.at) / 1000) }));
+
+    const session = (key, value) => {
+        try {
+            if(value === undefined) return sessionStorage[key];
+            sessionStorage[key] = value;
+        } catch(e) {}
+    };
+    const reloadedRecently = () => Date.now() - Number(session(RELOAD_AT) || 0) < RELOAD_AGAIN_AFTER;
+    // a reload doesn't bring back blocked or missing scripts, nor log in
+    const reloadMayHelp = () => !scriptsBlocked() && !files.length && ![...failed.values()].some(r => r.status === 401 || r.status === 403);
 
     function report() {
         let version = "";
@@ -181,18 +212,23 @@
             `Time: ${new Date(now).toISOString()}, ${seconds(now)} after the page opened`,
             `TweetDeck: ${started() ? `started at ${seconds(startedAt)}` : "not started"}`,
             `Steps: ${["extension", "page", "scripts"].map(step => `${step} ${steps[step] ? seconds(steps[step]) : "—"}`).join(", ")}; TD ${has("TD") ? "yes" : "no"}, OTD ${has("OTD") ? "yes" : "no"}`,
+            `TweetDeck's steps: ${startup.map(s => `${s.key} ${seconds(s.at)}`).join(", ") || "none"}`,
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
             ...[...csp.values()].map(v => `  ${v.directive} ${v.blocked}${v.where} ×${v.count}, first at ${seconds(v.at)}`),
             `X: ${answered} answered fine${failed.size ? ", errors:" : ""}`,
             ...[...failed.values()].map(r => `  ${describe(r)} ×${r.count}, first at ${seconds(r.at)}`),
+            `Waiting for X: ${pending.size ? "" : "nothing"}`,
+            ...waitingFor(0).map(r => `  ${r.method} ${r.url} for ${r.seconds} s`),
             `Still asked at api.x.com and answered: ${[...oldApi].map(([path, v]) => `${path} ×${v.count}`).join(", ") || "nothing"}`,
             `Moved to x.com/i/api: ${movedApi().join(", ") || "nothing"}`,
             ...moves.map(m => `  ${m.key} ${m.moved ? "moved" : "moved back"} at ${seconds(m.at)}`),
             `Script errors: ${errors.size ? "" : "none"}`,
             ...[...errors.values()].map(v => `  ${v.text} ×${v.count}, first at ${seconds(v.at)}`),
         ];
+        const before = session(RELOAD_REPORT);
+        if(before) lines.push("", `Before the automatic reload at ${new Date(Number(session(RELOAD_AT))).toISOString()}:`, before);
         return lines.join("\n");
     }
     document.addEventListener("otd-diagnostic-request", () => {
@@ -272,6 +308,15 @@
         }
         if(dismissed || localStorage.OTDloadWatchdog === "0") return;
         const waited = Date.now() - START;
+        if(waited >= DEADLINE && !host && reloadMayHelp() && !reloadedRecently()) {
+            // the stuck page's report stays for the next one
+            const stuck = report().split("\n\nBefore the automatic reload")[0];
+            session(RELOAD_REPORT, stuck);
+            session(RELOAD_AT, String(Date.now()));
+            clearInterval(timer);
+            location.reload();
+            return;
+        }
         if(waited >= DEADLINE || (waited >= DEADLINE_BROKEN && (scriptsBlocked() || files.length))) show();
     }, 1000);
 })();
