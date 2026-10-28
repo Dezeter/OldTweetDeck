@@ -86,7 +86,12 @@ async function stand(page, { dark = false, width = "medium", media = "", density
         window.__chirps = Object.fromEntries(window.__home.map(([, c]) => [c.id, c]));
         TD.controller.columnManager = { get: key => key === "home" ? { findChirp: id => window.__chirps[id], getMediaPreviewSize: () => "medium" } : null, getAllOrdered: () => [] };
 
-        const column = (key, title, body) => `<section class="js-column column" data-column="${key}"><div class="column-holder"><div class="column-panel flex flex-column height-p--100"><header class="js-column-header column-header flex-shrink--0"><i class="pull-left margin-l--10 margin-r--2 column-type-icon icon icon-${key === "home" ? "home" : key === "notif" ? "notifications" : "search"}"></i><div class="column-title flex flex-justify-content--space-between"><div class="column-header-title flex flex-align--center flex-wrap--wrap flex-grow--2"><h1 class="column-heading">${title}</h1> <span class="attribution txt-mute txt-sub-antialiased">@Dezeter</span></div><div class="column-header-links"><a class="column-header-link column-settings-link" href="#"><i class="icon icon-sliders"></i></a></div></div></header><div class="js-column-content column-content flex-auto position-rel flex flex-column height-p--100"><div class="js-column-scroller column-scroller position-rel scroll-v flex-auto height-p--100"><div class="js-chirp-container chirp-container">${body}</div></div></div></div></div></section>`;
+        // TweetDeck's own column header, as its columns render it
+        const header = (title, icon) => TD.ui.template.render("column/column_header", {
+            columntitle: TD.ui.template.render("column_title", { emojifiedTitle: title, needsUserAttribution: true, screenName: "@Dezeter" }),
+            columniconclass: icon, withImageAttribution: true,
+        });
+        const column = (key, title, body) => `<section class="js-column column" data-column="${key}"><div class="column-holder"><div class="column-panel flex flex-column height-p--100">${header(title, { home: "icon-home", notif: "icon-notifications" }[key] || "icon-user")}<div class="js-column-content column-content flex-auto position-rel flex flex-column height-p--100"><div class="js-column-scroller column-scroller position-rel scroll-v flex-auto height-p--100"><div class="js-chirp-container chirp-container">${body}</div></div></div></div></div></section>`;
         const homeHtml = window.__home.map(([label, chirp]) => chirp.render({ mediaPreviewSize: "medium" }).replace("<article ", `<article data-otd-label="${label}" `)).join("");
         // notifications, as X's activity JSON
         const account = window.__account;
@@ -128,7 +133,9 @@ async function stand(page, { dark = false, width = "medium", media = "", density
         window.__chirps[reply.id] = reply;
         const detail = TD.ui.template.render("status/tweet_detail", { chirp: focal, withDragHandle: false, isFavorited: false, isRetweeted: false, renderQuoted() { return ""; } });
         const detailHtml = `<div class="js-detail-container column-scroller" data-otd-label="opened tweet"><div class="js-tweet-detail tweet-detail-wrapper">${detail}</div><div class="js-tweet-replies tweet-detail-reply">${reply.render({ mediaPreviewSize: "medium" }).replace("<article ", '<article data-otd-label="reply in the opened tweet" ')}</div></div>`;
-        document.body.insertAdjacentHTML("beforeend", `<div class="js-app-content app-content" style="left:0"><div class="js-app-columns-container app-columns-container scroll-h"><div class="js-app-columns app-columns horizontal-flow-container">${column("home", "Home", homeHtml)}${column("notif", "Notifications", notifHtml)}${column("detail", "Tweet", detailHtml)}</div></div></div>`);
+        // TweetDeck's own left bar, condensed as people keep it
+        document.body.insertAdjacentHTML("beforeend", `<div class="js-app application is-condensed" style="position:absolute;left:0;top:0;bottom:0;width:60px" data-otd-label="left bar">${TD.ui.template.render("topbar/app_header", {})}</div>`);
+        document.body.insertAdjacentHTML("beforeend", `<div class="js-app-content app-content" style="left:60px"><div class="js-app-columns-container app-columns-container scroll-h"><div class="js-app-columns app-columns horizontal-flow-container">${column("home", "Home", homeHtml)}${column("notif", "Notifications", notifHtml)}${column("detail", "Tweet", detailHtml)}</div></div></div>`);
         window.__detailMedia = () => {
             const box = document.querySelector(".js-tweet-detail .js-tweet-media");
             if(!box) return;
@@ -174,6 +181,27 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
     };
 }));
 
+// where an icon's drawing is: its middle, from the middle of what it stands with (a column's title, a nav link's box,
+// a count next to it)
+const iconPlaces = page => page.evaluate(() => {
+    const mid = r => r.top + r.height / 2;
+    const drawing = icon => {
+        const box = icon.getBoundingClientRect();
+        const before = getComputedStyle(icon, "::before");
+        return box.top + parseFloat(before.marginTop || 0) + parseFloat(before.height) / 2;
+    };
+    const out = {};
+    document.querySelectorAll(".column-header").forEach((header, i) => {
+        out[`column ${i}`] = Math.round(drawing(header.querySelector(".column-type-icon")) - mid(header.querySelector(".column-heading").getBoundingClientRect()));
+    });
+    document.querySelectorAll(".app-navigator .app-nav-link, .app-navigator .app-nav-tab:not(.is-hidden)").forEach(link => {
+        out[`nav ${link.dataset.title}`] = Math.round(drawing(link.querySelector(".icon")) - mid(link.getBoundingClientRect()));
+    });
+    const action = document.querySelector('article[data-otd-label="text"] .tweet-action[rel="reply"]');
+    out["reply button"] = Math.round(drawing(action.querySelector(".icon")) - mid(action.getBoundingClientRect()));
+    return out;
+});
+
 const SCRIPTS = ["src/otd-common.js", "src/modern-look.js", "src/icons.js", "src/media-layout.js", "src/self-threads.js", "src/group-notifications.js"];
 for(const [name, options] of Object.entries({
     "light": {}, "dark": { dark: true }, "flex": { width: "flex" }, "dark-flex": { dark: true, width: "flex" }, "whole": { media: "whole" }, "comfortable": { density: "comfortable" },
@@ -191,5 +219,9 @@ for(const [name, options] of Object.entries({
         expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(["photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"]));
         for(const t of squares) expect(t.square, `${t.label} ${t.rects}`).toEqual([80, 80, true, true]);
     }
+    // icons where TweetDeck's font put them: a column's on its title's line, the left bar's in their buttons
+    for(const [where, off] of Object.entries(await iconPlaces(page))) expect(Math.abs(off), where).toBeLessThanOrEqual(where.startsWith("column") ? 5 : 2);
+    // a hairline round a square
+    if(options.media !== "whole") expect(await page.$eval('article[data-otd-label="photo, landscape"] .tweet-body > .js-media', el => getComputedStyle(el).outlineWidth)).toBe("1px");
     if(process.env.SPECIMENS_OUT) await shoot(page, name);
 });
