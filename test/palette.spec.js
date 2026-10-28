@@ -106,8 +106,7 @@ test("our switches and choices offer only what they aren't, and apply at once", 
 
     await page.keyboard.press("Control+KeyK");
     await page.keyboard.type("ширина");
-    // "Columns fit the window" has the letters too, after what has the word
-    expect(await shown(page)).toEqual(["Ширина колонок: узкие", "Ширина колонок: широкие", "Ширина колонок: очень широкие", "Колонки по ширине окна: выключить"]);
+    expect(await shown(page)).toEqual(["Ширина колонок: узкие", "Ширина колонок: широкие", "Ширина колонок: очень широкие", "Ширина колонок: по ширине окна (flex)"]);
     await page.keyboard.press("Enter");
     expect(await done(page)).toEqual(["width narrow"]);
 

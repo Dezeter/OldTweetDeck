@@ -92,3 +92,42 @@ test("the system's \"reduce motion\" stops TweetDeck's animations, with the swit
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await expect.poll(() => page.evaluate(() => window.__require(0).fx.off)).toBe(false);
 });
+
+test("6px between a tweet's text and its buttons; a quote's text in the tweet's color, also in the dark theme", async ({ page }) => {
+    await open(page, { dark: true });
+    const look = () => page.evaluate(() => {
+        const user = { id_str: "30", screen_name: "carol", name: "carol", profile_image_url_https: "", entities: {} };
+        if(!document.querySelector('[data-key="3"]')) {
+            const quoted = { id_str: "4", full_text: "quoted words", text: "quoted words", created_at: new Date().toUTCString(), source: "web", user, entities: { hashtags: [], symbols: [], urls: [], user_mentions: [] } };
+            const chirp = window.__client.processTweet({ ...quoted, id_str: "3", full_text: "quoting", text: "quoting", is_quote_status: true, quoted_status_id_str: "4", quoted_status: quoted });
+            document.querySelector(".js-chirp-container").insertAdjacentHTML("beforeend", chirp.render({}));
+        }
+        const article = document.querySelector('[data-key="3"]');
+        return [getComputedStyle(article.querySelector(".tweet-footer")).marginTop, getComputedStyle(article.querySelector(".js-quoted-tweet-text")).color === getComputedStyle(article.querySelector(".tweet-text")).color];
+    });
+    expect(await look()).toEqual(["6px", true]);
+    await page.evaluate(() => OTD.setOn("modernLook", false));
+    expect(await look()).toEqual(["3px", false]);
+});
+
+test("a notification's \"Name retweeted\" stays on one line, a long name cut short", async ({ page }) => {
+    await open(page);
+    const header = () => page.evaluate(() => {
+        if(!document.querySelector(".activity-header")) {
+            const entities = { description: { urls: [] }, url: { urls: [] } };
+            const me = { id_str: "1", id: 1, screen_name: "me", name: "me", profile_image_url_https: "", entities };
+            const them = { id_str: "40", id: 40, screen_name: "raen", name: "RAEN Foundation of a very long and winding name", entities,
+                profile_image_url_https: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#e0245e"/></svg>') };
+            const target = { id_str: "9", full_text: "mine", text: "mine", created_at: new Date().toUTCString(), source: "web", user: me, entities: { hashtags: [], symbols: [], urls: [], user_mentions: [] } };
+            const ts = Date.now();
+            const [chirp] = TD.services.TwitterAction.processRESTAction({ action: "retweet", created_at: new Date(ts).toUTCString(), max_position: `${ts}`, min_position: `${ts}`, sources: [them], sources_size: 1, targets: [target], targets_size: 1, target_objects: [target], target_objects_size: 1 }, window.__account);
+            document.querySelector(".js-chirp-container").insertAdjacentHTML("afterbegin", chirp.render({}));
+        }
+        const line = document.querySelector(".activity-header.has-source-avatar > .nbfc");
+        return [Math.round(line.getBoundingClientRect().height), Math.round(line.querySelector(".avatar").getBoundingClientRect().width), line.textContent.includes("Retweeted")];
+    });
+    // one line of 20px and TweetDeck's 2px under it
+    expect(await header()).toEqual([22, 20, true]);
+    await page.evaluate(() => OTD.setOn("modernLook", false));
+    expect((await header())[0]).toBeGreaterThan(22);
+});

@@ -11,10 +11,10 @@ test("switches read and write the same localStorage keys as before", async ({ pa
         return { before, paste: localStorage.OTDpasteImages ?? null, group: localStorage.OTDgroupNotifications, unknown: (() => { try { OTD.isOn("nope"); } catch(e) { return e.message; } })() };
     });
     expect(result.before).toEqual([
-        ["lightsOut", false], ["fitColumns", true], ["svgIcons", true], ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
+        ["lightsOut", false], ["svgIcons", true], ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["skeletons", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
-        ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
+        ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
         ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
     expect(result).toMatchObject({ paste: null, group: "0", unknown: "no TweeXDeck feature nope" });

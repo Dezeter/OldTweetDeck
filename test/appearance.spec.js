@@ -1,5 +1,4 @@
-// Columns that fit the window, density, the theme that follows the system's, and Lights out; all of them apply
-// without a reload
+// Density, the theme that follows the system's, and Lights out; all of them apply without a reload
 const { test, expect } = require("@playwright/test");
 const { openPage, addTweetDeck, addAccount, addScripts } = require("./helpers");
 
@@ -21,42 +20,6 @@ async function open(page, { storage, columns = 3, dark = false, before } = {}) {
     if(before) await page.evaluate(...before);
     await addScripts(page, "src/otd-common.js", "src/layout.js", "src/theme.js");
 }
-const widths = page => page.evaluate(() => {
-    const container = document.querySelector(".app-columns-container");
-    return { columns: [...document.querySelectorAll(".column")].map(c => Math.round(c.getBoundingClientRect().width)), scrolls: container.scrollWidth > container.clientWidth };
-});
-
-test("columns share a window they don't fill, up to 480px each; switched off, TweetDeck's width", async ({ page }) => {
-    await open(page);
-    // 1200px less TweetDeck's 6px before and after each column
-    expect(await widths(page)).toEqual({ columns: [392, 392, 392], scrolls: false });
-    await page.evaluate(() => OTD.setOn("fitColumns", false));
-    expect(await widths(page)).toEqual({ columns: [310, 310, 310], scrolls: false });
-    await page.evaluate(() => OTD.setOn("fitColumns", true));
-    await page.setViewportSize({ width: 1800, height: 700 });
-    expect(await widths(page)).toEqual({ columns: [480, 480, 480], scrolls: false });
-});
-
-test("with more columns than fit, they keep TweetDeck's width and the row scrolls", async ({ page }) => {
-    await open(page, { columns: 6 });
-    expect(await widths(page)).toEqual({ columns: [310, 310, 310, 310, 310, 310], scrolls: true });
-});
-
-test("TweetDeck's column drag still lays the row out: a dragged column and the gap it leaves", async ({ page }) => {
-    await open(page);
-    // what TweetDeck's dragdroplist does when a drag starts: columns taken out of the row, a placeholder in it
-    const placeholder = await page.evaluate(() => {
-        document.querySelectorAll(".column").forEach((column, i) => Object.assign(column.style, { position: "absolute", left: `${i * 398}px`, width: "392px" }));
-        const holder = document.createElement("section");
-        holder.className = "placeholder";
-        Object.assign(holder.style, { width: "1194px", height: "600px" });
-        document.querySelector(".app-columns").append(holder);
-        return Math.round(holder.getBoundingClientRect().width);
-    });
-    expect(placeholder).toBe(1194);
-    expect((await widths(page)).columns).toEqual([392, 392, 392]);
-});
-
 test("comfortable density: more room around a tweet and text from 15px, larger font sizes kept", async ({ page }) => {
     await open(page);
     const look = () => page.evaluate(() => {
