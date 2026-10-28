@@ -10,6 +10,14 @@
     // A feature is on by default unless it says default: false; localStorage[storage] "0" or "1" overrides that.
     // settings.js shows them as switches, by section, in this order.
     const FEATURES = [
+        { key: "lightsOut", storage: "OTDlightsOut", section: "appearance", default: false,
+            label: { ru: "Lights out: тёмная тема чёрная, как на x.com, для OLED-экранов", en: "Lights out: the dark theme in black, as on x.com, for OLED screens" } },
+        { key: "fitColumns", storage: "OTDfitColumns", section: "appearance",
+            label: { ru: "Колонки по ширине окна: если место остаётся, колонки растягиваются до 480 px", en: "Columns fit the window: with room to spare, columns grow up to 480px" } },
+        { key: "svgIcons", storage: "OTDsvgIcons", section: "appearance",
+            label: { ru: "Новые иконки: чёткие SVG в стиле x.com вместо шрифта TweetDeck", en: "New icons: sharp SVG in x.com's style instead of TweetDeck's font" } },
+        { key: "modernLook", storage: "OTDmodernLook", section: "appearance",
+            label: { ru: "Улучшенная читаемость: контрастная светлая тема, крупные кнопки под твитом, видимый фокус клавиатуры", en: "Better readability: higher-contrast light theme, larger tweet buttons, visible keyboard focus" } },
         { key: "grokTranslate", storage: "OTDgrokTranslate", section: "translation",
             label: { ru: "Переводить твиты через Grok", en: "Translate tweets with Grok" } },
         { key: "articlesTranslate", storage: "OTDarticlesTranslate", section: "translation",
@@ -24,6 +32,8 @@
             label: { ru: "Треды автора: без «Replying to @автор», соседние твиты треда соединены линией", en: "Author's threads: no \"Replying to @author\", neighbouring tweets of a thread joined by a line" } },
         { key: "threadsOldestFirst", storage: "OTDthreadsOldestFirst", section: "columns",
             label: { ru: "Треды автора в колонке по порядку: первый твит сверху", en: "Author's threads in a column in order: the first tweet on top" } },
+        { key: "skeletons", storage: "OTDskeletons", section: "columns",
+            label: { ru: "Загрузка и пустые колонки: заготовки твитов вместо «Loading…», понятный текст и кнопка, если пусто или X не ответил", en: "Loading and empty columns: tweet shapes instead of \"Loading…\", a plain message and a button when it's empty or X didn't answer" } },
         { key: "tabTitle", storage: "OTDtabTitle", section: "columns",
             label: { ru: "Непрочитанное в заголовке вкладки: «(3) TweetDeck»", en: "Unread in the tab title: \"(3) TweetDeck\"" } },
         { key: "loadAllReplies", storage: "OTDloadAllReplies", section: "tweets",
@@ -66,6 +76,11 @@
     // the font of TweetDeck's text, picked in the settings tab and drawn by fonts.js: TweetDeck's own system fonts
     // without the key, or one of these from files/fonts/<key>, all under the SIL Open Font License 1.1
     const FONT_STORAGE = "OTDfont";
+    // TweetDeck's density, picked in the settings tab and drawn by layout.js: TweetDeck's own, compact, without
+    // the key, or "comfortable"
+    const DENSITY_STORAGE = "OTDdensity";
+    // "1" while TweetDeck's theme follows the system's (theme.js)
+    const THEME_SYSTEM_STORAGE = "OTDthemeSystem";
     const FONTS = [
         { key: "golos", name: "Golos Text", weight: "400 900" },
         { key: "onest", name: "Onest", weight: "100 900" },
@@ -86,8 +101,39 @@
     // the key is removed when the value is the default
     function setOn(key, on) {
         const f = feature(key);
-        if(on === (f.default !== false)) localStorage.removeItem(f.storage);
-        else localStorage[f.storage] = on ? "1" : "0";
+        setValue(f.storage, on === (f.default !== false) ? "" : on ? "1" : "0");
+    }
+
+    // Settings that apply without a reload: a script listens to the setting's key, and the settings tab, which
+    // writes it with setValue, doesn't ask for a reload then. A change in another TweetDeck tab comes too.
+    const listeners = {};
+    function onChange(storage, fn) {
+        (listeners[storage] ||= []).push(fn);
+    }
+    const isLive = storage => !!listeners[storage]?.length;
+    function changed(storage) {
+        for(const fn of listeners[storage] || []) {
+            try {
+                fn();
+            } catch(e) {
+                console.error(`[otd] ${storage}:`, e);
+            }
+        }
+    }
+    // "" removes the key
+    function setValue(storage, value) {
+        if(value === "" || value === undefined) localStorage.removeItem(storage);
+        else localStorage[storage] = value;
+        changed(storage);
+    }
+    window.addEventListener("storage", e => {
+        if(e.key) changed(e.key);
+    });
+    // a class on <html> while a feature is on, as its switch changes too
+    function htmlClassWhileOn(key, className) {
+        const apply = () => document.documentElement.classList.toggle(className, isOn(key));
+        apply();
+        onChange(feature(key).storage, apply);
     }
     const targetLang = () => (localStorage[LANG_STORAGE] || navigator.language || "en").split("-")[0].toLowerCase();
     const label = (labels, lang = UI_LANG) => labels[lang] || labels.en;
@@ -280,6 +326,7 @@
         style.textContent = css;
         // injection.js removes x.com's own head once TweetDeck is in, stay on ours
         (document.getElementById("injected-head") || document.head).appendChild(style);
+        return style;
     }
 
     // watch(fn) runs fn on the next animation frame after the page changes, and every 2 s. All watchers share
@@ -327,5 +374,5 @@
         html.dark .dropdown-menu [data-otd-action], .dropdown-menu .is-selected [data-otd-action] { color: #fff; }
     `);
 
-    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, FONT_STORAGE, FONTS, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, FONT_STORAGE, FONTS, DENSITY_STORAGE, THEME_SYSTEM_STORAGE, isOn, setOn, setValue, onChange, isLive, htmlClassWhileOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
 })();

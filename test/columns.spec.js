@@ -66,6 +66,32 @@ test("holding a column doesn't move its tweets on the screen, nor do the ones th
     expect(await read()).toBe(before);
 });
 
+test("back at the top under the pointer, after TweetDeck's \"N New Tweets\" or a scroll, the column is held again", async ({ page }) => {
+    await open(page);
+    await page.hover('[data-column="c1"] article');
+    const scroller = '[data-column="c1"] .js-column-scroller';
+    // tweets came meanwhile, then TweetDeck's pill scrolls the column to the top
+    await page.evaluate(scroller => { document.querySelector(scroller).scrollTop = 0; }, scroller);
+    await expect.poll(() => scrollTop(page, "c1")).toBe(1);
+    expect(await page.$eval(scroller, el => el.classList.contains("otd-held"))).toBe(true);
+
+    // a scrollbar dragged to the top is TweetDeck's "release to refresh": held only once it's let go
+    await page.mouse.down();
+    await page.evaluate(scroller => { document.querySelector(scroller).scrollTop = 0; }, scroller);
+    await page.waitForTimeout(100);
+    expect(await scrollTop(page, "c1")).toBe(0);
+    await page.mouse.up();
+    expect(await scrollTop(page, "c1")).toBe(1);
+
+    // not with the pointer gone
+    await page.mouse.move(890, 590);
+    expect(await scrollTop(page, "c1")).toBe(0);
+    await page.evaluate(scroller => { document.querySelector(scroller).scrollTop = 50; }, scroller);
+    await page.evaluate(scroller => { document.querySelector(scroller).scrollTop = 0; }, scroller);
+    await page.waitForTimeout(100);
+    expect(await scrollTop(page, "c1")).toBe(0);
+});
+
 test("a column too short to scroll isn't touched", async ({ page }) => {
     await open(page);
     await page.evaluate(() => { document.querySelector('[data-column="c1"] .js-chirp-container').replaceChildren(); });

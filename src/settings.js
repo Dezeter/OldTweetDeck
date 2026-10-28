@@ -1,20 +1,29 @@
 // The TweeXDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, the
-// language to translate to and the font. They write the localStorage keys the features read on load, so changes apply
-// after a reload. Loaded by injection.js after otd-common.js.
+// language to translate to, and under "Appearance" TweetDeck's theme and column width with ours: density and font.
+// A search field filters them all. A label "What: how" shows as a title with a hint under it. Switches write the
+// localStorage keys the features read; what a script listens to (OTD.onChange) applies at once, the rest after a
+// reload, and the tab says so. Loaded by injection.js after otd-common.js.
 (() => {
     const GlobalSettings = window.TD?.components?.GlobalSettings;
     if(!GlobalSettings) return;
 
     const TAB = "oldtweetdeck";
     const RELEASES = "https://github.com/Dezeter/TweeXDeck/releases";
-    const LABEL = OTD.label({
+    const LABELS = {
         ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
-            diagnostics: "Скопировать диагностику", copied: "Скопировано",
-            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
+            diagnostics: "Скопировать диагностику", copied: "Скопировано", search: "Поиск по настройкам", nothing: "Ничего не нашлось",
+            theme: "Тема", themes: { light: "светлая", dark: "тёмная", system: "как в системе" },
+            columnWidth: "Ширина колонок", widths: { narrow: "узкие", medium: "средние", wide: "широкие", superwide: "очень широкие" },
+            density: "Плотность", densities: { "": "компактно, как в TweetDeck", comfortable: "свободно: больше воздуха, текст от 15 px" },
+            sections: { appearance: "Внешний вид", translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
         en: { lang: "Translate to", browser: "browser language", font: "Font", systemFont: "system, as in TweetDeck", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
-            diagnostics: "Copy diagnostics", copied: "Copied",
-            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
-    });
+            diagnostics: "Copy diagnostics", copied: "Copied", search: "Search settings", nothing: "Nothing found",
+            theme: "Theme", themes: { light: "light", dark: "dark", system: "as the system" },
+            columnWidth: "Column width", widths: { narrow: "narrow", medium: "medium", wide: "wide", superwide: "super wide" },
+            density: "Density", densities: { "": "compact, as in TweetDeck", comfortable: "comfortable: more room, text from 15px" },
+            sections: { appearance: "Appearance", translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
+    };
+    const LABEL = OTD.label(LABELS);
     const LANGUAGES = ["ru", "en", "uk", "be", "kk", "de", "fr", "es", "it", "pt", "pl", "cs", "nl", "sv", "fi", "tr", "ar", "fa", "he", "hi", "id", "vi", "th", "ja", "ko", "zh"];
 
     let names;
@@ -31,70 +40,131 @@
         return node;
     }
 
+    // "What: how" as the title and a hint under it, the hint from a capital letter
+    function labelParts(text) {
+        const at = text.indexOf(": ");
+        if(at < 0) return [text, ""];
+        const hint = text.slice(at + 2);
+        return [text.slice(0, at), hint[0].toUpperCase() + hint.slice(1)];
+    }
+    // what the search finds a row by: its labels in every language
+    const searchText = (...texts) => texts.join(" ").toLowerCase();
+
     // TweetDeck's switch: an icon and a label, the whole row toggles
     function toggleRow(feature, changed) {
         const row = el("div", "otd-setting");
         row.dataset.feature = feature.key;
+        row.dataset.search = searchText(...Object.values(feature.label));
         const icon = el("i", "icon icon-small color-twitter-blue is-actionable align-top");
         const show = () => {
             icon.classList.toggle("icon-toggle-on", OTD.isOn(feature.key));
             icon.classList.toggle("icon-toggle-off", !OTD.isOn(feature.key));
         };
         show();
+        const [title, hint] = labelParts(OTD.label(feature.label));
+        const text = el("span", "margin-l--4", title);
+        if(hint) text.append(el("span", "otd-setting-hint txt-mute", hint));
         // TweetDeck's template has a space between the switch and its label
-        row.append(icon, " ", el("span", "margin-l--4", OTD.label(feature.label)));
+        row.append(icon, " ", text);
         row.addEventListener("click", () => {
             OTD.setOn(feature.key, !OTD.isOn(feature.key));
             show();
-            changed();
+            changed(feature.storage);
         });
         return row;
     }
 
-    function languageRow(changed) {
-        const row = el("div", "otd-settings-lang");
-        const label = el("label", null, `${LABEL.lang} `);
+    // a select with its label; options are [value, text], set(value) writes it, storage is the key it changes
+    function selectRow(className, label, options, value, set, search, changed, storage) {
+        const row = el("div", `otd-settings-select ${className}`);
+        row.dataset.search = searchText(label, ...search);
+        const labelEl = el("label");
         const select = document.createElement("select");
+        select.append(...options.map(([value, text]) => new Option(text, value)));
+        select.value = value;
+        select.addEventListener("change", () => {
+            set(select.value);
+            changed(storage);
+        });
+        labelEl.append(el("span", "otd-settings-select-title", label), select);
+        row.append(labelEl);
+        return row;
+    }
+
+    // the translations read it when the page loads
+    function languageRow(changed) {
         const browserLang = (navigator.language || "en").split("-")[0].toLowerCase();
-        select.append(
-            new Option(`${names.of(browserLang) || browserLang} (${LABEL.browser})`, ""),
-            ...LANGUAGES.map(code => new Option(`${names.of(code) || code} (${code})`, code)),
-        );
+        const options = [["", `${names.of(browserLang) || browserLang} (${LABEL.browser})`], ...LANGUAGES.map(code => [code, `${names.of(code) || code} (${code})`])];
         const current = localStorage[OTD.LANG_STORAGE] || "";
         // a code typed into the console that isn't in the list
-        if(current && !LANGUAGES.includes(current)) select.append(new Option(current, current));
-        select.value = current;
-        select.addEventListener("change", () => {
-            if(select.value) localStorage[OTD.LANG_STORAGE] = select.value;
-            else localStorage.removeItem(OTD.LANG_STORAGE);
-            changed();
-        });
-        label.append(select);
-        row.append(label);
-        return row;
+        if(current && !LANGUAGES.includes(current)) options.push([current, current]);
+        return selectRow("otd-settings-lang", LABEL.lang, options, current, value => OTD.setValue(OTD.LANG_STORAGE, value),
+            [LABELS.ru.lang, LABELS.en.lang], changed, OTD.LANG_STORAGE);
     }
 
     // fonts.js draws the one picked here; TweetDeck's own without the key
-    function fontRow(changed) {
-        const row = el("div", "otd-settings-font");
-        const label = el("label", null, `${LABEL.font} `);
-        const select = document.createElement("select");
-        select.append(new Option(LABEL.systemFont, ""), ...OTD.FONTS.map(font => new Option(font.name, font.key)));
-        select.value = OTD.FONTS.some(font => font.key === localStorage[OTD.FONT_STORAGE]) ? localStorage[OTD.FONT_STORAGE] : "";
-        select.addEventListener("change", () => {
-            if(select.value) localStorage[OTD.FONT_STORAGE] = select.value;
-            else localStorage.removeItem(OTD.FONT_STORAGE);
-            changed();
-        });
-        label.append(select);
-        row.append(label);
-        return row;
+    const fontRow = changed => selectRow("otd-settings-font", LABEL.font, [["", LABEL.systemFont], ...OTD.FONTS.map(font => [font.key, font.name])],
+        OTD.FONTS.some(font => font.key === localStorage[OTD.FONT_STORAGE]) ? localStorage[OTD.FONT_STORAGE] : "",
+        value => OTD.setValue(OTD.FONT_STORAGE, value), [LABELS.ru.font, LABELS.en.font], changed, OTD.FONT_STORAGE);
+
+    // TweetDeck's own settings, which it applies at once; "system" is theme.js's
+    const themeRow = changed => selectRow("otd-settings-theme", LABEL.theme, ["light", "dark", "system"].map(theme => [theme, LABEL.themes[theme]]),
+        localStorage[OTD.THEME_SYSTEM_STORAGE] === "1" ? "system" : TD.settings.getTheme(), value => TD.settings.setTheme(value),
+        [LABELS.ru.theme, LABELS.en.theme, "dark", "light", "system"], changed, null);
+    const widthRow = changed => selectRow("otd-settings-width", LABEL.columnWidth, (TD.settings.COLUMN_WIDTH_VALUES || ["narrow", "medium", "wide"]).map(width => [width, LABEL.widths[width] || width]),
+        TD.settings.getColumnWidth(), value => TD.settings.setColumnWidth(value), [LABELS.ru.columnWidth, LABELS.en.columnWidth], changed, null);
+    // layout.js
+    const densityRow = changed => selectRow("otd-settings-density", LABEL.density, ["", "comfortable"].map(density => [density, LABEL.densities[density]]),
+        localStorage[OTD.DENSITY_STORAGE] === "comfortable" ? "comfortable" : "", value => OTD.setValue(OTD.DENSITY_STORAGE, value),
+        [LABELS.ru.density, LABELS.en.density], changed, OTD.DENSITY_STORAGE);
+
+    // the rows of a section: its features' switches, and under "Appearance" the selects before the switch they go with
+    function sectionRows(section, changed) {
+        const rows = [];
+        const before = {
+            appearance: { lightsOut: [themeRow], fitColumns: [widthRow], svgIcons: [densityRow, fontRow] },
+        }[section] || {};
+        for(const feature of OTD.FEATURES.filter(f => f.section === section)) {
+            for(const row of before[feature.key] || []) rows.push(row(changed));
+            rows.push(toggleRow(feature, changed));
+        }
+        // the reader's translate button uses the language too, so it stays with translation off
+        if(section === "translation") rows.push(languageRow(changed));
+        return rows;
+    }
+
+    // hides the rows the query isn't in, and the sections left empty; a section's title finds all its rows
+    function filter(fieldset, query) {
+        query = query.trim().toLowerCase();
+        let first = true;
+        let found = false;
+        for(const group of fieldset.querySelectorAll(".otd-settings-section")) {
+            const all = !query || group.dataset.search.includes(query);
+            let any = false;
+            for(const row of group.querySelectorAll("[data-search]")) {
+                row.hidden = !all && !row.dataset.search.includes(query);
+                any ||= !row.hidden;
+            }
+            group.hidden = !any;
+            const divider = group.previousElementSibling;
+            if(divider?.classList.contains("divider-bar")) divider.hidden = group.hidden || first;
+            if(any) first = false;
+            found ||= any;
+        }
+        fieldset.querySelector(".otd-settings-nothing").hidden = found;
     }
 
     function build() {
         const fieldset = el("fieldset");
         fieldset.id = "otd-settings";
         fieldset.append(el("legend", null, "TweeXDeck"));
+
+        const search = el("input", "otd-settings-search");
+        search.type = "search";
+        search.placeholder = LABEL.search;
+        search.setAttribute("aria-label", LABEL.search);
+        search.addEventListener("input", () => filter(fieldset, search.value));
+        fieldset.append(search);
 
         const note = el("div", "otd-settings-note txt-mute is-hidden", `${LABEL.reload} `);
         const reload = el("a", null, LABEL.reloadNow);
@@ -104,22 +174,25 @@
             location.reload();
         });
         note.append(reload);
-        const changed = () => note.classList.remove("is-hidden");
+        // TweetDeck's own settings (no key) and what a script listens to apply without a reload
+        const changed = storage => {
+            if(storage && !OTD.isLive(storage)) note.classList.remove("is-hidden");
+        };
 
         const sections = [...new Set(OTD.FEATURES.map(f => f.section))];
         sections.forEach((section, i) => {
             if(i) fieldset.append(el("div", "divider-bar"));
             const group = el("div", "control-group otd-settings-section");
             group.dataset.section = section;
+            group.dataset.search = searchText(LABELS.ru.sections[section], LABELS.en.sections[section]);
             const title = el("label", "txt-uppercase touch-larger-label");
             title.append(el("b", null, LABEL.sections[section]));
-            group.append(title);
-            if(section === "other") group.append(fontRow(changed));
-            for(const feature of OTD.FEATURES.filter(f => f.section === section)) group.append(toggleRow(feature, changed));
-            // the reader's translate button uses the language too, so it stays with translation off
-            if(section === "translation") group.append(languageRow(changed));
+            group.append(title, ...sectionRows(section, changed));
             fieldset.append(group);
         });
+        const nothing = el("div", "otd-settings-nothing txt-mute", LABEL.nothing);
+        nothing.hidden = true;
+        fieldset.append(nothing);
 
         const about = el("div", "otd-settings-about txt-mute", `TweeXDeck${OTD.VERSION ? ` ${OTD.VERSION}` : ""} · `);
         const releases = el("a", null, LABEL.releases);
@@ -174,14 +247,20 @@
     OTD.addStyle(`
         #otd-settings .otd-settings-section > label { display: block; margin-bottom: 4px; }
         /* a long label wraps next to its switch, not under it */
-        #otd-settings .otd-setting { display: flex; align-items: flex-start; margin-bottom: 3px; cursor: pointer; }
+        #otd-settings .otd-setting { display: flex; align-items: flex-start; margin-bottom: 6px; cursor: pointer; }
         /* in a flex row the space after the switch is gone, the margin stands in for it */
         #otd-settings .otd-setting > i { flex: none; margin-right: 4px; }
         #otd-settings .otd-setting > span { flex: 1; }
+        #otd-settings .otd-setting-hint { display: block; margin-top: 1px; font-size: 12px; line-height: 1.35; }
+        #otd-settings [hidden] { display: none !important; }
         #otd-settings a { color: #1da1f2; }
+        #otd-settings .otd-settings-search { box-sizing: border-box; width: 100%; margin: 0 0 14px; }
+        #otd-settings .otd-settings-select { margin: 0 0 8px; }
         #otd-settings .otd-settings-lang { margin: 6px 0 0 30px; }
-        #otd-settings .otd-settings-font { margin: 0 0 6px; }
-        #otd-settings .otd-settings-lang select, #otd-settings .otd-settings-font select { margin-left: 6px; max-width: 220px; }
+        #otd-settings .otd-settings-select-title { display: inline-block; min-width: 128px; }
+        #otd-settings .otd-settings-lang .otd-settings-select-title { min-width: 98px; }
+        #otd-settings .otd-settings-select select { max-width: 260px; }
+        #otd-settings .otd-settings-nothing { margin: 4px 0 10px; }
         #otd-settings .otd-settings-note, #otd-settings .otd-settings-about { margin-top: 10px; font-size: 12px; }
     `);
 })();
