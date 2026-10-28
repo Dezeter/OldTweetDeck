@@ -11,7 +11,7 @@ test("switches read and write the same localStorage keys as before", async ({ pa
         return { before, paste: localStorage.OTDpasteImages ?? null, group: localStorage.OTDgroupNotifications, unknown: (() => { try { OTD.isOn("nope"); } catch(e) { return e.message; } })() };
     });
     expect(result.before).toEqual([
-        ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
+        ["lightsOut", false], ["fitColumns", true], ["svgIcons", true], ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
@@ -121,4 +121,27 @@ test("TweetDeck's startup steps go to the load watchdog", async ({ page }) => {
         return steps;
     });
     expect(steps).toEqual([{ kind: "startup", key: "startup:start" }, { kind: "startup", key: "timing:controller:init:do-login" }]);
+});
+
+test("setValue tells who listens, one listener's error doesn't stop the next; a class on <html> follows a switch", async ({ page }) => {
+    await openPage(page);
+    await addScripts(page, "src/otd-common.js");
+    const result = await page.evaluate(() => {
+        const heard = [];
+        const live = [OTD.isLive("OTDdensity")];
+        OTD.onChange("OTDdensity", () => { throw new Error("broken"); });
+        OTD.onChange("OTDdensity", () => heard.push(localStorage.OTDdensity ?? null));
+        live.push(OTD.isLive("OTDdensity"));
+        OTD.setValue("OTDdensity", "comfortable");
+        OTD.setValue("OTDdensity", "");
+        const classes = [];
+        OTD.htmlClassWhileOn("lightsOut", "otd-test");
+        classes.push(document.documentElement.classList.contains("otd-test"));
+        OTD.setOn("lightsOut", true);
+        classes.push(document.documentElement.classList.contains("otd-test"), localStorage.OTDlightsOut);
+        OTD.setOn("lightsOut", false);
+        classes.push(document.documentElement.classList.contains("otd-test"), localStorage.OTDlightsOut ?? null);
+        return { heard, live, classes, liveSwitch: OTD.isLive("OTDlightsOut") };
+    });
+    expect(result).toEqual({ heard: ["comfortable", null], live: [false, true], classes: [false, true, "1", false, null], liveSwitch: true });
 });

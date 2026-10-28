@@ -5,7 +5,7 @@
 // - keyboard focus shows (TweetDeck takes the outline off everywhere), for the pointer it stays as it was;
 // - tweet text at line-height 1.4 instead of 1.29, @handles at 13px instead of 12, counts in tabular figures.
 // Whatever the switch, the system's "reduce motion" stops TweetDeck's animations, CSS and jQuery ones.
-// Loaded by injection.js after otd-common.js. Switch "modernLook".
+// Loaded by injection.js after otd-common.js. Switch "modernLook", applies without a reload.
 (() => {
     // the system's setting, now and when it changes
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -21,8 +21,7 @@
         }
     `);
 
-    if(!OTD.isOn("modernLook")) return;
-    document.documentElement.classList.add("otd-modern");
+    OTD.htmlClassWhileOn("modernLook", "otd-modern");
 
     const ACTIONS = ".tweet-action, .tweet-detail-action";
     const RESTING = ":not(:hover):not(:focus):not(:active):not(.is-selected)";
