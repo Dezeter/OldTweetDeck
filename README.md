@@ -22,6 +22,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
+- [The Medeo Sans font](#font) for all of TweetDeck's text
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -99,6 +100,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
+| Medeo Sans font | `OTDmedeoFont` |
 | Keeping x.com's service worker off (off by default, `'1'` turns it on) | `OTDblockServiceWorker` |
 | Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
@@ -121,6 +123,8 @@ TweetDeck asks for an open tweet's replies again every minute; the extra pages a
 ## Pasting images
 
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
+
+A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. A direct message still takes a Tweet or an image.
 
 ## Emoji and GIFs
 
@@ -173,6 +177,10 @@ A thread, where the author replies to themselves, looks the way TweetDeck showed
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
+## Font
+
+All of TweetDeck's text (tweets, columns, menus, buttons and fields) is in [Medeo Sans](https://github.com/DNFDEVS/medeo-font), a free font for Latin and Cyrillic by DNF. The font comes with the extension and loads from its files, nothing is downloaded. Icons keep TweetDeck's own font; Japanese, Chinese and emoji come from the system fonts as before. Settings → OldTweetDeck → Other switches it off.
+
 ## Instant replies
 
 A reply you send shows up in the open conversation right away, instead of after the next refresh or reopening the tweet.
@@ -217,4 +225,5 @@ This can not be fixed. Since Twitter made likes private, the API to retrieve lik
 
 MIT, see [LICENSE](LICENSE). Copyright dimden (the original OldTweetDeck) and Dezeter (this fork).  
 The `x-client-transaction-id` algorithm in `src/challenge.js` is ported from [x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id) by Lami (MIT).  
-TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.
+TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.  
+Medeo Sans in `files/fonts/` (`medeo-font` 1.0.0-rc.4.1) is by DNF, based on Geist and Inter, under the SIL Open Font License 1.1, see [files/fonts/Medeo-LICENSE.txt](files/fonts/Medeo-LICENSE.txt).

@@ -16317,8 +16317,9 @@ document.body.addEventListener("click", function (e) {
                         !(!e.hasValidCharacterCount || !e.hasSelectedAccounts) &&
                         !(e.isJustWhitespace && !e.hasMediaAttached) &&
                         !!e.safeguardingOk &&
-                        !!e.schedulingOk &&
-                        (!e.hasQuotedTweet || !e.hasMediaAttached)
+                        !!e.schedulingOk
+                        // OldTweetDeck: X takes images and video with a quoted Tweet now (attachment_url and media
+                        // together, as x.com sends them), so a quote no longer keeps a Tweet with media from going
                     );
                 })(t)),
                 t
@@ -70539,7 +70540,7 @@ document.body.addEventListener("click", function (e) {
                         : (0, n.default)("You cannot add more than {{max}} images", {
                               max: s.default.getMaxAllowedImages(e),
                           })
-                    : e.quotedTweet
+                    : e.quotedTweet && l.isTweetTypeMessage(e)
                     ? l.tooltipText.quotedTweet
                     : void 0;
             },
@@ -70558,7 +70559,8 @@ document.body.addEventListener("click", function (e) {
                             (s.default.getMaxAllowedImages(e) > 1 && !o(e))
                         );
                     })(e) &&
-                    !e.quotedTweet
+                    // OldTweetDeck: a quoted Tweet takes images and video now; a message still takes one or the other
+                    !(e.quotedTweet && l.isTweetTypeMessage(e))
                 );
             },
         };

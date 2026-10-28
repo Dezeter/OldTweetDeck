@@ -32,7 +32,7 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
         ["pauseOnHover", true], ["selfThreads", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
-        ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
+        ["emojiPicker", true], ["gifPicker", true], ["medeoFont", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
     expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("OldTweetDeck 5.1.0 · Релизы и обновления · Скопировать диагностику");

@@ -52,6 +52,7 @@ async function main() {
             load("/files/twitter-text.js"),
             // otd-common.js first: the others use window.OTD
             load("/src/otd-common.js"),
+            load("/src/medeo-font.js"),
             load("/src/grok-translate.js"),
             load("/src/hide-home-replies.js"),
             load("/src/self-threads.js"),
