@@ -43,7 +43,7 @@ const items = page => page.evaluate(() => Object.fromEntries([...document.queryS
 }])));
 
 test("a thread has no \"Replying to @author\", and its tweets next to each other are joined by a line", async ({ page }) => {
-    await openColumn(page);
+    await openColumn(page, { OTDthreadsOldestFirst: "0" });
     expect(await items(page)).toEqual({
         "300": { replying: "Replying to @bob", showThread: false, lines: [] },
         "200": { replying: null, showThread: true, lines: [] },
@@ -69,7 +69,7 @@ test("a thread has no \"Replying to @author\", and its tweets next to each other
 });
 
 test("a new tweet above takes its place in the thread, and lines go with tweets that go", async ({ page }) => {
-    await openColumn(page);
+    await openColumn(page, { OTDthreadsOldestFirst: "0" });
     await page.evaluate(() => {
         const chirp = window.__client.processTweet({ id_str: "103", full_text: "four", text: "four", created_at: new Date().toUTCString(), source: "web",
             user: { id_str: "10", screen_name: "alice", name: "alice", profile_image_url_https: "", entities: {} },
@@ -81,6 +81,59 @@ test("a new tweet above takes its place in the thread, and lines go with tweets 
     await expect.poll(async () => Object.fromEntries(Object.entries(await items(page)).map(([key, item]) => [key, item.lines]))).toEqual({
         "300": [], "200": [], "190": [], "103": ["down"], "102": ["down", "up"], "101": ["up"],
     });
+});
+
+// the column's tweets as they're seen, top to bottom, and as they are in the page
+const seen = page => page.evaluate(() => [...document.querySelectorAll(".js-chirp-container > article")].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top).map(a => a.dataset.key));
+const inPage = page => page.evaluate(() => [...document.querySelectorAll(".js-chirp-container > article")].map(a => a.dataset.key));
+
+test("by default a thread reads from its first tweet down, in its place; the page keeps TweetDeck's order", async ({ page }) => {
+    await openColumn(page);
+    expect(await seen(page)).toEqual(["300", "200", "190", "100", "101", "102"]);
+    expect(await inPage(page)).toEqual(["300", "200", "190", "102", "101", "100"]);
+    expect(await items(page)).toMatchObject({
+        "100": { replying: null, showThread: false, lines: ["down"] },
+        "101": { replying: null, showThread: false, lines: ["down", "up"] },
+        // "Show this thread" only where there's more of it before, as the other way round
+        "102": { replying: null, showThread: false, lines: ["up"] },
+    });
+
+    // the thread takes the place the newest of it had, right under the tweets above, and the lines meet
+    const geometry = await page.evaluate(() => {
+        const box = key => document.querySelector(`article[data-key="${key}"]`).getBoundingClientRect();
+        const line = (key, where) => document.querySelector(`article[data-key="${key}"] .otd-thread-line-${where}`).getBoundingClientRect();
+        const avatar = key => document.querySelector(`article[data-key="${key}"] .tweet-header .tweet-img`).getBoundingClientRect();
+        return {
+            slot: Math.round(box("100").top - box("190").bottom),
+            downToNext: [["100", "101"], ["101", "102"]].map(([key, next]) => Math.round(box(next).top - line(key, "down").bottom)),
+            upCentered: Math.abs(line("102", "up").left + 1 - (avatar("102").left + avatar("102").width / 2)) <= 1,
+        };
+    });
+    expect(geometry).toEqual({ slot: 0, downToNext: [0, 0], upCentered: true });
+});
+
+test("a new tweet of the thread goes to its end; a column without a thread is TweetDeck's own", async ({ page }) => {
+    await openColumn(page);
+    // TweetDeck puts it on top in the page
+    await page.evaluate(() => {
+        const chirp = window.__client.processTweet({ id_str: "103", full_text: "four", text: "four", created_at: new Date().toUTCString(), source: "web",
+            user: { id_str: "10", screen_name: "alice", name: "alice", profile_image_url_https: "", entities: {} },
+            entities: { hashtags: [], user_mentions: [], symbols: [], urls: [] }, in_reply_to_status_id_str: "102", in_reply_to_user_id_str: "10", in_reply_to_screen_name: "alice" });
+        window.__chirps["103"] = chirp;
+        document.querySelector('article[data-key="300"]').insertAdjacentHTML("beforebegin", chirp.render({}));
+        // and it's the newest: above all
+        document.querySelector('article[data-key="102"]').before(document.querySelector('article[data-key="103"]'));
+    });
+    await expect.poll(() => seen(page)).toEqual(["300", "200", "190", "100", "101", "102", "103"]);
+    expect(await inPage(page)).toEqual(["300", "200", "190", "103", "102", "101", "100"]);
+
+    // the thread broken up: no order of its own, the container a plain block again
+    await page.evaluate(() => { document.querySelector('article[data-key="101"]').remove(); document.querySelector('article[data-key="102"]').remove(); });
+    await expect.poll(() => page.evaluate(() => {
+        const container = document.querySelector(".js-chirp-container");
+        return [getComputedStyle(container).display, [...container.children].map(child => child.style.order).join("")];
+    })).toEqual(["block", ""]);
+    expect(await seen(page)).toEqual(await inPage(page));
 });
 
 test("only while TweetDeck renders a tweet is a self-reply in a thread: the tweet view, which asks too, keeps its reply box", async ({ page }) => {

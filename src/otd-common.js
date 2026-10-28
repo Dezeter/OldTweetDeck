@@ -22,6 +22,8 @@
             label: { ru: "Не сдвигать колонку новыми твитами, пока над ней курсор", en: "Don't push a column down with new tweets while the pointer is over it" } },
         { key: "selfThreads", storage: "OTDselfThreads", section: "columns",
             label: { ru: "Треды автора: без «Replying to @автор», соседние твиты треда соединены линией", en: "Author's threads: no \"Replying to @author\", neighbouring tweets of a thread joined by a line" } },
+        { key: "threadsOldestFirst", storage: "OTDthreadsOldestFirst", section: "columns",
+            label: { ru: "Треды автора в колонке по порядку: первый твит сверху", en: "Author's threads in a column in order: the first tweet on top" } },
         { key: "tabTitle", storage: "OTDtabTitle", section: "columns",
             label: { ru: "Непрочитанное в заголовке вкладки: «(3) TweetDeck»", en: "Unread in the tab title: \"(3) TweetDeck\"" } },
         { key: "loadAllReplies", storage: "OTDloadAllReplies", section: "tweets",

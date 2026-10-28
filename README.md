@@ -84,6 +84,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Grouping notifications | `OTDgroupNotifications` |
 | Holding a column under the pointer | `OTDpauseOnHover` |
 | An author's threads without "Replying to @author", joined by a line | `OTDselfThreads` |
+| An author's threads in a column from the first tweet down | `OTDthreadsOldestFirst` |
 | Unread in the tab title | `OTDtabTitle` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
@@ -173,7 +174,7 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
 
-A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column (the newest on top, as always) are joined by a line between the avatars.
+A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
