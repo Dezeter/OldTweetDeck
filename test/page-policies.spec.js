@@ -13,24 +13,80 @@ const X_HEADERS = [
 ];
 const POLICIES = /^(content-security-policy|cross-origin-(opener|embedder)-policy)(-report-only)?$/i;
 
-test("Firefox's background script takes x.com's page policies off TweetDeck's page and keeps the rest", async ({ page }) => {
+// Firefox's background script with chrome.* stubbed: its listeners by event in window.__listeners, in the order they
+// listen, tabs reloaded in window.__reloads, storage.local in window.__stored
+const STUB = `
+    const listeners = window.__listeners = {};
+    window.__reloads = [];
+    window.__stored = window.__stored || {};
+    const event = name => ({
+        addListener: (fn, filter, spec) => { (listeners[name] ||= []).push({ fn, filter, spec }); },
+        removeListener: fn => { listeners[name] = (listeners[name] || []).filter(l => l.fn !== fn); },
+    });
+    window.chrome = {
+        webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("beforeSend"), onSendHeaders: event("send"),
+            onResponseStarted: event("started"), onBeforeRequest: event("request") },
+        webNavigation: { onCommitted: event("navigation") },
+        runtime: { onMessage: event("message"), getURL: path => path },
+        tabs: { reload: (tabId, options) => window.__reloads.push([tabId, options]) },
+        storage: { local: { get: (defaults, done) => done({ ...defaults, ...window.__stored }), set: items => Object.assign(window.__stored, items) } },
+    };
+`;
+async function firefoxBackground(page, stored) {
     await openPage(page);
-    const result = await page.evaluate(([source, headers]) => {
-        const listeners = {};
-        const event = name => ({ addListener: (fn, filter, spec) => { (listeners[name] ||= []).push({ fn, filter, spec }); } });
-        window.chrome = {
-            webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("send"), onBeforeRequest: event("request") },
-            webNavigation: { onCommitted: event("navigation") },
-            runtime: { onMessage: event("message"), getURL: path => path },
-            storage: { local: { get: (defaults, done) => done(defaults), set: () => {} } },
-        };
+    await page.evaluate(([stub, source, stored]) => {
+        window.__stored = stored;
+        new Function(stub)();
         new Function(source)();
-        const [listener] = listeners.headers;
+        window.__ask = (action, tabId) => new Promise(resolve => window.__listeners.message[0].fn({ action }, { tab: { id: tabId } }, resolve));
+    }, [STUB, read("src/background.js"), stored || {}]);
+}
+
+test("Firefox's background script takes x.com's page policies off TweetDeck's page and keeps the rest", async ({ page }) => {
+    await firefoxBackground(page);
+    const result = await page.evaluate(headers => {
+        const [listener] = window.__listeners.headers;
         return { filter: listener.filter.urls, spec: listener.spec, headers: listener.fn({ url: "https://x.com/i/tweetdeck", responseHeaders: headers }).responseHeaders.map(h => h.name) };
-    }, [read("src/background.js"), X_HEADERS]);
+    }, X_HEADERS);
     expect(result.filter).toEqual(expect.arrayContaining(["https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*", "https://twitter.com/i/tweetdeck"]));
     expect(result.spec).toEqual(expect.arrayContaining(["blocking", "responseHeaders"]));
     expect(result.headers).toEqual(["strict-transport-security", "Content-Type"]);
+});
+
+test("Firefox's background script listens anew before each request for TweetDeck's page and the watchdog's reload, so its changes come last", async ({ page }) => {
+    await firefoxBackground(page);
+    const result = await page.evaluate(headers => {
+        const listeners = window.__listeners;
+        // another extension's, which rewrites x.com's policy, listening after this one
+        const other = { fn: details => ({ responseHeaders: details.responseHeaders }), filter: { urls: ["<all_urls>"] }, spec: ["blocking", "responseHeaders"] };
+        listeners.headers.push(other);
+        const ours = () => listeners.headers.filter(l => l !== other);
+        const order = () => listeners.headers.map(l => l === other ? "other" : "ours");
+        const before = order();
+        const [send] = listeners.send;
+        send.fn({ url: "https://x.com/i/tweetdeck", type: "main_frame", tabId: 7 });
+        const afterRequest = order();
+        listeners.headers.push(listeners.headers.splice(0, 1)[0]);
+        const moved = order();
+        listeners.message[0].fn({ action: "otdReload" }, { tab: { id: 7 } }, () => {});
+        const afterReload = order();
+        const last = ours()[0];
+        return {
+            before, afterRequest, moved, afterReload,
+            filter: send.filter, spec: last.spec, urls: last.filter.urls,
+            headers: last.fn({ url: "https://x.com/i/tweetdeck", responseHeaders: headers }).responseHeaders.map(h => h.name),
+            reloads: window.__reloads,
+        };
+    }, X_HEADERS);
+    expect(result.before).toEqual(["ours", "other"]);
+    expect(result.afterRequest).toEqual(["other", "ours"]);
+    expect(result.moved).toEqual(["ours", "other"]);
+    expect(result.afterReload).toEqual(["other", "ours"]);
+    expect(result.filter).toEqual({ urls: ["https://twitter.com/i/tweetdeck", "https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*"], types: ["main_frame"] });
+    expect(result.spec).toEqual(expect.arrayContaining(["blocking", "responseHeaders"]));
+    expect(result.urls).toContain("https://x.com/i/tweetdeck");
+    expect(result.headers).toEqual(["strict-transport-security", "Content-Type"]);
+    expect(result.reloads).toEqual([[7, { bypassCache: true }]]);
 });
 
 test("Chrome's rules take the same policies off TweetDeck's page on x.com and twitter.com", () => {
@@ -44,32 +100,34 @@ test("Chrome's rules take the same policies off TweetDeck's page on x.com and tw
     }
 });
 
-test("Firefox's background script tells the load watchdog what it took off a tab's page, and reloads past the cache", async ({ page }) => {
-    await openPage(page);
-    const result = await page.evaluate(async ([source, headers]) => {
-        const listeners = {};
-        const reloads = [];
-        const event = name => ({ addListener: (fn, filter, spec) => { (listeners[name] ||= []).push({ fn, filter, spec }); } });
-        window.chrome = {
-            webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("send"), onBeforeRequest: event("request") },
-            webNavigation: { onCommitted: event("navigation") },
-            runtime: { onMessage: event("message"), getURL: path => path },
-            tabs: { reload: (tabId, options) => reloads.push([tabId, options]) },
-            storage: { local: { get: (defaults, done) => done(defaults), set: () => {} } },
-        };
-        new Function(source)();
-        const ask = (action, tabId) => new Promise(resolve => listeners.message[0].fn({ action }, { tab: { id: tabId } }, resolve));
-        const before = await ask("otdPage", 7);
-        listeners.headers[0].fn({ url: "https://x.com/i/tweetdeck", type: "main_frame", tabId: 7, statusCode: 200, fromCache: false, responseHeaders: headers });
-        listeners.headers[0].fn({ url: "https://x.com/i/tweetdeck?x", type: "xmlhttprequest", tabId: 8, statusCode: 200, responseHeaders: headers });
-        const seen = await ask("otdPage", 7);
-        const other = await ask("otdPage", 8);
+test("Firefox's background script tells the load watchdog what it took off a tab's page, when, and what came back after every extension", async ({ page }) => {
+    await firefoxBackground(page);
+    const result = await page.evaluate(async headers => {
+        const listeners = window.__listeners;
+        const before = await window.__ask("otdPage", 7);
+        const now = Date.now();
+        listeners.headers[0].fn({ url: "https://x.com/i/tweetdeck", type: "main_frame", tabId: 7, requestId: "5", statusCode: 200, fromCache: false, responseHeaders: headers });
+        listeners.headers[0].fn({ url: "https://x.com/i/tweetdeck?x", type: "xmlhttprequest", tabId: 8, requestId: "6", statusCode: 200, responseHeaders: headers });
+        // a copy, as a message is
+        const seen = { ...await window.__ask("otdPage", 7) };
+        const other = await window.__ask("otdPage", 8);
+        // another extension gave the page a policy again; an earlier request of the tab is no news
+        const [started] = listeners.started;
+        started.fn({ type: "main_frame", tabId: 7, requestId: "4", responseHeaders: [] });
+        started.fn({ type: "main_frame", tabId: 7, requestId: "5", responseHeaders: [headers[0], headers.at(-1)] });
+        const left = await window.__ask("otdPage", 7);
         listeners.message[0].fn({ action: "otdReload" }, { tab: { id: 7 } }, () => {});
-        return { before, seen, other, reloads };
-    }, [read("src/background.js"), X_HEADERS]);
+        return { before, seen, other, left, late: seen.at - now, filter: started.filter, spec: started.spec, reloads: window.__reloads };
+    }, X_HEADERS);
     expect(result.before).toBeNull();
-    expect(result.seen).toEqual({ status: 200, fromCache: false, stripped: ["content-security-policy", "content-security-policy-report-only", "cross-origin-opener-policy", "cross-origin-embedder-policy"] });
+    expect(result.seen).toMatchObject({ status: 200, fromCache: false, stripped: ["content-security-policy", "content-security-policy-report-only", "cross-origin-opener-policy", "cross-origin-embedder-policy"], requestId: "5" });
+    expect(result.seen.left).toBeUndefined();
+    expect(result.late).toBeGreaterThanOrEqual(0);
+    expect(result.late).toBeLessThan(1000);
     expect(result.other).toBeNull();
+    expect(result.left.left).toEqual(["content-security-policy"]);
+    expect(result.filter).toEqual({ urls: ["https://twitter.com/i/tweetdeck", "https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*"], types: ["main_frame"] });
+    expect(result.spec).toEqual(["responseHeaders"]);
     expect(result.reloads).toEqual([[7, { bypassCache: true }]]);
 });
 
@@ -113,18 +171,10 @@ test("content.js passes the load watchdog's questions to the background script a
 });
 
 test("Firefox's background script keeps x.com's service worker script from loading while the setting says so, and remembers it", async ({ page }) => {
-    await openPage(page);
-    const result = await page.evaluate(async source => {
-        const listeners = {};
-        const stored = { blockServiceWorker: true };
-        const event = name => ({ addListener: (fn, filter, spec) => { (listeners[name] ||= []).push({ fn, filter, spec }); } });
-        window.chrome = {
-            webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("send"), onBeforeRequest: event("request") },
-            webNavigation: { onCommitted: event("navigation") },
-            runtime: { onMessage: event("message"), getURL: path => path },
-            storage: { local: { get: (defaults, done) => done({ ...defaults, ...stored }), set: items => Object.assign(stored, items) } },
-        };
-        new Function(source)();
+    await firefoxBackground(page, { blockServiceWorker: true });
+    const result = await page.evaluate(async () => {
+        const listeners = window.__listeners;
+        const stored = window.__stored;
         const worker = listeners.request.find(l => l.filter.urls.includes("https://x.com/sw.js*"));
         const load = () => worker.fn({ url: "https://x.com/sw.js", type: "script" }) ?? null;
         const tell = block => listeners.message[0].fn({ action: "otdServiceWorker", block }, { tab: { id: 1 } }, () => {});
@@ -134,7 +184,7 @@ test("Firefox's background script keeps x.com's service worker script from loadi
         tell(true);
         const on = [load(), { ...stored }];
         return { filter: worker.filter.urls, spec: worker.spec, remembered, off, on };
-    }, read("src/background.js"));
+    });
     expect(result).toEqual({
         filter: ["https://x.com/sw.js*", "https://twitter.com/sw.js*"],
         spec: ["blocking"],

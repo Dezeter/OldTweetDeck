@@ -11,9 +11,9 @@ const X_POLICY = "script-src 'nonce-abc'";
 // reloaded: as if the watchdog had reloaded the page a moment ago, so it doesn't again;
 // worker: x.com's service worker answers the page ("registered": it is there, but doesn't), the ones it lets go are
 // counted in sessionStorage.__unregistered; storage: localStorage as the page opens;
-// background: what the background script saw of the page, as content.js answers; false: no answer, nor reloads
-// past the cache, which are counted in sessionStorage.__hardReloads; what it's told of the service worker is in
-// window.__workerTold
+// background: what the background script saw of the page, as content.js answers, its atOffset when it saw it from the
+// start of the page's load; false: no answer, nor reloads past the cache, which are counted in
+// sessionStorage.__hardReloads; what it's told of the service worker is in window.__workerTold
 async function openWatched(page, { headers, routes, reloaded, worker, storage, background = { status: 200, fromCache: false, stripped: [] }, html } = {}) {
     // the page's time stands still between the test's steps
     const now = Date.now();
@@ -29,10 +29,16 @@ async function openWatched(page, { headers, routes, reloaded, worker, storage, b
     if(storage) await page.addInitScript(storage => Object.assign(localStorage, storage), storage);
     await page.addInitScript(background => {
         window.__workerTold = [];
+        // the page's clock has its time origin from its first task on
+        const answer = () => {
+            if(background?.atOffset === undefined) return background;
+            const { atOffset, ...rest } = background;
+            return { ...rest, at: performance.timeOrigin + atOffset };
+        };
         window.addEventListener("message", e => {
             if(e.data?.action === "otdServiceWorker") window.__workerTold.push(e.data.block);
             if(background === false) return;
-            if(e.data?.action === "otdPage") window.postMessage({ otdPage: background }, "*");
+            if(e.data?.action === "otdPage") window.postMessage({ otdPage: answer() }, "*");
             if(e.data?.action === "otdReload") {
                 sessionStorage.__hardReloads = String(Number(sessionStorage.__hardReloads || 0) + 1);
                 location.reload();
@@ -116,27 +122,62 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     expect(await page.evaluate(() => window.__same)).toBe(true);
 });
 
-test("when Firefox keeps x.com's policy the background script took off, the page reloads once more; kept again, the panel", async ({ page }) => {
+test("when Firefox keeps x.com's policy the background script took off, the page reloads once more, and a last time half a minute after the first", async ({ page }) => {
     // the policy still comes with the page here, as Firefox keeps it when the reload moves the tab to another process
     await openWatched(page, { headers: { "content-security-policy": X_POLICY }, background: { status: 200, fromCache: false, stripped: ["content-security-policy", "cross-origin-opener-policy", "cross-origin-embedder-policy"] } });
     await inject(page);
     await reloaded(page, 1000);
     expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("1");
     await inject(page);
+    // the page's clock here starts a little before the time the reload was asked at
+    expect(await askReport(page)).toMatch(/\nLoaded: [^;\n]+, -?\d+\.\d s after the automatic reload was asked; /);
     await reloaded(page, 1000);
     expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
 
-    // no third: the panel, with the reports of both pages before
+    // the panel meanwhile, with how long till the last try
     await inject(page);
     await page.clock.runFor(5000);
     await expect(panel(page)).toBeVisible();
     expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
-    const list = await findings(page);
+    let list = await findings(page);
     expect(list[0]).toContain("in Firefox sometimes after plain x.com in this tab");
+    expect(list[1]).toMatch(/^The page reloads once more in 2\d s: Firefox usually lets go of this policy in about half a minute\.$/);
+    await reloaded(page, 25000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("3");
+
+    // no fourth: the panel, with the reports of the pages before
+    await inject(page);
+    await page.clock.runFor(60000);
+    await expect(panel(page)).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("3");
+    list = await findings(page);
     expect(list[1]).toBe(RELOADED);
     const report = await askReport(page);
-    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nTweeXDeck diagnostics\n/g)).toHaveLength(2);
-    expect(report.match(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy, cross-origin-embedder-policy \(HTTP 200\)\n/g)).toHaveLength(3);
+    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nTweeXDeck diagnostics\n/g)).toHaveLength(3);
+    expect(report.match(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy, cross-origin-embedder-policy \(HTTP 200\)\n/g)).toHaveLength(4);
+});
+
+test("x.com's policy put back by another extension: the report says what the page had after every extension, and when the background script saw it", async ({ page }) => {
+    await openWatched(page, { headers: { "content-security-policy": `${X_POLICY} https://*.twimg.com; connect-src 'self'` }, background: {
+        status: 200, fromCache: false, stripped: ["content-security-policy", "cross-origin-opener-policy"], left: ["content-security-policy"], atOffset: 300,
+    } });
+    // as on the page after the two reloads
+    await page.evaluate(() => Object.assign(sessionStorage, { OTDautoReloadAt: String(Date.now()), OTDautoReloads: "2", OTDautoReloadFirst: String(Date.now()) }));
+    await inject(page);
+    const report = await askReport(page);
+    expect(report).toMatch(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy \(HTTP 200, 0\.3 s into its load\); after every extension's changes it had content-security-policy again\n/);
+    expect(report).toContain("\nPage policy: script-src 'nonce-…' https://*.twimg.com; connect-src 'self'\nBlocked by: script-src 'nonce-…' https://*.twimg.com\n");
+
+    await page.clock.runFor(5000);
+    const list = await findings(page);
+    expect(list).toHaveLength(3);
+    expect(list[1]).toBe("Another extension put x.com's policy back: it changes the page's headers after TweeXDeck. That's usually a userscript manager that rewrites Content-Security-Policy, or a blocker. Switch its CSP changes off for x.com, or switch it off on this page.");
+    expect(list[2]).toMatch(/^The page reloads once more in 2\d s/);
+});
+
+test("an answer about an earlier load of the tab says it isn't this page's", async ({ page }) => {
+    await openWatched(page, { background: { status: 200, fromCache: false, stripped: [], atOffset: -42000 }, reloaded: true });
+    expect(await askReport(page)).toContain("; the background script took off nothing (HTTP 200, 42 s before this page began loading: not its load)\n");
 });
 
 test("stuck with nothing to explain it, the page reloads once and keeps the stuck one's report; stuck again, the panel", async ({ page }) => {

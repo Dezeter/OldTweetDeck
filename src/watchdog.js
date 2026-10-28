@@ -1,9 +1,10 @@
 // Load watchdog: when TweetDeck hasn't started 20 s after the page opened, it reloads the page once, when that
 // may help, and then a panel says what went wrong instead of the endless spinner and copies a report for an
 // issue. When x.com's service worker answers the page, or the page's policy blocked the extension's scripts,
-// which is its doing, it lets the worker go and reloads at once, and once more when Firefox kept the policy the
-// background script took off. It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the
-// other scripts tell it on "otd-diagnostic" events: the steps of injection.js and the extension files that
+// which is its doing, it lets the worker go and reloads at once, once more when Firefox kept the policy the
+// background script took off, and a last time half a minute after the first, as a reload by hand helped then.
+// It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the other
+// scripts tell it on "otd-diagnostic" events: the steps of injection.js and the extension files that
 // didn't load, the transaction id solver, TweetDeck's own steps as it starts, the requests to X and X's answers.
 // A content script that runs before injection.js, so it works when everything injection.js adds is blocked; in
 // Firefox it's in the extension's own world and sees the page's through wrappedJSObject.
@@ -16,12 +17,15 @@
     const DEADLINE = 20000;
     // when the extension's scripts are blocked or missing, TweetDeck won't start, there's no need to wait long
     const DEADLINE_BROKEN = 5000;
-    // one automatic reload (two when Firefox kept x.com's policy), and not again for a while if TweetDeck is stuck
+    // one automatic reload (three when Firefox kept x.com's policy), and not again for a while if TweetDeck is stuck
     // after it too
     const RELOAD_AT = "OTDautoReloadAt";
+    const RELOAD_FIRST = "OTDautoReloadFirst";
     const RELOAD_REPORT = "OTDautoReloadReport";
     const RELOAD_COUNT = "OTDautoReloads";
     const RELOAD_AGAIN_AFTER = 120000;
+    // the last try with x.com's policy kept, after the first reload: a reload by hand that long after loaded TweetDeck
+    const KEPT_RETRY_AFTER = 30000;
     const ISSUES = "https://github.com/Dezeter/TweeXDeck/issues";
     const RU = (navigator.language || "en").toLowerCase().startsWith("ru");
     const T = RU ? {
@@ -29,6 +33,8 @@
         noExtension: "Расширение не запустилось на странице: его скрипт не получил ответа. Перезагрузите страницу; если не поможет — перезапустите браузер или переустановите расширение.",
         files: list => `Не загрузились файлы расширения: ${list}. Переустановите расширение и не удаляйте его файлы после установки.`,
         csp: n => `x.com запретил скрипты расширения (Content-Security-Policy), заблокировано: ${n}. Расширение снимает этот запрет; он остаётся, когда страницу отдаёт service worker x.com из своего кэша, в Firefox — иногда после обычного x.com в этой вкладке, или его возвращает другое расширение.`,
+        putBack: "Запрет x.com вернуло другое расширение: оно меняет заголовки страницы после TweeXDeck. Обычно так делает менеджер пользовательских скриптов, который правит Content-Security-Policy, или блокировщик. Выключите в нём правку CSP для x.com или выключите его на этой странице.",
+        retryIn: n => `Через ${n} с страница перезагрузится ещё раз: обычно Firefox отпускает этот запрет примерно через полминуты.`,
         worker: url => `Страницу TweetDeck отдаёт service worker x.com (${url}), мимо расширения. Удалите его вручную и перезагрузите страницу: about:serviceworkers в Firefox, chrome://serviceworker-internals в Chrome, найдите x.com и нажмите «Unregister».`,
         solver: text => `Не вычисляется x-client-transaction-id, без него X отклоняет часть запросов: ${text}.`,
         auth: "X отвечает 401/403: похоже, вы не вошли в x.com в этом браузере или сессия истекла. Откройте x.com, войдите и перезагрузите эту страницу.",
@@ -46,6 +52,8 @@
         noExtension: "The extension didn't start on the page: its script got no answer. Reload the page; if that doesn't help, restart the browser or reinstall the extension.",
         files: list => `The extension's files didn't load: ${list}. Reinstall the extension and keep its files after installing.`,
         csp: n => `x.com blocked the extension's scripts (Content-Security-Policy), ${n} blocked. The extension takes this policy off; it stays when x.com's service worker answers the page from its cache, in Firefox sometimes after plain x.com in this tab, or when another extension puts it back.`,
+        putBack: "Another extension put x.com's policy back: it changes the page's headers after TweeXDeck. That's usually a userscript manager that rewrites Content-Security-Policy, or a blocker. Switch its CSP changes off for x.com, or switch it off on this page.",
+        retryIn: n => `The page reloads once more in ${n} s: Firefox usually lets go of this policy in about half a minute.`,
         worker: url => `x.com's service worker (${url}) answers TweetDeck's page, past the extension. Remove it by hand and reload the page: about:serviceworkers in Firefox, chrome://serviceworker-internals in Chrome, find x.com and press "Unregister".`,
         solver: text => `x-client-transaction-id can't be computed, and X refuses some requests without it: ${text}.`,
         auth: "X answers 401/403: you're probably not logged in to x.com in this browser or the session expired. Open x.com, log in and reload this page.",
@@ -90,9 +98,12 @@
     const pending = new Map();
     const startup = [];
     // where the page came from: what the background script saw of it (undefined: no answer yet, null: didn't see
-    // it), the policy that blocked scripts, nonces masked, and whether x.com's page had one in a <meta>
+    // it), the policy that blocked scripts and its directive that did, nonces masked, how many policies blocked
+    // anything (extensions' policies are merged with x.com's), and whether x.com's page had one in a <meta>
     let backgroundSaw;
     let policy = "";
+    let blockedBy = "";
+    const policies = new Set();
     let metaPolicy = false;
     let answered = 0;
     let solver = null;
@@ -125,9 +136,21 @@
             else tally(failed, `${entry.method} ${clean(entry.url)} ${status || entry.error || ""}`, { method: String(entry.method), url: clean(entry.url), status, error: entry.error ? String(entry.error) : "" });
         }
     });
+    const mask = text => String(text || "").replace(/'(nonce|sha\d+)-[^']*'/g, "'$1-…'");
+    // script-src-elem falls back on script-src, then default-src
+    function directive(text, name) {
+        const parts = String(text || "").split(";").map(part => part.trim());
+        for(const tried of [name, name.replace(/-(elem|attr)$/, ""), "default-src"]) {
+            const found = parts.find(part => part.split(/\s+/)[0].toLowerCase() === tried);
+            if(found) return found;
+        }
+        return "";
+    }
     document.addEventListener("securitypolicyviolation", e => {
         if(e.disposition !== "enforce") return;
-        policy ||= String(e.originalPolicy || "").replace(/'(nonce|sha\d+)-[^']*'/g, "'$1-…'").slice(0, 600);
+        policy ||= mask(e.originalPolicy).slice(0, 600);
+        blockedBy ||= mask(directive(e.originalPolicy, String(e.effectiveDirective || ""))).slice(0, 600);
+        if(policies.size < 10) policies.add(String(e.originalPolicy || ""));
         const where = e.sourceFile ? ` ${clean(e.sourceFile)}${e.lineNumber ? `:${e.lineNumber}` : ""}` : "";
         tally(csp, `${e.effectiveDirective} ${e.blockedURI}${where}`, { directive: e.effectiveDirective, blocked: clean(e.blockedURI) || "inline", where });
     }, true);
@@ -191,13 +214,27 @@
             return "";
         }
     };
+    // the background script's answer is about the tab's last response for TweetDeck's page: one from before this
+    // page began loading wasn't its own
+    function seen(at) {
+        if(typeof at !== "number") return "";
+        let began;
+        try {
+            began = pageWindow().performance.timeOrigin;
+        } catch(e) {}
+        if(typeof began !== "number") return "";
+        const after = (at - began) / 1000;
+        return after < 0 ? `, ${Math.round(-after)} s before this page began loading: not its load` : `, ${after.toFixed(1)} s into its load`;
+    }
     function background() {
         if(backgroundSaw === undefined) return "no answer from the background script";
         if(backgroundSaw === null) return "the background script didn't see it";
         if(backgroundSaw.rules) return "Chrome's rules took its policies off";
         const stripped = Array.isArray(backgroundSaw.stripped) ? backgroundSaw.stripped.join(", ") : "";
-        return `the background script took off ${stripped || "nothing"} (HTTP ${backgroundSaw.status}${backgroundSaw.fromCache ? ", from the cache" : ""})`;
+        const left = !Array.isArray(backgroundSaw.left) ? "" : `; after every extension's changes ${backgroundSaw.left.length ? `it had ${backgroundSaw.left.join(", ")} again` : "it had none of them"}`;
+        return `the background script took off ${stripped || "nothing"} (HTTP ${backgroundSaw.status}${backgroundSaw.fromCache ? ", from the cache" : ""}${seen(backgroundSaw.at)})${left}`;
     }
+    const putBack = () => Array.isArray(backgroundSaw?.left) && backgroundSaw.left.includes("content-security-policy");
 
     const pageWindow = () => window.wrappedJSObject || window;
     const has = name => {
@@ -221,6 +258,7 @@
         if(files.length) list.push(T.files(files.join(", ")));
         const blocked = scriptsBlocked();
         if(blocked) list.push(T.csp(blocked));
+        if(blocked && putBack()) list.push(T.putBack);
         if(CONTROLLED_BY) list.push(T.worker(clean(CONTROLLED_BY)));
         if(solver && !solver.ok) list.push(T.solver(solver.text));
         const responses = [...failed.values()];
@@ -233,7 +271,8 @@
         const errs = [...errors.values()];
         if(errs.length) list.push(T.errors(errs[0].text, errs.length - 1));
         if(!list.length) list.push(T.nothing);
-        if(reloadedRecently()) list.push(T.reloaded);
+        if(lastTryIn() > 0) list.push(T.retryIn(Math.ceil(lastTryIn() / 1000)));
+        else if(reloadedRecently()) list.push(T.reloaded);
         return list;
     }
     const describe = r => `${r.method} ${r.url} — ${r.status || (r.error ? `${T.notSent} (${r.error})` : T.noAnswer)}`;
@@ -249,6 +288,8 @@
     };
     const reloadedRecently = () => Date.now() - Number(session(RELOAD_AT) || 0) < RELOAD_AGAIN_AFTER;
     const autoReloads = () => reloadedRecently() ? Number(session(RELOAD_COUNT)) || 1 : 0;
+    // this page, opened by the watchdog's reload: how long after it asked (much longer: a reload by hand, probably)
+    const ASKED_AT = reloadedRecently() ? Number(session(RELOAD_AT)) : 0;
 
     // x.com's service worker can answer TweetDeck's page from its cache, with the page policies the extension takes
     // off what comes from the network (it doesn't see what a service worker answers), and then gets every request
@@ -290,8 +331,11 @@
     const reloadMayHelp = () => !scriptsBlocked() && !files.length && ![...failed.values()].some(r => r.status === 401 || r.status === 403);
     // Firefox may keep x.com's policy on a page the background script took it off: when the reload moves the tab
     // out of the process of x.com's cross-origin isolated page (what its service worker answered, or x.com itself a
-    // moment before). Another reload, in the same process, has none.
+    // moment before), or another extension that changes the page's headers after the background script gives it back.
+    // A reload by hand half a minute later had none so far.
     const policyKept = () => scriptsBlocked() && !metaPolicy && Array.isArray(backgroundSaw?.stripped) && backgroundSaw.stripped.includes("content-security-policy");
+    // kept after two reloads: one more, a while after the first
+    const lastTryIn = () => !dismissed && autoReloads() === 2 && policyKept() ? Number(session(RELOAD_FIRST) || 0) + KEPT_RETRY_AFTER - Date.now() : 0;
 
     function report() {
         let version = "";
@@ -310,8 +354,9 @@
             `Steps: ${["extension", "page", "scripts"].map(step => `${step} ${steps[step] ? seconds(steps[step]) : "—"}`).join(", ")}; TD ${has("TD") ? "yes" : "no"}, OTD ${has("OTD") ? "yes" : "no"}`,
             `TweetDeck's steps: ${startup.map(s => `${s.key} ${seconds(s.at)}`).join(", ") || "none"}`,
             `Service worker: ${CONTROLLED_BY ? `controls the page (${clean(CONTROLLED_BY)})` : "none"}${removedWorkers ? `, ${removedWorkers} removed` : ""}`,
-            `Loaded: ${navigation()}${isolated()}; ${background()}`,
-            `Page policy: ${policy || "nothing blocked"}${metaPolicy ? "; x.com's page has one in a <meta>" : ""}`,
+            `Loaded: ${navigation()}${isolated()}${ASKED_AT ? `, ${((START - ASKED_AT) / 1000).toFixed(1)} s after the automatic reload was asked` : ""}; ${background()}`,
+            `Page policy: ${policy || "nothing blocked"}${metaPolicy ? "; x.com's page has one in a <meta>" : ""}${policies.size > 1 ? `; ${policies.size} policies blocked scripts` : ""}`,
+            ...(blockedBy ? [`Blocked by: ${blockedBy}`] : []),
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
@@ -413,6 +458,7 @@
             if(waited >= DEADLINE && reloadMayHelp()) return reload();
         }
         else if(!host && autoReloads() < 2 && policyKept()) return reload();
+        else if(autoReloads() === 2 && policyKept() && lastTryIn() <= 0) return reload();
         if(waited >= DEADLINE || (waited >= DEADLINE_BROKEN && (scriptsBlocked() || files.length))) show();
     }, 1000);
 
@@ -423,6 +469,7 @@
         const count = autoReloads() + 1;
         session(RELOAD_REPORT, count > 1 ? report() : report().split("\n\nBefore the automatic reload")[0]);
         session(RELOAD_COUNT, String(count));
+        if(count === 1) session(RELOAD_FIRST, String(Date.now()));
         session(RELOAD_AT, String(Date.now()));
         // past the browser's cache and the service worker, by the background script; a plain one if that doesn't come
         window.postMessage({ action: "otdReload" }, "*");

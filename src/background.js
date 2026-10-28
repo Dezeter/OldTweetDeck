@@ -16,25 +16,49 @@ const STRIPPED_HEADERS = [
     'location',
 ];
 
-// what this script saw of TweetDeck's page, by tab, for the load watchdog's report (watchdog.js)
+const TWEETDECK_PAGE = ["https://twitter.com/i/tweetdeck", "https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*"];
+const policiesOf = headers => headers.map(header => header.name.toLowerCase()).filter(name => STRIPPED_HEADERS.includes(name));
+
+// what this script saw of TweetDeck's page, by tab, for the load watchdog's report (watchdog.js): when, what it
+// took off, and what of it the page still had after every extension's listener
 const pages = {};
 
-chrome.webRequest.onHeadersReceived.addListener(
+function stripPolicies(details) {
+    let headers = details.responseHeaders.filter(header => !STRIPPED_HEADERS.includes(header.name.toLowerCase()));
+    if(details.type === "main_frame") {
+        pages[details.tabId] = {
+            status: details.statusCode,
+            fromCache: !!details.fromCache,
+            stripped: policiesOf(details.responseHeaders),
+            at: Date.now(),
+            requestId: details.requestId,
+        };
+    }
+    return {
+        responseHeaders: headers
+    }
+}
+// Firefox applies what the extensions' listeners return in the order they started listening, and a CSP one of them
+// sets after this one took x.com's off is merged with nothing and stays: an extension that rewrites x.com's policy
+// (to let its own scripts in) and started listening later gives the page x.com's policy back. Listening anew
+// before each request for TweetDeck's page and before the watchdog's reload makes this listener the last one.
+let stripping = null;
+function listenLast() {
+    const listener = details => stripPolicies(details);
+    // the new one before the old one goes, so a response between the two still has one
+    chrome.webRequest.onHeadersReceived.addListener(listener, {urls: TWEETDECK_PAGE}, extraInfoSpec);
+    if(stripping) chrome.webRequest.onHeadersReceived.removeListener(stripping);
+    stripping = listener;
+}
+listenLast();
+chrome.webRequest.onSendHeaders.addListener(() => listenLast(), {urls: TWEETDECK_PAGE, types: ["main_frame"]});
+chrome.webRequest.onResponseStarted.addListener(
     function(details) {
-        let headers = details.responseHeaders.filter(header => !STRIPPED_HEADERS.includes(header.name.toLowerCase()));
-        if(details.type === "main_frame") {
-            pages[details.tabId] = {
-                status: details.statusCode,
-                fromCache: !!details.fromCache,
-                stripped: details.responseHeaders.map(header => header.name.toLowerCase()).filter(name => STRIPPED_HEADERS.includes(name)),
-            };
-        }
-        return {
-            responseHeaders: headers
-        }
+        const page = pages[details.tabId];
+        if(page?.requestId === details.requestId) page.left = policiesOf(details.responseHeaders || []);
     },
-    {urls: ["https://twitter.com/i/tweetdeck", "https://x.com/i/tweetdeck", "https://x.com/i/tweetdeck?*"]},
-    extraInfoSpec
+    {urls: TWEETDECK_PAGE, types: ["main_frame"]},
+    ["responseHeaders"]
 );
 
 // Settings "blockServiceWorker": x.com's service worker script isn't loaded, so x.com can't register it again and
@@ -189,7 +213,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         sendResponse(page);
         return page;
     } else if(request.action === 'otdReload') {
-        // past the browser's cache and x.com's service worker, as Ctrl+Shift+R
+        // past the browser's cache and x.com's service worker, as Ctrl+Shift+R, with this script's listener last
+        listenLast();
         if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
     } else if(request.action === 'otdServiceWorker') {
         blockServiceWorker = request.block === true;
