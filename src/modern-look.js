@@ -41,7 +41,11 @@
         html.otd-modern:not(.dark) .other-replies a:not(:hover),
         html.otd-modern:not(.dark) .js-show-this-thread .color-twitter-blue { color: #1570c4; }
 
-        html.otd-modern .tweet-action, html.otd-modern .tweet-detail-action { position: relative; z-index: 0; }
+        /* the circle is the button's middle, so the button is its icon's height and the icon in the middle of its own:
+           with the counts on TweetDeck floats the icon and the count, and the button around them would be 0px tall;
+           an opened tweet's icon has a line taller than itself, its middle 2.6px under the icon's */
+        html.otd-modern .tweet-action, html.otd-modern .tweet-detail-action { position: relative; z-index: 0; display: flow-root; }
+        html.otd-modern .tweet-action .icon, html.otd-modern .tweet-detail-action .icon { line-height: 1; }
         html.otd-modern .tweet-action::after, html.otd-modern .tweet-detail-action::after {
             content: ""; position: absolute; z-index: -1; left: -7px; top: 50%; width: 32px; height: 32px; margin-top: -16px;
             border-radius: 50%; transition: background-color .15s;

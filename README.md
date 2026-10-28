@@ -167,7 +167,7 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 Settings → TweeXDeck → Media → "Media in columns" sets how a tweet's photos and videos show in a column:
 
-- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Several photos are TweetDeck's grid in the square (or the first one with "+2"), a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
+- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Of several photos the square has the first, with "+2" for the others, a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
 - **Whole**: a tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 - **A strip, as in TweetDeck**.
 
@@ -197,7 +197,7 @@ After them, **Flex**: columns that share the window, each from 310 up to 480px, 
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is. TweetDeck's "N New Tweets" over the column counts the ones that came; it, or a scroll to the top, brings them in, and with the pointer still over the column it holds still again.
 
-A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
+A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under their text, over the buttons. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
