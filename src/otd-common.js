@@ -54,8 +54,6 @@
             label: { ru: "Кнопка «Эмодзи» в окне твита", en: "\"Emoji\" button in the tweet box" } },
         { key: "gifPicker", storage: "OTDgifPicker", section: "compose",
             label: { ru: "Кнопка «GIF» в окне твита: поиск GIF на X", en: "\"GIF\" button in the tweet box: X's GIF search" } },
-        { key: "medeoFont", storage: "OTDmedeoFont", section: "other",
-            label: { ru: "Шрифт Medeo Sans вместо системного", en: "Medeo Sans font instead of the system one" } },
         { key: "blockServiceWorker", storage: "OTDblockServiceWorker", section: "other", default: false,
             label: { ru: "Не давать x.com ставить свой service worker: TweetDeck не будет зависать при запуске, но уведомления X в браузере перестанут приходить", en: "Keep x.com's service worker off: TweetDeck won't get stuck at start, but X's notifications in the browser stop" } },
         { key: "loadWatchdog", storage: "OTDloadWatchdog", section: "other",
@@ -63,6 +61,15 @@
     ];
     // the language tweets and articles are translated to
     const LANG_STORAGE = "OTDgrokTranslateLang";
+    // the font of TweetDeck's text, picked in the settings tab and drawn by fonts.js: TweetDeck's own system fonts
+    // without the key, or one of these from files/fonts/<key>, all under the SIL Open Font License 1.1
+    const FONT_STORAGE = "OTDfont";
+    const FONTS = [
+        { key: "golos", name: "Golos Text", weight: "400 900" },
+        { key: "onest", name: "Onest", weight: "100 900" },
+        { key: "inter", name: "Inter", weight: "100 900" },
+        { key: "manrope", name: "Manrope", weight: "200 800" },
+    ];
 
     function feature(key) {
         const found = FEATURES.find(f => f.key === key);
@@ -318,5 +325,5 @@
         html.dark .dropdown-menu [data-otd-action], .dropdown-menu .is-selected [data-otd-action] { color: #fff; }
     `);
 
-    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, FONT_STORAGE, FONTS, isOn, setOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
 })();
