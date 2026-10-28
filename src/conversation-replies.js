@@ -1,11 +1,12 @@
 // Loads all replies in the tweet detail view. TweetDeck reads only the first page of
 // /2/timeline/conversation and skips its cursors: the next page and the replies X hides behind
 // "Show more replies" / "Show probable spam". This follows them and hands TweetDeck one merged response.
+// interception.js asks X with TweetDetail and turns its pages into /2/timeline/conversation's (conversationTimeline).
 // Loaded by injection.js after interception.js and otd-common.js, and builds on interception.js's route.
 // Switch "loadAllReplies".
 (() => {
     if(!OTD.isOn("loadAllReplies")) return;
-    if(typeof proxyRoutes === "undefined") return;
+    if(typeof proxyRoutes === "undefined" || typeof conversationTimeline !== "function") return;
 
     const route = proxyRoutes.find(r => r && r.path instanceof RegExp && r.path.source.includes("timeline\\/conversation"));
     // upstream handling it on its own one day means this is no longer needed
@@ -19,6 +20,16 @@
 
     const cursorOf = entry => entry.content?.operation?.cursor;
     const addEntriesOf = data => data?.timeline?.instructions?.find(i => i.addEntries)?.addEntries;
+    // TweetDetail takes the cursor to its next page among its variables
+    function withCursor(url, cursor) {
+        const next = new URL(url);
+        let variables = {};
+        try {
+            variables = JSON.parse(next.searchParams.get("variables") || "{}");
+        } catch(e) {}
+        next.searchParams.set("variables", JSON.stringify({ ...variables, cursor }));
+        return next.toString();
+    }
     const report = entry => document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", method: "GET", ...entry }) }));
 
     async function getPage(url, headers, retry = true) {
@@ -55,12 +66,14 @@
         const first = await getPage(url, headers);
         let data;
         try {
-            data = JSON.parse(first.text);
+            data = conversationTimeline(JSON.parse(first.text));
         } catch(e) {
             return { ...first, ok: false };
         }
         const base = addEntriesOf(data);
-        if(!first.ok || !base || !data.globalObjects) return first;
+        if(!first.ok) return first;
+        // X's errors come with 200 too, when the tweet is deleted or hidden: TweetDeck needs an error to say so
+        if(!base || !Object.keys(data.globalObjects?.tweets || {}).length) return { ...first, ok: false, status: 404 };
 
         const seen = new Set(base.entries.map(e => e.entryId));
         const nextCursor = () => base.entries.findIndex(e => e.entryId.startsWith("cursor-") && !e.entryId.startsWith("cursor-top") && cursorOf(e)?.value);
@@ -93,13 +106,11 @@
             if(at === -1) break;
             const [cursorEntry] = base.entries.splice(at, 1);
 
-            const next = new URL(url);
-            next.searchParams.set("cursor", cursorOf(cursorEntry).value);
             let more;
             try {
-                const res = await getPage(next.toString(), headers);
+                const res = await getPage(withCursor(url, cursorOf(cursorEntry).value), headers);
                 if(!res.ok) throw res.status;
-                more = JSON.parse(res.text);
+                more = conversationTimeline(JSON.parse(res.text));
             } catch(e) {
                 complete = false;
                 break;
