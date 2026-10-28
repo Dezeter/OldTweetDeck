@@ -9,8 +9,10 @@ test.use({ locale: "en-US" });
 const X_POLICY = "script-src 'nonce-abc'";
 
 // reloaded: as if the watchdog had reloaded the page a moment ago, so it doesn't again;
-// worker: x.com's service worker answers the page, the ones it lets go are counted in sessionStorage.__unregistered
-async function openWatched(page, { headers, routes, reloaded, worker } = {}) {
+// worker: x.com's service worker answers the page, the ones it lets go are counted in sessionStorage.__unregistered;
+// background: what the background script saw of the page, as content.js answers; false: no answer, nor reloads
+// past the cache, which are counted in sessionStorage.__hardReloads
+async function openWatched(page, { headers, routes, reloaded, worker, background = { status: 200, fromCache: false, stripped: [] }, html } = {}) {
     // the page's time stands still between the test's steps
     const now = Date.now();
     await page.clock.install({ time: now });
@@ -22,13 +24,23 @@ async function openWatched(page, { headers, routes, reloaded, worker } = {}) {
         } };
         Object.defineProperty(navigator, "serviceWorker", { value: { controller: { scriptURL: "https://x.com/sw.js?v=1" }, getRegistrations: async () => [registration] } });
     });
+    await page.addInitScript(background => {
+        if(background === false) return;
+        window.addEventListener("message", e => {
+            if(e.data?.action === "otdPage") window.postMessage({ otdPage: background }, "*");
+            if(e.data?.action === "otdReload") {
+                sessionStorage.__hardReloads = String(Number(sessionStorage.__hardReloads || 0) + 1);
+                location.reload();
+            }
+        });
+    }, background);
     await page.addInitScript({ path: path.join(ROOT, "src/watchdog.js") });
     // what the copy button puts on the clipboard
     await page.addInitScript(() => {
         Object.defineProperty(navigator, "clipboard", { value: { writeText: async text => { window.__copied = text; } } });
     });
     // the page itself with x.com's headers
-    if(headers) routes = { ...routes, "http://otd.test/i/tweetdeck": route => route.fulfill({ headers: { "content-type": "text/html", ...headers }, body: read("files/index.html") }) };
+    if(headers || html) routes = { ...routes, "http://otd.test/i/tweetdeck": route => route.fulfill({ headers: { "content-type": "text/html", ...headers }, body: html || read("files/index.html") }) };
     await openPage(page, { routes });
     if(reloaded) await page.evaluate(() => { sessionStorage.OTDautoReloadAt = String(Date.now()); });
 }
@@ -65,6 +77,7 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     await inject(page);
     expect(await page.evaluate(() => window.__ran ?? false)).toBe(false);
     await reloaded(page, 1000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("1");
 
     // the new page's time starts about a second off, after the reload
     await inject(page);
@@ -85,6 +98,9 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     expect(report).toContain("TweetDeck: not started");
     expect(report).toContain("Steps: extension 0 s, page 0 s, scripts 0 s; TD no, OTD no\n");
     expect(report).toContain("\nService worker: none\n");
+    // the page's clock here takes performance's navigation entry; the extension's test has it
+    expect(report).toMatch(/\nLoaded: [^;\n]+; the background script took off nothing \(HTTP 200\)\n/);
+    expect(report).toContain("\nPage policy: script-src 'nonce-…'\n");
     expect(report).toMatch(/\n {2}script-src-elem inline\b.* ×1, first at 0 s\n/);
 
     // hidden for good, and no reload: it wouldn't help
@@ -124,6 +140,7 @@ test("a page x.com's service worker answers: the worker goes and the page reload
     await openWatched(page, { worker: true });
     await reloaded(page, 1000);
     expect(await page.evaluate(() => sessionStorage.__unregistered)).toBe("1");
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("1");
     expect(await askReport(page)).toMatch(/\nBefore the automatic reload at [^\n]+\n[^]*\nService worker: controls the page \(x\.com\/sw\.js\), 1 removed\n/);
 
     // still answered by it after the reload (a stub here): no more reloads, the panel says how to remove it by hand
@@ -134,6 +151,25 @@ test("a page x.com's service worker answers: the worker goes and the page reload
         RELOADED,
     ]);
     expect(await page.evaluate(() => sessionStorage.__unregistered)).toBe("1");
+});
+
+test("a policy in a <meta> of x.com's page, and what the background script took off, are in the report", async ({ page }) => {
+    await openWatched(page, {
+        html: `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="script-src 'nonce-abc123' 'self'"></head><body>x.com</body></html>`,
+        background: { status: 200, fromCache: true, stripped: ["content-security-policy", "cross-origin-opener-policy"] },
+    });
+    await inject(page);
+    await reloaded(page, 1000);
+    const report = (await askReport(page)).split("Before the automatic reload")[1];
+    expect(report).toContain("\nPage policy: script-src 'nonce-…' 'self'; x.com's page has one in a <meta>\n");
+    expect(report).toContain("; the background script took off content-security-policy, cross-origin-opener-policy (HTTP 200, from the cache)\n");
+});
+
+test("when the background script doesn't reload, a plain reload does", async ({ page }) => {
+    await openWatched(page, { worker: true, background: false });
+    await reloaded(page, 3000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads ?? null)).toBeNull();
+    expect(await askReport(page)).toMatch(/\nLoaded: [^\n]+; no answer from the background script\n/);
 });
 
 test("after a reload, without errors it waits 20 s, and goes away when TweetDeck starts after all", async ({ page }) => {
