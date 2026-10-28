@@ -32,23 +32,23 @@ jobs:
         run: npm run build
 
       - name: Unzip extension
-        run: unzip -qq ./build/OldTweetDeckChrome.zip -d build/OldTweetDeckChrome; unzip -qq ./build/OldTweetDeckFirefox.zip -d build/OldTweetDeckFirefox
+        run: unzip -qq ./build/TweeXDeckChrome.zip -d build/TweeXDeckChrome; unzip -qq ./build/TweeXDeckFirefox.zip -d build/TweeXDeckFirefox
         working-directory: ${{ github.workspace }}
         
       - name: Upload for Firefox
         uses: actions/upload-artifact@v4
         with:
-          name: OldTweetDeckFirefox
-          path: ${{ github.workspace }}/build/OldTweetDeckFirefox
+          name: TweeXDeckFirefox
+          path: ${{ github.workspace }}/build/TweeXDeckFirefox
       - name: Upload for Chromium
         uses: actions/upload-artifact@v4
         with:
-          name: OldTweetDeckChrome
-          path: ${{ github.workspace }}/build/OldTweetDeckChrome
+          name: TweeXDeckChrome
+          path: ${{ github.workspace }}/build/TweeXDeckChrome
 
       - name: Attach to release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" build/OldTweetDeckChrome.zip build/OldTweetDeckFirefox.zip --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" build/TweeXDeckChrome.zip build/TweeXDeckFirefox.zip --clobber --repo "$GITHUB_REPOSITORY"

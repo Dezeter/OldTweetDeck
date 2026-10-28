@@ -1,4 +1,4 @@
-// The font of all of TweetDeck's text, picked in Settings → OldTweetDeck (OTD.FONTS, OTD.FONT_STORAGE): without
+// The font of all of TweetDeck's text, picked in Settings → TweeXDeck (OTD.FONTS, OTD.FONT_STORAGE): without
 // a pick TweetDeck keeps its own system fonts. The fonts are in files/fonts/<key>, from Fontsource's variable
 // packages, each with its OFL.txt: Latin and Cyrillic in four files, every one with its unicode range, so other
 // scripts and emoji fall back to the system fonts. The files are fetched from the extension and handed to the

@@ -6482,8 +6482,9 @@ document.body.addEventListener("click", function (e) {
                 v = {},
                 T = {};
             v.NEW_COMPOSER_OPT_IN = "new_composer_opt_in";
+            // TweeXDeck: "superwide" columns, 400px, after TweetDeck's three
             var w = ["previous_splash_version", "dataminr_auth_token"],
-                b = ["narrow", "medium", "wide"];
+                b = ["narrow", "medium", "wide", "superwide"];
             v.COLUMN_WIDTH_VALUES = b;
             var y = ["smallest", "small", "medium", "large", "largest"];
             v.FONT_SIZE_VALUES = y;
@@ -9035,7 +9036,7 @@ document.body.addEventListener("click", function (e) {
             s = i(9);
         (n = s) && n.__esModule;
         (TD.buildID = "eaa4dd9d220d59ad2697caa42876b7d8f3073c67"),
-            (TD.buildIDShort = "oldtweetdeck"),
+            (TD.buildIDShort = "tweexdeck"),
             (TD.version = "4.0.220811153004"),
             (TD.config = i(1812)),
             (e.exports = TD.config);
@@ -16318,7 +16319,7 @@ document.body.addEventListener("click", function (e) {
                         !(e.isJustWhitespace && !e.hasMediaAttached) &&
                         !!e.safeguardingOk &&
                         !!e.schedulingOk
-                        // OldTweetDeck: X takes images and video with a quoted Tweet now (attachment_url and media
+                        // TweeXDeck: X takes images and video with a quoted Tweet now (attachment_url and media
                         // together, as x.com sends them), so a quote no longer keeps a Tweet with media from going
                     );
                 })(t)),
@@ -17691,7 +17692,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                `<span class="inline-block"><a href="https://github.com/Dezeter/OldTweetDeck" target="_blank">OldTweetDeck</a>, based on <a href="https://github.com/dimdenGD/OldTweetDeck" target="_blank">OldTweetDeck by dimden</a></span> <span class="aria-hidden">&middot;</span> <span class="inline-block">{{version}}</span>
+                `<span class="inline-block"><a href="https://github.com/Dezeter/TweeXDeck" target="_blank">TweeXDeck</a>, based on <a href="https://github.com/dimdenGD/OldTweetDeck" target="_blank">OldTweetDeck by dimden</a></span> <span class="aria-hidden">&middot;</span> <span class="inline-block">{{version}}</span>
 				<br><br>
 				<button class="Button--primary" onclick="importState()">
 					<span class="label">
@@ -18276,7 +18277,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<section class="js-login-form form-login startflow-panel-rounded" data-auth-type="twitter" aria-labelledby="login-form-title"> <h2 class="form-legend padding-axl" id="login-form-title"> {{_i}}Log in with your Twitter account{{/i}} </h2> <div class="margin-a--16"> {{> login/login_form_message}} <a href="{{twitterLoginUrl}}" class="Button Button--primary block txt-size--18 txt-center"> Log in </a> </div> <div class="divider-bar margin-v--0 margin-h--16"></div> <div class="padding-axl"> <a href="https://github.com/Dezeter/OldTweetDeck" class="startflow-link" rel="url" target="_blank">github.com/Dezeter/OldTweetDeck &raquo;</a></p> </div> </section>');
+                '<section class="js-login-form form-login startflow-panel-rounded" data-auth-type="twitter" aria-labelledby="login-form-title"> <h2 class="form-legend padding-axl" id="login-form-title"> {{_i}}Log in with your Twitter account{{/i}} </h2> <div class="margin-a--16"> {{> login/login_form_message}} <a href="{{twitterLoginUrl}}" class="Button Button--primary block txt-size--18 txt-center"> Log in </a> </div> <div class="divider-bar margin-v--0 margin-h--16"></div> <div class="padding-axl"> <a href="https://github.com/Dezeter/TweeXDeck" class="startflow-link" rel="url" target="_blank">github.com/Dezeter/TweeXDeck &raquo;</a></p> </div> </section>');
     },
     function (e, t, i) {
         "use strict";
@@ -18452,7 +18453,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<ul> <li><b class="non-selectable-item txt-ellipsis"> @{{account}} </b></li> <li class="drp-h-divider"></li> {{#showReleaseNotesLink}} <li class="is-selectable"> <a href="https://github.com/Dezeter/OldTweetDeck/releases" rel="url noopener noreferrer" class="release-notes-item" target="_blank">{{_i}}Release page{{/i}}</a> </li> {{/showReleaseNotesLink}} {{^isTouchDevice}} <li class="is-selectable"> <a href="#" data-action="keyboardShortcutList">{{_i}}Keyboard shortcuts{{/i}}</a> </li> {{/isTouchDevice}} <li class="is-selectable"> <a href="#" data-action="searchOperatorList">{{_i}}Search tips{{/i}}</a> </li> <li class="is-selectable"> <a href="#" data-action="globalSettings">{{_i}}Settings{{/i}}</a> </li> {{#showUpdateAvailable}} <li class="drp-h-divider"></li> <li class="is-selectable margin-v---6"> <a href="#" data-action="updateAvailable" class="update-available-item padding-v--10"> {{_i}}Update TweetDeck{{/i}} </a> </li> {{/showUpdateAvailable}} {{#showDisableDogfood}} <li class="drp-h-divider"></li> <li class="is-selectable margin-v---6"> <a href="#" data-action="disableDogfood" class="update-available-item padding-v--10"> {{_i}}Disable dev/dogfood features{{/i}} </a> </li> {{/showDisableDogfood}} <li class="drp-h-divider"></li> <li class="is-selectable"> <a href="#" data-action="signOut">{{_i}}Log out{{/i}}</a> </li> </ul>');
+                '<ul> <li><b class="non-selectable-item txt-ellipsis"> @{{account}} </b></li> <li class="drp-h-divider"></li> {{#showReleaseNotesLink}} <li class="is-selectable"> <a href="https://github.com/Dezeter/TweeXDeck/releases" rel="url noopener noreferrer" class="release-notes-item" target="_blank">{{_i}}Release page{{/i}}</a> </li> {{/showReleaseNotesLink}} {{^isTouchDevice}} <li class="is-selectable"> <a href="#" data-action="keyboardShortcutList">{{_i}}Keyboard shortcuts{{/i}}</a> </li> {{/isTouchDevice}} <li class="is-selectable"> <a href="#" data-action="searchOperatorList">{{_i}}Search tips{{/i}}</a> </li> <li class="is-selectable"> <a href="#" data-action="globalSettings">{{_i}}Settings{{/i}}</a> </li> {{#showUpdateAvailable}} <li class="drp-h-divider"></li> <li class="is-selectable margin-v---6"> <a href="#" data-action="updateAvailable" class="update-available-item padding-v--10"> {{_i}}Update TweetDeck{{/i}} </a> </li> {{/showUpdateAvailable}} {{#showDisableDogfood}} <li class="drp-h-divider"></li> <li class="is-selectable margin-v---6"> <a href="#" data-action="disableDogfood" class="update-available-item padding-v--10"> {{_i}}Disable dev/dogfood features{{/i}} </a> </li> {{/showDisableDogfood}} <li class="drp-h-divider"></li> <li class="is-selectable"> <a href="#" data-action="signOut">{{_i}}Log out{{/i}}</a> </li> </ul>');
     },
     function (e, t, i) {
         "use strict";
@@ -18720,7 +18721,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<fieldset id="general_settings"> <legend>{{_i}}General Settings{{/i}}</legend> <div class="control-group"> <div> <i class="js-streaming-updates icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="streaming-updates"></i> <span class="margin-l--4">{{_i}}Stream Tweets in realtime{{/i}}</span> </div> <div> <i class="js-show-startup-notifications icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-startup-notifications"></i> <span class="margin-l--4">{{_i}}Show notifications on startup{{/i}}</span> </div> <div> <i class="js-display-sensitive-media icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="display-sensitive-media"></i> <span class="margin-l--4">{{_i}}Display media that may contain sensitive content{{/i}}</span> </div> <div> <i class="js-auto-play-gifs icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="auto-play-gifs"></i> <span class="margin-l--4">{{_i}}Autoplay GIFs{{/i}}</span> </div> <div> <i class="js-enable-auto-expand icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="enable-auto-expand"></i> <span class="margin-l--4">{{_i}}Enable tweet auto expand (OldTweetDeck){{/i}}</span> </div> <div> <i class="js-show-all-replies-in-home icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-all-replies-in-home"></i> <span class="margin-l--4">{{_i}}Show all replies in home column (OldTweetDeck){{/i}}</span> </div> <div class="divider-bar"></div> <div class="cf"> <div class="obj-left js-theme"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Theme{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="dark"> {{_i}}Dark{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="light"> {{_i}}Light{{/i}} </label> </div> <div class="obj-left js-column-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Columns{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="narrow"> {{_i}}Narrow{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="wide"> {{_i}}Wide{{/i}} </label> </div> <div class="obj-left js-font-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Font size{{/i}}</b></label> <label class="txt-size--12 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="smallest"> {{_i}}Smallest{{/i}} </label> <label class="txt-size--13 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="small"> {{_i}}Small{{/i}} </label> <label class="txt-size--14 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="txt-size--15 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="large"> {{_i}}Large{{/i}} </label> <label class="txt-size--16 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="largest"> {{_i}}Largest{{/i}} </label> </div> </div> </div> <div class="mdl-links"> {{> app_links}} </div> </fieldset>');
+                '<fieldset id="general_settings"> <legend>{{_i}}General Settings{{/i}}</legend> <div class="control-group"> <div> <i class="js-streaming-updates icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="streaming-updates"></i> <span class="margin-l--4">{{_i}}Stream Tweets in realtime{{/i}}</span> </div> <div> <i class="js-show-startup-notifications icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-startup-notifications"></i> <span class="margin-l--4">{{_i}}Show notifications on startup{{/i}}</span> </div> <div> <i class="js-display-sensitive-media icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="display-sensitive-media"></i> <span class="margin-l--4">{{_i}}Display media that may contain sensitive content{{/i}}</span> </div> <div> <i class="js-auto-play-gifs icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="auto-play-gifs"></i> <span class="margin-l--4">{{_i}}Autoplay GIFs{{/i}}</span> </div> <div> <i class="js-enable-auto-expand icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="enable-auto-expand"></i> <span class="margin-l--4">{{_i}}Enable tweet auto expand (TweeXDeck){{/i}}</span> </div> <div> <i class="js-show-all-replies-in-home icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-all-replies-in-home"></i> <span class="margin-l--4">{{_i}}Show all replies in home column (TweeXDeck){{/i}}</span> </div> <div class="divider-bar"></div> <div class="cf"> <div class="obj-left js-theme"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Theme{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="dark"> {{_i}}Dark{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="light"> {{_i}}Light{{/i}} </label> </div> <div class="obj-left js-column-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Columns{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="narrow"> {{_i}}Narrow{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="wide"> {{_i}}Wide{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="superwide"> {{_i}}Super wide{{/i}} </label> </div> <div class="obj-left js-font-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Font size{{/i}}</b></label> <label class="txt-size--12 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="smallest"> {{_i}}Smallest{{/i}} </label> <label class="txt-size--13 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="small"> {{_i}}Small{{/i}} </label> <label class="txt-size--14 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="txt-size--15 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="large"> {{_i}}Large{{/i}} </label> <label class="txt-size--16 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="largest"> {{_i}}Largest{{/i}} </label> </div> </div> </div> <div class="mdl-links"> {{> app_links}} </div> </fieldset>');
     },
     function (e, t, i) {
         "use strict";
@@ -18772,7 +18773,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<div class="release-notes-header nbfc"> <img class="release-notes-image pull-left" src="{{#asset}}/logos/64.png{{/asset}}" alt="{{_i}}TweetDeck logo{{/i}}"> <h1 class="release-notes-header-title">{{_i}}Welcome to OldTweetDeck{{/i}}</h1> </div> <div class="release-notes"> <div class="release-notes-section nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_01.png{{/asset}}" alt="{{_i}}Create Collections{{/i}}"> <h2>{{_i}}Create a custom Twitter experience{{/i}}</h2> <p>{{_i}}Organize and build Collections, keep track of Lists, searches, activity and more. Click the + in the sidebar.{{/i}}</p> </div> <div class="release-notes-section nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_02.png{{/asset}}" alt="{{_i}}Create filters{{/i}}"> <h2>{{_i}}Find exactly what you&rsquo;re looking for{{/i}}</h2> <p>{{_i}}Create searches to track topics, events and hashtags. Refine the results with filters at the top of each timeline.{{/i}}</p> </div> <div class="release-notes-section margin-bn nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_03.png{{/asset}}" alt="{{_i}}Multiple accounts{{/i}}"> <h2>{{_i}}Manage multiple accounts{{/i}}</h2> <p>{{_i}}Tweet, monitor and follow new accounts from all &mdash; or just one of your accounts. Add another account in <a href="#" data-action="openSettings"><i class="icon icon-user-switch icon-bot"></i> Accounts</a>.{{/i}}</p> </div> </div> <button class="js-done Button--primary obj-center margin-tl"><i class="add"></i>{{_i}}Get started{{/i}}</button>');
+                '<div class="release-notes-header nbfc"> <img class="release-notes-image pull-left" src="{{#asset}}/logos/64.png{{/asset}}" alt="{{_i}}TweetDeck logo{{/i}}"> <h1 class="release-notes-header-title">{{_i}}Welcome to TweeXDeck{{/i}}</h1> </div> <div class="release-notes"> <div class="release-notes-section nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_01.png{{/asset}}" alt="{{_i}}Create Collections{{/i}}"> <h2>{{_i}}Create a custom Twitter experience{{/i}}</h2> <p>{{_i}}Organize and build Collections, keep track of Lists, searches, activity and more. Click the + in the sidebar.{{/i}}</p> </div> <div class="release-notes-section nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_02.png{{/asset}}" alt="{{_i}}Create filters{{/i}}"> <h2>{{_i}}Find exactly what you&rsquo;re looking for{{/i}}</h2> <p>{{_i}}Create searches to track topics, events and hashtags. Refine the results with filters at the top of each timeline.{{/i}}</p> </div> <div class="release-notes-section margin-bn nbfc"> <img class="release-notes-image-bullet pull-left" src="{{#asset}}/global/backgrounds/td_whatsnew_03.png{{/asset}}" alt="{{_i}}Multiple accounts{{/i}}"> <h2>{{_i}}Manage multiple accounts{{/i}}</h2> <p>{{_i}}Tweet, monitor and follow new accounts from all &mdash; or just one of your accounts. Add another account in <a href="#" data-action="openSettings"><i class="icon icon-user-switch icon-bot"></i> Accounts</a>.{{/i}}</p> </div> </div> <button class="js-done Button--primary obj-center margin-tl"><i class="add"></i>{{_i}}Get started{{/i}}</button>');
     },
     function (e, t, i) {
         "use strict";
@@ -19082,9 +19083,10 @@ document.body.addEventListener("click", function (e) {
     },
     function (e, t, i) {
         "use strict";
+        // TweeXDeck: the quote in an opened Tweet whether or not it has media, under it, as on x.com
         i.r(t),
             (t.default =
-                '{{<stream_item}} {{$stream_item_data}} {{#chirp}} data-key="{{key}}{{id}}" data-account-key="{{#account}}{{getKey}}{{/account}}" data-tweet-id="{{#getMainTweet}}{{id}}{{/getMainTweet}}" {{/chirp}} {{/stream_item_data}} {{$content}} {{#chirp}} <div class="js-tweet tweet-detail {{#isFavorite}}is-favorite{{/isFavorite}} {{#isRetweeted}}is-retweet{{/isRetweeted}} {{#quotedTweet}}is-quote-tweet{{/quotedTweet}} {{#isInThread}}{{#hasReplies}}js-has-replies {{#indentedChirp}}margin-l--46{{/indentedChirp}}{{/hasReplies}}{{/isInThread}}"> <div class="{{^indentedChirp}}margin-b--10{{/indentedChirp}} {{#indentedChirp}}margin-l---46{{/indentedChirp}}"> {{#getMainUser}} {{> account_summary }} {{/getMainUser}} </div> {{^isInThread}} <div class="txt-size-variable--12 margin-b--2"> {{{getReplyContext}}} </div> {{/isInThread}} {{#indentedChirp}} <div class="thread margin-t--4"></div> {{/indentedChirp}} <p class="js-tweet-text tweet-text txt-size-variable--18 margin-b--10 with-linebreaks{{#translation}} tweet-translation-original-text margin-bn{{/translation}}{{#indentedChirp}} padding-t--10{{/indentedChirp}}" lang="{{lang}}">{{{htmlText}}}</p> {{#translation}}{{>status/tweet_translation}}{{/translation}} {{#isTranslatable}}{{^translation}}<a class="js-translate-call-to-action txt-mute" href="#" rel="translateTweet">{{_i}}Translate Tweet{{/i}}</a>{{/translation}}{{/isTranslatable}} {{#getMainTweet}} <div class="js-tweet-media tweet-detail-media margin-v--15 margin-h--0 is-hidden {{#user}}{{#isProtected}}is-protected{{/isProtected}}{{/user}}"></div> {{^hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{/hasMedia}} {{#quotedTweetMissing}} {{! placeholder to be replaced when quoted tweet is fetched}} <div class="js-attachment-tweet"> {{>status/attachment_tweet}} </div> {{/quotedTweetMissing}} <div class="js-card-container"></div> <div class="margin-tl txt-mute txt-size-variable--12"> <a href="{{getChirpURL}}" rel="url" target="_blank">{{createdPrettyFull}}</a> &middot; <a href="{{sourceUrl}}" rel="url" target="_blank">{{sourceNoHTML}}</a> </div> {{#hasLocationData}} <div class="margin-bl txt-mute txt-size-variable--12 tweet-location"> <a href="{{getLocationURL}}" rel="url" target="_blank"><i class="icon icon-base-valigned icon-geo"></i>{{getLocationFullName}}</a> </div> {{/hasLocationData}} <footer> <div class="js-tweet-stats"></div> {{> status/tweet_detail_actions}} </footer> {{/getMainTweet}} </div> <div class="js-detail-view-inline detail-view-inline item-box-full-bleed padding-axl scroll-conversation {{^isInThread}}dark-border-top{{/isInThread}} {{#indentedChirp}}dark-border margin-l--46{{/indentedChirp}}"> <div rel="reply" class="js-detail-view-inline-text detail-view-inline-text padding-h--15 padding-v--10 inline-block full-width txt-ellipsis br--20">{{_i}}Reply to{{/i}} {{mentions}}</div> </div> {{#dataminr}} <a class="js-skip-to-replies is-hidden is-actionable link-complex block item-box-full-bleed padding-hxl padding-bl scroll-conversation" rel="skipToReplies"> &#8595; <span class="link-complex-target align-middle">{{_i}}Skip to replies{{/i}}</span> </a> {{/dataminr}} {{/chirp}} {{/content}} {{/stream_item}}');
+                '{{<stream_item}} {{$stream_item_data}} {{#chirp}} data-key="{{key}}{{id}}" data-account-key="{{#account}}{{getKey}}{{/account}}" data-tweet-id="{{#getMainTweet}}{{id}}{{/getMainTweet}}" {{/chirp}} {{/stream_item_data}} {{$content}} {{#chirp}} <div class="js-tweet tweet-detail {{#isFavorite}}is-favorite{{/isFavorite}} {{#isRetweeted}}is-retweet{{/isRetweeted}} {{#quotedTweet}}is-quote-tweet{{/quotedTweet}} {{#isInThread}}{{#hasReplies}}js-has-replies {{#indentedChirp}}margin-l--46{{/indentedChirp}}{{/hasReplies}}{{/isInThread}}"> <div class="{{^indentedChirp}}margin-b--10{{/indentedChirp}} {{#indentedChirp}}margin-l---46{{/indentedChirp}}"> {{#getMainUser}} {{> account_summary }} {{/getMainUser}} </div> {{^isInThread}} <div class="txt-size-variable--12 margin-b--2"> {{{getReplyContext}}} </div> {{/isInThread}} {{#indentedChirp}} <div class="thread margin-t--4"></div> {{/indentedChirp}} <p class="js-tweet-text tweet-text txt-size-variable--18 margin-b--10 with-linebreaks{{#translation}} tweet-translation-original-text margin-bn{{/translation}}{{#indentedChirp}} padding-t--10{{/indentedChirp}}" lang="{{lang}}">{{{htmlText}}}</p> {{#translation}}{{>status/tweet_translation}}{{/translation}} {{#isTranslatable}}{{^translation}}<a class="js-translate-call-to-action txt-mute" href="#" rel="translateTweet">{{_i}}Translate Tweet{{/i}}</a>{{/translation}}{{/isTranslatable}} {{#getMainTweet}} <div class="js-tweet-media tweet-detail-media margin-v--15 margin-h--0 is-hidden {{#user}}{{#isProtected}}is-protected{{/isProtected}}{{/user}}"></div> {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{#quotedTweetMissing}} {{! placeholder to be replaced when quoted tweet is fetched}} <div class="js-attachment-tweet"> {{>status/attachment_tweet}} </div> {{/quotedTweetMissing}} <div class="js-card-container"></div> <div class="margin-tl txt-mute txt-size-variable--12"> <a href="{{getChirpURL}}" rel="url" target="_blank">{{createdPrettyFull}}</a> &middot; <a href="{{sourceUrl}}" rel="url" target="_blank">{{sourceNoHTML}}</a> </div> {{#hasLocationData}} <div class="margin-bl txt-mute txt-size-variable--12 tweet-location"> <a href="{{getLocationURL}}" rel="url" target="_blank"><i class="icon icon-base-valigned icon-geo"></i>{{getLocationFullName}}</a> </div> {{/hasLocationData}} <footer> <div class="js-tweet-stats"></div> {{> status/tweet_detail_actions}} </footer> {{/getMainTweet}} </div> <div class="js-detail-view-inline detail-view-inline item-box-full-bleed padding-axl scroll-conversation {{^isInThread}}dark-border-top{{/isInThread}} {{#indentedChirp}}dark-border margin-l--46{{/indentedChirp}}"> <div rel="reply" class="js-detail-view-inline-text detail-view-inline-text padding-h--15 padding-v--10 inline-block full-width txt-ellipsis br--20">{{_i}}Reply to{{/i}} {{mentions}}</div> </div> {{#dataminr}} <a class="js-skip-to-replies is-hidden is-actionable link-complex block item-box-full-bleed padding-hxl padding-bl scroll-conversation" rel="skipToReplies"> &#8595; <span class="link-complex-target align-middle">{{_i}}Skip to replies{{/i}}</span> </a> {{/dataminr}} {{/chirp}} {{/content}} {{/stream_item}}');
     },
     function (e, t, i) {
         "use strict";
@@ -19150,9 +19152,10 @@ document.body.addEventListener("click", function (e) {
     },
     function (e, t, i) {
         "use strict";
+        // TweeXDeck: a Tweet with images or video can quote one now; the quote goes under the media, as on x.com
         i.r(t),
             (t.default =
-                '<div class="js-tweet tweet {{#isFavorite}}is-favorite{{/isFavorite}} {{#isRetweeted}}is-retweet{{/isRetweeted}} {{#isInConvo}}is-conversation{{/isInConvo}} {{#isMinimalist}}is-minimalist{{/isMinimalist}} {{#quotedTweet}}is-quote-tweet{{/quotedTweet}} {{#quotedTweetMissing}}is-quote-tweet{{/quotedTweetMissing}} {{#withContentMute}}txt-mute{{/withContentMute}} {{#hasReplies}}js-has-replies{{/hasReplies}}"> {{#isRetweetedStatus}} <div class="tweet-context txt-size-variable--12 txt-mute padding-bs"> <div class="obj-left item-img"> <i class="pull-right icon icon-retweet-filled icon-small-context icon-retweet-color txt-size--16"></i> </div> <div class="nbfc"> {{#user}} <a href="{{getProfileURL}}" rel="user" target="_blank">{{{emojifiedName}}}</a>{{_i}} Retweeted{{/i}} {{/user}} </div> </div> {{/isRetweetedStatus}} <header class="tweet-header js-tweet-header flex flex-row flex-align--baseline"> {{#getMainUser}} {{>status/tweet_single_header}} {{/getMainUser}} {{#getMainTweet}} {{>status/tweet_timestamp}} {{/getMainTweet}} </header> {{#isInConvo}} {{#hasReplies}} <div class="thread"></div> {{/hasReplies}} {{/isInConvo}} <div class="tweet-body js-tweet-body"> {{^isInThread}} {{#getMainTweet}} <div class="nbfc txt-size-variable--12 txt-ellipsis"> {{{ getReplyContext }}} </div> {{/getMainTweet}} {{/isInThread}} <p class="js-tweet-text tweet-text {{#withLinebreaks}}with-linebreaks{{/withLinebreaks}} {{#translation}}tweet-translation-original-text margin-bn{{/translation}}" lang="{{lang}}">{{{htmlText}}}</p> <div class="js-card-container"></div> {{^hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{#isInThread}} <div class="margin-b--5"></div> {{/isInThread}} {{/hasMedia}} {{#quotedTweetMissing}} {{>status/quoted_tweet_missing}} {{/quotedTweetMissing}} {{#translation}}{{>status/tweet_translation}}{{/translation}} {{>status/tweet_media_wrapper}} </div> {{>status/tweet_single_footer}} <div class="js-show-this-thread"> {{^isInConvo}} {{#isInThread}} {{^inDialog}} <p class="color-twitter-blue txt-link txt-ellipsis link-complex-target margin-t--5">{{_i}}Show this thread{{/i}}</p> {{/inDialog}} {{#inDialog}} <p class="txt-mute">{{_i}}Show this thread{{/i}}</p> {{/inDialog}} {{/isInThread}} {{/isInConvo}} </div> </div>');
+                '<div class="js-tweet tweet {{#isFavorite}}is-favorite{{/isFavorite}} {{#isRetweeted}}is-retweet{{/isRetweeted}} {{#isInConvo}}is-conversation{{/isInConvo}} {{#isMinimalist}}is-minimalist{{/isMinimalist}} {{#quotedTweet}}is-quote-tweet{{/quotedTweet}} {{#quotedTweetMissing}}is-quote-tweet{{/quotedTweetMissing}} {{#withContentMute}}txt-mute{{/withContentMute}} {{#hasReplies}}js-has-replies{{/hasReplies}}"> {{#isRetweetedStatus}} <div class="tweet-context txt-size-variable--12 txt-mute padding-bs"> <div class="obj-left item-img"> <i class="pull-right icon icon-retweet-filled icon-small-context icon-retweet-color txt-size--16"></i> </div> <div class="nbfc"> {{#user}} <a href="{{getProfileURL}}" rel="user" target="_blank">{{{emojifiedName}}}</a>{{_i}} Retweeted{{/i}} {{/user}} </div> </div> {{/isRetweetedStatus}} <header class="tweet-header js-tweet-header flex flex-row flex-align--baseline"> {{#getMainUser}} {{>status/tweet_single_header}} {{/getMainUser}} {{#getMainTweet}} {{>status/tweet_timestamp}} {{/getMainTweet}} </header> {{#isInConvo}} {{#hasReplies}} <div class="thread"></div> {{/hasReplies}} {{/isInConvo}} <div class="tweet-body js-tweet-body"> {{^isInThread}} {{#getMainTweet}} <div class="nbfc txt-size-variable--12 txt-ellipsis"> {{{ getReplyContext }}} </div> {{/getMainTweet}} {{/isInThread}} <p class="js-tweet-text tweet-text {{#withLinebreaks}}with-linebreaks{{/withLinebreaks}} {{#translation}}tweet-translation-original-text margin-bn{{/translation}}" lang="{{lang}}">{{{htmlText}}}</p> <div class="js-card-container"></div> {{^hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{#isInThread}} <div class="margin-b--5"></div> {{/isInThread}} {{/hasMedia}} {{#quotedTweetMissing}} {{>status/quoted_tweet_missing}} {{/quotedTweetMissing}} {{#translation}}{{>status/tweet_translation}}{{/translation}} {{>status/tweet_media_wrapper}} {{#hasMedia}} {{#quotedTweet}} {{{ renderQuoted }}} {{/quotedTweet}} {{/hasMedia}} </div> {{>status/tweet_single_footer}} <div class="js-show-this-thread"> {{^isInConvo}} {{#isInThread}} {{^inDialog}} <p class="color-twitter-blue txt-link txt-ellipsis link-complex-target margin-t--5">{{_i}}Show this thread{{/i}}</p> {{/inDialog}} {{#inDialog}} <p class="txt-mute">{{_i}}Show this thread{{/i}}</p> {{/inDialog}} {{/isInThread}} {{/isInConvo}} </div> </div>');
     },
     function (e, t, i) {
         "use strict";
@@ -39836,6 +39839,7 @@ document.body.addEventListener("click", function (e) {
                 narrow: 250,
                 medium: 290,
                 wide: 330,
+                superwide: 380,
                 temporary: 350,
             }),
             (TD.services.TwitterMedia.MAX_THUMB_WIDTH = 90),
@@ -39915,6 +39919,26 @@ document.body.addEventListener("click", function (e) {
                     detail: {
                         width: 330,
                         height: 330,
+                    },
+                },
+                superwide: {
+                    stream: {
+                        small: {
+                            width: 162,
+                            height: 104,
+                        },
+                        medium: {
+                            width: 283,
+                            height: 175,
+                        },
+                        large: {
+                            width: 400,
+                            height: 400,
+                        },
+                    },
+                    detail: {
+                        width: 380,
+                        height: 380,
                     },
                 },
             }),
@@ -45135,7 +45159,8 @@ document.body.addEventListener("click", function (e) {
             (n.updateColumnSize = function () {
                 var e = TD.settings.getColumnWidth(),
                     t = (0, o.default)(document.body);
-                switch ((t.removeClass("is-narrow-columns is-medium-columns is-wide-columns"), e)) {
+                // TweeXDeck: superwide is wide (its smaller media, labels shown) with columns of 400px
+                switch ((t.removeClass("is-narrow-columns is-medium-columns is-wide-columns is-superwide-columns"), e)) {
                     case "narrow":
                         t.addClass("is-narrow-columns");
                         break;
@@ -45144,6 +45169,9 @@ document.body.addEventListener("click", function (e) {
                         break;
                     case "wide":
                         t.addClass("is-wide-columns");
+                        break;
+                    case "superwide":
+                        t.addClass("is-wide-columns is-superwide-columns");
                 }
                 (0, o.default)(document).trigger("uiColumnWidthChange", {
                     columnWidth: e,
@@ -47965,7 +47993,7 @@ document.body.addEventListener("click", function (e) {
         }
         var f = i(855),
             p = (function (e) {
-                // OldTweetDeck: the "new TweetDeck" button is gone; a component that draws nothing, or React
+                // TweeXDeck: the "new TweetDeck" button is gone; a component that draws nothing, or React
                 // calls the empty class as a function and logs "Cannot call a class as a function" at every start
                 (0, o.default)(t, e);
                 function t() {
@@ -70559,7 +70587,7 @@ document.body.addEventListener("click", function (e) {
                             (s.default.getMaxAllowedImages(e) > 1 && !o(e))
                         );
                     })(e) &&
-                    // OldTweetDeck: a quoted Tweet takes images and video now; a message still takes one or the other
+                    // TweeXDeck: a quoted Tweet takes images and video now; a message still takes one or the other
                     !(e.quotedTweet && l.isTweetTypeMessage(e))
                 );
             },

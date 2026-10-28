@@ -1,6 +1,6 @@
 // X takes images and video with a quoted Tweet now; TweetDeck's composer kept them apart
 const { test, expect } = require("@playwright/test");
-const { openPage, addTweetDeck, addScripts } = require("./helpers");
+const { openPage, addTweetDeck, addScripts, addAccount } = require("./helpers");
 
 // TweetDeck's composer state: whether it can send, and whether "Add images or video" is on, with its tooltip
 async function composer(page, state) {
@@ -55,5 +55,44 @@ test("the quote and the images go to X together, as x.com sends them", async ({ 
         tweet_text: "hi",
         attachment_url: "https://x.com/alice/status/1",
         media: { media_entities: [{ media_id: "11", tagged_users: [] }, { media_id: "12", tagged_users: [] }] },
+    });
+});
+
+// a Tweet with a photo quoting another, as X sends it, drawn in a column and opened
+async function quoteWithPhoto(page) {
+    await openPage(page);
+    await addTweetDeck(page, { css: true });
+    await addAccount(page);
+    return page.evaluate(() => {
+        TD.settings.getColumnWidth = () => "medium";
+        const user = (id, screenName) => ({ id_str: id, screen_name: screenName, name: screenName, profile_image_url_https: "", entities: {} });
+        const photo = { id_str: "9", type: "photo", media_url_https: "https://pbs.twimg.com/media/P9.jpg", original_info: { width: 800, height: 400 },
+            sizes: { large: { w: 800, h: 400, resize: "fit" }, medium: { w: 800, h: 400, resize: "fit" }, small: { w: 800, h: 400, resize: "fit" }, thumb: { w: 150, h: 150, resize: "crop" } },
+            url: "https://t.co/m", display_url: "pic.x.com/m", expanded_url: "https://x.com/me/status/700/photo/1", indices: [13, 27] };
+        const quoted = { id_str: "650", full_text: "You made it first", text: "You made it first", created_at: new Date().toUTCString(), source: "web", user: user("10", "raen"), entities: { hashtags: [], user_mentions: [], symbols: [], urls: [] } };
+        const chirp = window.__client.processTweet({ id_str: "700", full_text: "thanks you =) https://t.co/m", text: "thanks you =) https://t.co/m", created_at: new Date().toUTCString(), source: "web", user: user("1", "me"),
+            entities: { hashtags: [], user_mentions: [], symbols: [], urls: [], media: [photo] }, extended_entities: { media: [photo] },
+            is_quote_status: true, quoted_status_id_str: "650", quoted_status: quoted, quoted_status_permalink: { expanded: "https://x.com/raen/status/650" } });
+        const where = html => {
+            const box = document.createElement("div");
+            box.style.width = "340px";
+            box.innerHTML = html;
+            document.body.append(box);
+            const media = box.querySelector(".js-media, .js-media-preview-container, .js-tweet-media");
+            const quote = box.querySelector(".quoted-tweet");
+            const out = { media: !!media, quote: quote?.querySelector(".js-quoted-tweet-text")?.textContent ?? null, quoteBelowMedia: !!media && !!quote && !!(media.compareDocumentPosition(quote) & Node.DOCUMENT_POSITION_FOLLOWING) };
+            box.remove();
+            return out;
+        };
+        const column = where(chirp.render({ mediaPreviewSize: "medium" }));
+        const opened = where(TD.ui.template.render("status/tweet_detail", { chirp, renderQuoted: function() { return this.renderQuotedTweet({ mediaPreviewSize: "medium" }); } }));
+        return { column, opened };
+    });
+}
+
+test("a Tweet with images shows the Tweet it quotes under them, in a column and opened", async ({ page }) => {
+    expect(await quoteWithPhoto(page)).toEqual({
+        column: { media: true, quote: "You made it first", quoteBelowMedia: true },
+        opened: { media: true, quote: "You made it first", quoteBelowMedia: true },
     });
 });

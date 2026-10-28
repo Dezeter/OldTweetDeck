@@ -1,4 +1,4 @@
-// The OldTweetDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, the
+// The TweeXDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, the
 // language to translate to and the font. They write the localStorage keys the features read on load, so changes apply
 // after a reload. Loaded by injection.js after otd-common.js.
 (() => {
@@ -6,7 +6,7 @@
     if(!GlobalSettings) return;
 
     const TAB = "oldtweetdeck";
-    const RELEASES = "https://github.com/Dezeter/OldTweetDeck/releases";
+    const RELEASES = "https://github.com/Dezeter/TweeXDeck/releases";
     const LABEL = OTD.label({
         ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
             diagnostics: "Скопировать диагностику", copied: "Скопировано",
@@ -94,7 +94,7 @@
     function build() {
         const fieldset = el("fieldset");
         fieldset.id = "otd-settings";
-        fieldset.append(el("legend", null, "OldTweetDeck"));
+        fieldset.append(el("legend", null, "TweeXDeck"));
 
         const note = el("div", "otd-settings-note txt-mute is-hidden", `${LABEL.reload} `);
         const reload = el("a", null, LABEL.reloadNow);
@@ -121,7 +121,7 @@
             fieldset.append(group);
         });
 
-        const about = el("div", "otd-settings-about txt-mute", `OldTweetDeck${OTD.VERSION ? ` ${OTD.VERSION}` : ""} · `);
+        const about = el("div", "otd-settings-about txt-mute", `TweeXDeck${OTD.VERSION ? ` ${OTD.VERSION}` : ""} · `);
         const releases = el("a", null, LABEL.releases);
         releases.href = RELEASES;
         releases.target = "_blank";
@@ -155,7 +155,7 @@
     const getInfo = proto.getInfo;
     proto.getInfo = function() {
         const info = getInfo.apply(this, arguments);
-        info.tabs.push({ title: "OldTweetDeck", action: TAB });
+        info.tabs.push({ title: "TweeXDeck", action: TAB });
         return info;
     };
     // TweetDeck's switchTab renders its own tabs into the form; ours is drawn after it switched

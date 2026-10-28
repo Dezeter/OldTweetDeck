@@ -98,7 +98,7 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     await panel(page).getByRole("button", { name: "Copy diagnostics" }).click();
     await expect(panel(page).getByRole("button", { name: "Copied" })).toBeVisible();
     const report = await page.evaluate(() => window.__copied);
-    expect(report).toMatch(/^OldTweetDeck diagnostics\n/);
+    expect(report).toMatch(/^TweeXDeck diagnostics\n/);
     expect(report).toContain("Page: http://otd.test/i/tweetdeck\n");
     expect(report).toContain("TweetDeck: not started");
     expect(report).toContain("Steps: extension 0 s, page 0 s, scripts 0 s; TD no, OTD no\n");
@@ -135,7 +135,7 @@ test("when Firefox keeps x.com's policy the background script took off, the page
     expect(list[0]).toContain("in Firefox sometimes after plain x.com in this tab");
     expect(list[1]).toBe(RELOADED);
     const report = await askReport(page);
-    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nOldTweetDeck diagnostics\n/g)).toHaveLength(2);
+    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nTweeXDeck diagnostics\n/g)).toHaveLength(2);
     expect(report.match(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy, cross-origin-embedder-policy \(HTTP 200\)\n/g)).toHaveLength(3);
 });
 
@@ -160,7 +160,7 @@ test("stuck with nothing to explain it, the page reloads once and keeps the stuc
     expect(list[0]).toMatch(/^X doesn't answer TweetDeck's requests: GET api\.x\.com\/1\.1\/account\/verify_credentials\.json \(waiting 2\d s\)\. A reload usually helps\.$/);
     expect(list[1]).toBe(RELOADED);
     const report = await askReport(page);
-    expect(report).toMatch(/\n\nBefore the automatic reload at \d{4}-\d\d-\d\dT[\d:.]+Z:\nOldTweetDeck diagnostics\n/);
+    expect(report).toMatch(/\n\nBefore the automatic reload at \d{4}-\d\d-\d\dT[\d:.]+Z:\nTweeXDeck diagnostics\n/);
     expect(report.split("Before the automatic reload")[1]).toContain("\nWaiting for X: \n  GET api.x.com/1.1/account/verify_credentials.json for 20 s\n");
 });
 

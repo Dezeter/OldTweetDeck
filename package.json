@@ -1,5 +1,5 @@
 {
-  "name": "oldtweetdeck",
+  "name": "tweexdeck",
   "version": "0.0.0",
   "description": "Returns old TweetDeck! Fork of OldTweetDeck by dimden.",
   "main": "pack.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Dezeter/OldTweetDeck.git"
+    "url": "git+https://github.com/Dezeter/TweeXDeck.git"
   },
   "keywords": [
     "twitter",
@@ -25,9 +25,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Dezeter/OldTweetDeck/issues"
+    "url": "https://github.com/Dezeter/TweeXDeck/issues"
   },
-  "homepage": "https://github.com/Dezeter/OldTweetDeck#readme",
+  "homepage": "https://github.com/Dezeter/TweeXDeck#readme",
   "dependencies": {
     "adm-zip": "^0.5.10"
   },

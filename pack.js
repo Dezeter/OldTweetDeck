@@ -27,20 +27,20 @@ if(!fs.existsSync('./build')) {
     fs.mkdirSync('./build');
 }
 
-if(fs.existsSync('./build/OldTweetDeckTempChrome')) {
-    fs.rmSync('./build/OldTweetDeckTempChrome', { recursive: true });
+if(fs.existsSync('./build/TweeXDeckTempChrome')) {
+    fs.rmSync('./build/TweeXDeckTempChrome', { recursive: true });
 }
-if(fs.existsSync('./build/OldTweetDeckFirefox')) {
-    fs.rmSync('./build/OldTweetDeckFirefox', { recursive: true });
+if(fs.existsSync('./build/TweeXDeckFirefox')) {
+    fs.rmSync('./build/TweeXDeckFirefox', { recursive: true });
 }
 
 console.log("Copying...");
-copyDir('./', './build/OldTweetDeckFirefox').then(async () => {
-    await copyDir('./', './build/OldTweetDeckTempChrome');
+copyDir('./', './build/TweeXDeckFirefox').then(async () => {
+    await copyDir('./', './build/TweeXDeckTempChrome');
     console.log("Copied!");
     console.log("Patching...");
 
-    let manifest = JSON.parse(await fsp.readFile('./build/OldTweetDeckTempChrome/manifest.json', 'utf8'));
+    let manifest = JSON.parse(await fsp.readFile('./build/TweeXDeckTempChrome/manifest.json', 'utf8'));
     manifest.browser_specific_settings = {
         gecko: {
             id: "oldtweetdeck@dezeter",
@@ -62,25 +62,25 @@ copyDir('./', './build/OldTweetDeckFirefox').then(async () => {
     }
     manifest.web_accessible_resources = manifest.web_accessible_resources[0].resources;
 
-    fs.unlinkSync('./build/OldTweetDeckFirefox/pack.js');
-    fs.unlinkSync('./build/OldTweetDeckTempChrome/pack.js');
-    fs.unlinkSync('./build/OldTweetDeckFirefox/README.md');
-    fs.unlinkSync('./build/OldTweetDeckTempChrome/README.md');
-    fs.unlinkSync('./build/OldTweetDeckFirefox/package.json');
-    fs.unlinkSync('./build/OldTweetDeckTempChrome/package.json');
-    fs.unlinkSync('./build/OldTweetDeckFirefox/package-lock.json');
-    fs.unlinkSync('./build/OldTweetDeckTempChrome/package-lock.json');
-    fs.unlinkSync('./build/OldTweetDeckFirefox/.gitignore');
-    fs.unlinkSync('./build/OldTweetDeckTempChrome/.gitignore');
-    fs.writeFileSync('./build/OldTweetDeckFirefox/manifest.json', JSON.stringify(manifest, null, 2));
+    fs.unlinkSync('./build/TweeXDeckFirefox/pack.js');
+    fs.unlinkSync('./build/TweeXDeckTempChrome/pack.js');
+    fs.unlinkSync('./build/TweeXDeckFirefox/README.md');
+    fs.unlinkSync('./build/TweeXDeckTempChrome/README.md');
+    fs.unlinkSync('./build/TweeXDeckFirefox/package.json');
+    fs.unlinkSync('./build/TweeXDeckTempChrome/package.json');
+    fs.unlinkSync('./build/TweeXDeckFirefox/package-lock.json');
+    fs.unlinkSync('./build/TweeXDeckTempChrome/package-lock.json');
+    fs.unlinkSync('./build/TweeXDeckFirefox/.gitignore');
+    fs.unlinkSync('./build/TweeXDeckTempChrome/.gitignore');
+    fs.writeFileSync('./build/TweeXDeckFirefox/manifest.json', JSON.stringify(manifest, null, 2));
 
     console.log("Patched!");
 
     console.log("Zipping Firefox version...");
     try {
         const zip = new AdmZip();
-        const outputDir = "./build/OldTweetDeckFirefox.zip";
-        zip.addLocalFolder("./build/OldTweetDeckFirefox");
+        const outputDir = "./build/TweeXDeckFirefox.zip";
+        zip.addLocalFolder("./build/TweeXDeckFirefox");
         zip.writeZip(outputDir);
     } catch (e) {
         console.log(`Something went wrong ${e}`);
@@ -88,15 +88,15 @@ copyDir('./', './build/OldTweetDeckFirefox').then(async () => {
     console.log("Zipping Chrome version...");
     try {
         const zip = new AdmZip();
-        const outputDir = "./build/OldTweetDeckChrome.zip";
-        zip.addLocalFolder("./build/OldTweetDeckTempChrome");
+        const outputDir = "./build/TweeXDeckChrome.zip";
+        zip.addLocalFolder("./build/TweeXDeckTempChrome");
         zip.writeZip(outputDir);
     } catch (e) {
         console.log(`Something went wrong ${e}`);
     }
     console.log("Zipped!");
     console.log("Deleting temporary folders...");
-    fs.rmSync('./build/OldTweetDeckTempChrome', { recursive: true });
-    fs.rmSync('./build/OldTweetDeckFirefox', { recursive: true });
+    fs.rmSync('./build/TweeXDeckTempChrome', { recursive: true });
+    fs.rmSync('./build/TweeXDeckFirefox', { recursive: true });
     console.log("Deleted!");
 });

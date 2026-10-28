@@ -1,8 +1,10 @@
-# OldTweetDeck
+# TweeXDeck
+
+Until 5.12.0 this fork was called OldTweetDeck, like the project it comes from.
 
 Returns old TweetDeck, with translation, X Articles, grouped notifications and other additions.
 
-This is an independently developed fork of [OldTweetDeck by dimden](https://github.com/dimdenGD/OldTweetDeck). It doesn't download anything from the original project and gets its updates through the [releases of this repository](https://github.com/Dezeter/OldTweetDeck/releases). MIT licensed, like the original.
+This is an independently developed fork of [OldTweetDeck by dimden](https://github.com/dimdenGD/OldTweetDeck). It doesn't download anything from the original project and gets its updates through the [releases of this repository](https://github.com/Dezeter/TweeXDeck/releases). MIT licensed, like the original.
 
 > [!NOTE]
 > Since Twitter made likes private, the Likes tab aren't loading anymore.  
@@ -19,7 +21,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
-- [Columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
+- [Super wide columns](#columns) of 400px, [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
 - [A font of your choice](#font) for TweetDeck's text: Golos Text, Onest, Inter or Manrope
@@ -32,7 +34,7 @@ If the original OldTweetDeck is installed, remove or disable it first: both work
 
 ### Chromium (Chrome, Edge, Opera, Brave, Etc.)
 
-1. Go to the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and download `OldTweetDeckChrome.zip`
+1. Go to the [Release page](https://github.com/Dezeter/TweeXDeck/releases) and download `TweeXDeckChrome.zip`
 2. Unzip the archive
 3. Go to extensions page (`chrome://extensions`)
 4. Enable developer mode (there should be switch somewhere on that page)
@@ -44,7 +46,7 @@ If the original OldTweetDeck is installed, remove or disable it first: both work
 
 #### Nightly / Developer Edition
 
-1. Go to the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and download `OldTweetDeckFirefox.zip`
+1. Go to the [Release page](https://github.com/Dezeter/TweeXDeck/releases) and download `TweeXDeckFirefox.zip`
 2. Go to Firefox Configuration Editor (`about:config`)
 3. Change the preference `xpinstall.signatures.required` to false
 4. Go to addons page(`about:addons`)
@@ -67,11 +69,11 @@ NOT SUPPORTED
 ## Updating
 
 Everything ships with the extension: TweetDeck's own code, the request handling and the signing of requests to X (`x-client-transaction-id`, computed locally the same way x.com does it). Nothing is downloaded at runtime except from X itself.  
-When a new release is out, OldTweetDeck tells you about it once. Download it from the [Release page](https://github.com/Dezeter/OldTweetDeck/releases) and replace the extension files: in Chromium, unzip over the old folder and press the reload button of the extension on `chrome://extensions`.
+When a new release is out, TweeXDeck tells you about it once. Download it from the [Release page](https://github.com/Dezeter/TweeXDeck/releases) and replace the extension files: in Chromium, unzip over the old folder and press the reload button of the extension on `chrome://extensions`.
 
 ## Settings
 
-Settings → OldTweetDeck has a switch for every feature below, all on by default, and the language to translate to. Changes apply after a reload; the tab has a link for it.
+Settings → TweeXDeck has a switch for every feature below, all on by default, and the language to translate to. Changes apply after a reload; the tab has a link for it.
 
 The same settings are kept in `localStorage`, so they can also be changed from the browser console on the TweetDeck tab (`"0"` turns a feature off, removing the key turns it back on):
 
@@ -118,14 +120,14 @@ Home columns hide replies to other people, the way mutes hide tweets. Threads wh
 
 ## All replies in the tweet view
 
-TweetDeck only shows the first page of replies when you open a tweet. OldTweetDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
+TweetDeck only shows the first page of replies when you open a tweet. TweeXDeck also loads up to 3 more pages, including the replies x.com hides behind "Show more replies" and "Show probable spam".  
 TweetDeck asks for an open tweet's replies again every minute; the extra pages are kept for 5 minutes and only the first page is asked for again, so X's rate limit lasts longer. When X's answer gets lost or comes back empty, it's asked for once more.
 
 ## Pasting images
 
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
 
-A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. A direct message still takes a Tweet or an image.
+A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. Such a Tweet shows the quoted one under its media, in columns and opened. A direct message still takes a Tweet or an image.
 
 ## Emoji and GIFs
 
@@ -172,6 +174,8 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 ## Columns
 
+Settings → General → Columns has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
+
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
 
 A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
@@ -180,7 +184,7 @@ The tab title shows what's unread: "(3) TweetDeck" for three unread direct messa
 
 ## Font
 
-Settings → OldTweetDeck → Other → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
+Settings → TweeXDeck → Other → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
 
 ## Instant replies
 
@@ -188,8 +192,8 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 ## When TweetDeck doesn't load
 
-If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page reloads at once, past the browser's cache and the service worker (as Ctrl+Shift+R). In Firefox x.com's policy can stay on the page after that reload although the extension took it off, when the tab had plain x.com or its service worker's answer a moment before; then the page reloads once more. x.com registers its worker again when you open x.com; if TweetDeck gets stuck this way often, switch on "Keep x.com's service worker off" in Settings → OldTweetDeck → Other: the worker is removed whenever TweetDeck opens and x.com can't install it again, but X's notifications in the browser stop coming. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
-"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters; where the page came from (the network, the cache or a service worker), what the extension took off it, and the page policy that blocked anything. After an automatic reload it also has the reports of the pages that got stuck. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
+If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page reloads at once, past the browser's cache and the service worker (as Ctrl+Shift+R). In Firefox x.com's policy can stay on the page after that reload although the extension took it off, when the tab had plain x.com or its service worker's answer a moment before; then the page reloads once more. x.com registers its worker again when you open x.com; if TweetDeck gets stuck this way often, switch on "Keep x.com's service worker off" in Settings → TweeXDeck → Other: the worker is removed whenever TweetDeck opens and x.com can't install it again, but X's notifications in the browser stop coming. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
+"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/TweeXDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters; where the page came from (the network, the cache or a service worker), what the extension took off it, and the page policy that blocked anything. After an automatic reload it also has the reports of the pages that got stuck. It has no cookies or tokens. The same report is under Settings → TweeXDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
 
 ## When X retires an address
 
@@ -206,7 +210,7 @@ X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 20
 `npm install`, then:
 
 - `npm test` runs the tests: TweetDeck's own code with these scripts on stubbed pages, in Chromium and Firefox, and the unpacked extension in Chromium. They need Playwright's browsers once: `npx playwright install chromium firefox`.
-- `npm run build` packs `build/OldTweetDeckChrome.zip` and `build/OldTweetDeckFirefox.zip`. Publishing a release attaches them to it.
+- `npm run build` packs `build/TweeXDeckChrome.zip` and `build/TweeXDeckFirefox.zip`. Publishing a release attaches them to it.
 
 ## FAQ
 
