@@ -116,6 +116,29 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     expect(await page.evaluate(() => window.__same)).toBe(true);
 });
 
+test("when Firefox keeps x.com's policy the background script took off, the page reloads once more; kept again, the panel", async ({ page }) => {
+    // the policy still comes with the page here, as Firefox keeps it when the reload moves the tab to another process
+    await openWatched(page, { headers: { "content-security-policy": X_POLICY }, background: { status: 200, fromCache: false, stripped: ["content-security-policy", "cross-origin-opener-policy", "cross-origin-embedder-policy"] } });
+    await inject(page);
+    await reloaded(page, 1000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("1");
+    await inject(page);
+    await reloaded(page, 1000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
+
+    // no third: the panel, with the reports of both pages before
+    await inject(page);
+    await page.clock.runFor(5000);
+    await expect(panel(page)).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
+    const list = await findings(page);
+    expect(list[0]).toContain("in Firefox sometimes after plain x.com in this tab");
+    expect(list[1]).toBe(RELOADED);
+    const report = await askReport(page);
+    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nOldTweetDeck diagnostics\n/g)).toHaveLength(2);
+    expect(report.match(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy, cross-origin-embedder-policy \(HTTP 200\)\n/g)).toHaveLength(3);
+});
+
 test("stuck with nothing to explain it, the page reloads once and keeps the stuck one's report; stuck again, the panel", async ({ page }) => {
     await openWatched(page);
     await inject(page);
