@@ -112,6 +112,9 @@
         html.otd-media-thumb .otd-has-thumb > :not(.js-media):not(.js-quote-detail), html.otd-media-thumb .otd-quote-thumb > :not(.js-media) { max-width: 100%; box-sizing: border-box; }
         ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px -92px 6px 0; overflow: hidden; border-radius: 12px; }
         ${M[1]} { --otd-thumb: 64px; margin: 0 -74px 4px 0; border-radius: 10px; }
+        /* a hairline round it, as on x.com: a dark picture on the dark theme doesn't melt into the column */
+        ${both("")} { outline: 1px solid rgba(15, 20, 25, .1); outline-offset: -1px; }
+        ${["html.dark.otd-media-thumb .otd-has-thumb > .js-media", "html.dark.otd-media-thumb .otd-quote-thumb > .js-media"].join(", ")} { outline-color: rgba(255, 255, 255, .14); }
         /* in a quote, its author's line cut short with "…" */
         html.otd-media-thumb .otd-quote-thumb > .tweet-header > .account-link, html.otd-media-thumb .otd-quote-thumb > .tweet-header .nbfc { display: block; }
         /* a quote under the square, whole */

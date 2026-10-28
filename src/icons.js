@@ -88,8 +88,10 @@
     OTD.addStyle(`
         ${classes.map(name => `html.otd-svg-icons .icon-${name} { --otd-icon: ${url(...ICONS[name].split(" "))}; }`).join("\n")}
         ${classes.map(name => `html.otd-svg-icons .icon-${name}::before`).join(", ")} {
-            /* 1em, as the glyph was, also where TweetDeck lets an icon's box size itself */
-            content: ""; display: block; width: 1em; height: 1em; background-color: currentColor;
+            /* 1em, as the glyph was, also where TweetDeck lets an icon's box size itself; and where the glyph was: in the
+               middle of a line of the icon's line height, which TweetDeck sets taller than the icon in places (a column's
+               header puts its icon on the title's line that way) */
+            content: ""; display: block; width: 1em; height: 1em; margin-top: calc((1lh - 1em) / 2); background-color: currentColor;
             -webkit-mask: var(--otd-icon) center / contain no-repeat; mask: var(--otd-icon) center / contain no-repeat;
         }
     `);
