@@ -16,9 +16,19 @@ const STRIPPED_HEADERS = [
     'location',
 ];
 
+// what this script saw of TweetDeck's page, by tab, for the load watchdog's report (watchdog.js)
+const pages = {};
+
 chrome.webRequest.onHeadersReceived.addListener(
     function(details) {
         let headers = details.responseHeaders.filter(header => !STRIPPED_HEADERS.includes(header.name.toLowerCase()));
+        if(details.type === "main_frame") {
+            pages[details.tabId] = {
+                status: details.statusCode,
+                fromCache: !!details.fromCache,
+                stripped: details.responseHeaders.map(header => header.name.toLowerCase()).filter(name => STRIPPED_HEADERS.includes(name)),
+            };
+        }
         return {
             responseHeaders: headers
         }
@@ -159,5 +169,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         const response = await googleTranslate(request.text, request.to);
         sendResponse(response);
         return response;
+    } else if(request.action === 'otdPage') {
+        // from the load watchdog through content.js: what this script saw of the tab's page
+        const page = pages[sender.tab?.id] || null;
+        sendResponse(page);
+        return page;
+    } else if(request.action === 'otdReload') {
+        // past the browser's cache and x.com's service worker, as Ctrl+Shift+R
+        if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
     }
 });

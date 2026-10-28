@@ -98,6 +98,8 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
         expect(report).toMatch(/\nSteps: extension \d+ s, page \d+ s, scripts \d+ s; TD yes, OTD yes\n/);
         expect(report).toMatch(/\nSolver: ready at \d+ s \(ondemand\.s\.[\w-]+\.js\)\n/);
         expect(report).toContain("\nBlocked by Content-Security-Policy: nothing\n");
+        expect(report).toMatch(/\nLoaded: navigate, from the (network \(\d+ kB\)|browser's cache); Chrome's rules took its policies off\n/);
+        expect(report).toContain("\nService worker: none\n");
         expect(report).toMatch(/\n {2}GET api\.x\.com\/1\.1\/account\/verify_credentials\.json — 401 ×\d+, first at \d+ s\n/);
         // TweetDeck's own, with where it happened
         expect(report).toMatch(/\n {2}TypeError: .*id_str.* \((src|files)\/[\w-]+\.js:\d+\) ×\d+, first at \d+ s/);

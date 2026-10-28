@@ -39,5 +39,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if(request.action === 'googleTranslate') {
         googleTranslate(request.text, request.to).then(sendResponse);
         return true;
+    } else if(request.action === 'otdPage') {
+        // from the load watchdog through content.js; the rules in ruleset.json don't tell what they did
+        sendResponse({ rules: true });
+    } else if(request.action === 'otdReload') {
+        // past the browser's cache and x.com's service worker, as Ctrl+Shift+R
+        if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
     }
 });

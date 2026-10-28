@@ -86,6 +86,11 @@
     // the requests sent to X with no answer yet, and TweetDeck's steps as it starts
     const pending = new Map();
     const startup = [];
+    // where the page came from: what the background script saw of it (undefined: no answer yet, null: didn't see
+    // it), the policy that blocked scripts, nonces masked, and whether x.com's page had one in a <meta>
+    let backgroundSaw;
+    let policy = "";
+    let metaPolicy = false;
     let answered = 0;
     let solver = null;
     let startedAt = 0;
@@ -97,7 +102,10 @@
         } catch(err) {
             return;
         }
-        if(entry.kind === "step") steps[entry.step] ??= Date.now();
+        if(entry.kind === "step") {
+            steps[entry.step] ??= Date.now();
+            if(steps.page) metaWatch.disconnect();
+        }
         else if(entry.kind === "file") files.push(String(entry.path));
         else if(entry.kind === "moved") moves.push({ key: String(entry.key), moved: !!entry.moved, at: Date.now() });
         else if(entry.kind === "startup" && startup.length < 20) startup.push({ key: String(entry.key), at: Date.now() });
@@ -116,9 +124,21 @@
     });
     document.addEventListener("securitypolicyviolation", e => {
         if(e.disposition !== "enforce") return;
+        policy ||= String(e.originalPolicy || "").replace(/'(nonce|sha\d+)-[^']*'/g, "'$1-…'").slice(0, 600);
         const where = e.sourceFile ? ` ${clean(e.sourceFile)}${e.lineNumber ? `:${e.lineNumber}` : ""}` : "";
         tally(csp, `${e.effectiveDirective} ${e.blockedURI}${where}`, { directive: e.effectiveDirective, blocked: clean(e.blockedURI) || "inline", where });
     }, true);
+    // x.com's own page, until injection.js replaces it
+    const metaWatch = new MutationObserver(() => {
+        if(document.querySelector('meta[http-equiv="Content-Security-Policy" i]')) metaPolicy = true;
+    });
+    metaWatch.observe(document, { childList: true, subtree: true });
+    // content.js asks the background script
+    window.addEventListener("message", e => {
+        if(e.data && typeof e.data === "object" && "otdPage" in e.data) backgroundSaw = e.data.otdPage;
+    });
+    window.postMessage({ action: "otdPage" }, "*");
+
     // errors of x.com's own page before injection.js replaced it don't matter
     window.addEventListener("error", e => {
         if(!steps.page || !e.message) return;
@@ -148,6 +168,25 @@
             return [];
         }
     };
+
+    // how the browser got the page
+    function navigation() {
+        try {
+            const entry = (window.wrappedJSObject || window).performance.getEntriesByType("navigation")[0];
+            if(!entry) return "unknown";
+            const from = entry.workerStart > 0 ? "through a service worker" : entry.transferSize > 0 ? `from the network (${Math.round(entry.transferSize / 1024)} kB)` : "from the browser's cache";
+            return `${entry.type}, ${from}`;
+        } catch(e) {
+            return "unknown";
+        }
+    }
+    function background() {
+        if(backgroundSaw === undefined) return "no answer from the background script";
+        if(backgroundSaw === null) return "the background script didn't see it";
+        if(backgroundSaw.rules) return "Chrome's rules took its policies off";
+        const stripped = Array.isArray(backgroundSaw.stripped) ? backgroundSaw.stripped.join(", ") : "";
+        return `the background script took off ${stripped || "nothing"} (HTTP ${backgroundSaw.status}${backgroundSaw.fromCache ? ", from the cache" : ""})`;
+    }
 
     const pageWindow = () => window.wrappedJSObject || window;
     const has = name => {
@@ -244,6 +283,8 @@
             `Steps: ${["extension", "page", "scripts"].map(step => `${step} ${steps[step] ? seconds(steps[step]) : "—"}`).join(", ")}; TD ${has("TD") ? "yes" : "no"}, OTD ${has("OTD") ? "yes" : "no"}`,
             `TweetDeck's steps: ${startup.map(s => `${s.key} ${seconds(s.at)}`).join(", ") || "none"}`,
             `Service worker: ${CONTROLLED_BY ? `controls the page (${clean(CONTROLLED_BY)})` : "none"}${removedWorkers ? `, ${removedWorkers} removed` : ""}`,
+            `Loaded: ${navigation()}; ${background()}`,
+            `Page policy: ${policy || "nothing blocked"}${metaPolicy ? "; x.com's page has one in a <meta>" : ""}`,
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
@@ -353,6 +394,8 @@
         // the stuck page's report stays for the next one
         session(RELOAD_REPORT, report().split("\n\nBefore the automatic reload")[0]);
         session(RELOAD_AT, String(Date.now()));
-        location.reload();
+        // past the browser's cache and the service worker, by the background script; a plain one if that doesn't come
+        window.postMessage({ action: "otdReload" }, "*");
+        setTimeout(() => location.reload(), 2000);
     }
 })();
