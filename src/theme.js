@@ -13,7 +13,8 @@
     const systemDark = window.matchMedia?.("(prefers-color-scheme: dark)");
     const follows = () => localStorage[OTD.THEME_SYSTEM_STORAGE] === "1";
     const setTheme = settings.setTheme;
-    const systemTheme = () => systemDark?.matches ? "dark" : "light";
+    // asked afresh: Firefox brings a MediaQueryList it gave before up to date only with its change event
+    const systemTheme = () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     // TweetDeck's radio, the TweeXDeck tab and the command palette all pick "system" through here
     settings.setTheme = function(theme) {
         OTD.setValue(OTD.THEME_SYSTEM_STORAGE, theme === "system" ? "1" : "");

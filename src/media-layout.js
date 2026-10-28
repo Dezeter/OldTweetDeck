@@ -109,6 +109,7 @@
            the padding, so the column doesn't hang on how a browser fits a block beside a float */
         html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { padding-right: 92px; }
         html.otd-media-thumb .otd-quote-thumb { padding-right: 74px; }
+        html.otd-media-thumb .otd-has-thumb > :not(.js-media):not(.js-quote-detail), html.otd-media-thumb .otd-quote-thumb > :not(.js-media) { max-width: 100%; box-sizing: border-box; }
         ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px -92px 6px 0; overflow: hidden; border-radius: 12px; }
         ${M[1]} { --otd-thumb: 64px; margin: 0 -74px 4px 0; border-radius: 10px; }
         /* in a quote, its author's line cut short with "…" */

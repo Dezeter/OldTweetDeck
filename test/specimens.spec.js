@@ -168,6 +168,8 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
         label: article.dataset.otdLabel,
         out,
         square: square ? [Math.round(square.width), Math.round(square.height), text.right <= square.left - 12, !quote || quote.top >= square.bottom] : null,
+        // for a failure's message
+        rects: square ? JSON.stringify({ text: [text.left, text.right, text.width], square: [square.left, square.right], body: [box(media.parentElement).left, box(media.parentElement).right], textDisplay: getComputedStyle(article.querySelector(".tweet-text")).display }) : "",
     };
 }));
 
@@ -186,7 +188,7 @@ for(const [name, options] of Object.entries({
     if(options.media === "whole") expect(squares.every(t => t.square[0] > 200)).toBe(true);
     else {
         expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(["photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"]));
-        for(const t of squares) expect(t.square, t.label).toEqual([80, 80, true, true]);
+        for(const t of squares) expect(t.square, `${t.label} ${t.rects}`).toEqual([80, 80, true, true]);
     }
     if(process.env.SPECIMENS_OUT) await shoot(page, name);
 });
