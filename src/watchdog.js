@@ -263,6 +263,17 @@
             for(let i = 0; i < (registrations?.length || 0); i++) if(await registrations[i].unregister()) removedWorkers++;
         } catch(e) {}
     }
+    // Settings "blockServiceWorker": the worker goes whenever TweetDeck opens, and the background script doesn't let
+    // x.com load it again; told on every load, so switching it off lets it back
+    const KEEP_WORKER_OFF = (() => {
+        try {
+            return localStorage.OTDblockServiceWorker === "1";
+        } catch(e) {
+            return false;
+        }
+    })();
+    window.postMessage({ action: "otdServiceWorker", block: KEEP_WORKER_OFF }, "*");
+    if(KEEP_WORKER_OFF) dropServiceWorkers();
     // after a while a reload may help, but not with missing scripts or being logged out
     const reloadMayHelp = () => !scriptsBlocked() && !files.length && ![...failed.values()].some(r => r.status === 401 || r.status === 403);
 

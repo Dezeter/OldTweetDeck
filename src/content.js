@@ -16,6 +16,9 @@ window.addEventListener('message', async e => {
         chrome.runtime.sendMessage({ action }, response => {
             if(action === 'otdPage') window.postMessage({ otdPage: response ?? null }, '*');
         });
+    } else if(e.data?.action === 'otdServiceWorker' && e.source === window) {
+        // the load watchdog -> background script: keep x.com's service worker off, or let it be
+        chrome.runtime.sendMessage({ action: 'otdServiceWorker', block: e.data.block === true });
     } else if(e.data?.action === 'otdGoogleTranslate') {
         // x-articles.js -> background script, which may call Google
         const { id, text, to } = e.data;

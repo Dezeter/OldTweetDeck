@@ -19,7 +19,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
-- [Columns that hold still](#columns) under the pointer, and [unread counts](#columns) in the tab title
+- [Columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
 - [A Settings tab](#settings) to switch each of these on and off
@@ -82,6 +82,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Hiding replies in home columns | `OTDhideHomeReplies` |
 | Grouping notifications | `OTDgroupNotifications` |
 | Holding a column under the pointer | `OTDpauseOnHover` |
+| An author's threads without "Replying to @author", joined by a line | `OTDselfThreads` |
 | Unread in the tab title | `OTDtabTitle` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
@@ -98,6 +99,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
+| Keeping x.com's service worker off (off by default, `'1'` turns it on) | `OTDblockServiceWorker` |
 | Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
 ## Grok auto-translation
@@ -167,6 +169,8 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
 
+A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column (the newest on top, as always) are joined by a line between the avatars.
+
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
 ## Instant replies
@@ -175,7 +179,7 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 ## When TweetDeck doesn't load
 
-If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page reloads at once, past the browser's cache and the service worker (as Ctrl+Shift+R); x.com registers its worker again when you open x.com. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
+If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page reloads at once, past the browser's cache and the service worker (as Ctrl+Shift+R); x.com registers its worker again when you open x.com; if TweetDeck gets stuck this way often, switch on "Keep x.com's service worker off" in Settings → OldTweetDeck → Other: the worker is removed whenever TweetDeck opens and x.com can't install it again, but X's notifications in the browser stop coming. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
 "Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/OldTweetDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters; where the page came from (the network, the cache or a service worker), what the extension took off it, and the page policy that blocked anything. After an automatic reload it also has the report of the page that got stuck. It has no cookies or tokens. The same report is under Settings → OldTweetDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
 
 ## When X retires an address
