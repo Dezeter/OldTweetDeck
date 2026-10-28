@@ -21,11 +21,14 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
-- [Super wide columns](#columns) of 400px, [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
+- [Super wide columns](#columns) of 400px, [columns that fit the window](#columns), [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
+- [Tweet shapes while a column loads](#loading-and-empty-columns), and a plain message with a button when it's empty or X didn't answer
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
+- [A theme that follows the system's](#appearance), [Lights out](#appearance) in x.com's black, [a comfortable density](#appearance) and [sharp SVG icons](#appearance)
 - [A font of your choice](#font) for TweetDeck's text: Golos Text, Onest, Inter or Manrope
-- [A Settings tab](#settings) to switch each of these on and off
+- [A command palette](#command-palette) on Ctrl+K: go to a column, write a tweet, switch the theme and more
+- [A Settings tab](#settings) to switch each of these on and off, with a search
 
 ## Installation
 
@@ -73,7 +76,7 @@ When a new release is out, TweeXDeck tells you about it once. Download it from t
 
 ## Settings
 
-Settings → TweeXDeck has a switch for every feature below, all on by default, and the language to translate to. Changes apply after a reload; the tab has a link for it.
+Settings → TweeXDeck has a switch for every feature below, all on by default, and the language to translate to; under "Appearance" also TweetDeck's own theme and column width, the density and the font. A field at the top finds a setting by any word of it, in Russian or English. What's under "Appearance" applies at once; the rest after a reload, and the tab says when one is needed, with a link for it.
 
 The same settings are kept in `localStorage`, so they can also be changed from the browser console on the TweetDeck tab (`"0"` turns a feature off, removing the key turns it back on):
 
@@ -104,7 +107,13 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
 | Better readability: contrast, larger buttons, keyboard focus | `OTDmodernLook` |
+| Lights out (off by default, `'1'` turns it on) | `OTDlightsOut` |
+| Theme following the system's (TweetDeck's own pick without the key) | `OTDthemeSystem`: `'1'` |
+| Columns fitting the window | `OTDfitColumns` |
+| Density (TweetDeck's compact without the key) | `OTDdensity`: `'comfortable'` |
+| SVG icons | `OTDsvgIcons` |
 | Font (TweetDeck's own without the key) | `OTDfont`: `'golos'`, `'onest'`, `'inter'` or `'manrope'` |
+| Tweet shapes while loading, messages in empty columns | `OTDskeletons` |
 | Keeping x.com's service worker off (off by default, `'1'` turns it on) | `OTDblockServiceWorker` |
 | Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
@@ -177,15 +186,30 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 Settings → General → Columns has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
 
-A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
+Columns that don't fill the window share it: each grows from the width picked in the settings up to 480px, so three columns on a wide screen don't leave half of it empty. With more columns than fit, they keep their width and the row scrolls as before.
+
+A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is. TweetDeck's "N New Tweets" over the column counts the ones that came; it, or a scroll to the top, brings them in, and with the pointer still over the column it holds still again.
 
 A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
+## Loading and empty columns
+
+While a column loads, it shows grey shapes of tweets instead of TweetDeck's "Loading…". When X doesn't answer, TweetDeck used to leave "Loading…" for good; now the column says so, with a button to try again. An empty column says "Nothing here yet" in your language, with a button to refresh it, or, for a search, to open its options.
+
 ## Appearance
 
-TweetDeck's look is brought up to today's accessibility standards (WCAG 2.2 AA) where it fell short, switched in Settings → TweeXDeck → Appearance:
+Settings → TweeXDeck → Appearance has, in one place:
+
+- **Theme**: light, dark, or as the system, which follows the system's light or dark mode as it changes. "System" is in Settings → General → Theme too.
+- **Lights out**: the dark theme in x.com's black instead of TweetDeck's dark blue, for OLED screens.
+- **Column width** and **columns fitting the window** (see [Columns](#columns)).
+- **Density**: TweetDeck's compact one, or comfortable, with more room around a tweet and its text from 15px, for reading a few columns rather than many.
+- **Font** (see [Font](#font)).
+- **New icons**: TweetDeck's icon font replaced by sharp SVG icons in x.com's style, from [Lucide](https://lucide.dev). A liked heart stays red and filled, a retweet green; the icons Lucide has no match for (the bird, switches, badges) keep the font.
+
+TweetDeck's look is also brought up to today's accessibility standards (WCAG 2.2 AA) where it fell short, with the "Better readability" switch:
 
 - The light theme's grey text, icons and links are darker: handles and times at 6.1:1 instead of 2.9:1, links at 5.1:1 instead of 2.8:1, the icons under a tweet at 6.1:1 instead of 2.0:1. The dark theme already passed and keeps its colors.
 - The buttons under a tweet take a 32px circle around their 18px icons, tinted on hover as on x.com, so they're easier to hit.
@@ -194,9 +218,13 @@ TweetDeck's look is brought up to today's accessibility standards (WCAG 2.2 AA) 
 
 With "reduce motion" on in the system, TweetDeck's animations stop, whatever the switch.
 
+## Command palette
+
+Ctrl+K (⌘K on a Mac), or TweetDeck's own ";", opens one field for everything: type a few letters of what you need and press Enter. It has TweetDeck's own commands (go to a column, with its number key; remove a column; create a list; change the column width or font size) and TweeXDeck's: write a tweet, add a column, search, open the settings or the TweeXDeck tab, switch the theme, Lights out, column width, density, font, icons and readability, copy the diagnostics, reload. TweetDeck had this palette all along, but only for X's own staff.
+
 ## Font
 
-Settings → TweeXDeck → Appearance → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
+Settings → TweeXDeck → Appearance → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep their own font, or SVG with "New icons"; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
 
 ## Instant replies
 
@@ -243,4 +271,5 @@ This can not be fixed. Since Twitter made likes private, the API to retrieve lik
 MIT, see [LICENSE](LICENSE). Copyright dimden (the original OldTweetDeck) and Dezeter (this fork).  
 The `x-client-transaction-id` algorithm in `src/challenge.js` is ported from [x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id) by Lami (MIT).  
 TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.  
-The fonts in `files/fonts/` (Golos Text, Onest, Inter, Manrope, from [Fontsource](https://fontsource.org)'s variable packages, Latin and Cyrillic) are by their authors under the SIL Open Font License 1.1, see `files/fonts/<font>/OFL.txt`.
+The fonts in `files/fonts/` (Golos Text, Onest, Inter, Manrope, from [Fontsource](https://fontsource.org)'s variable packages, Latin and Cyrillic) are by their authors under the SIL Open Font License 1.1, see `files/fonts/<font>/OFL.txt`.  
+The icon shapes in `src/icons.js` are [Lucide](https://lucide.dev)'s (ISC, some from Feather under MIT), see `files/icons/LICENSE`.

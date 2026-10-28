@@ -88,7 +88,8 @@
     OTD.addStyle(`
         ${classes.map(name => `html.otd-svg-icons .icon-${name} { --otd-icon: ${url(...ICONS[name].split(" "))}; }`).join("\n")}
         ${classes.map(name => `html.otd-svg-icons .icon-${name}::before`).join(", ")} {
-            content: ""; display: block; width: 100%; height: 100%; background-color: currentColor;
+            /* 1em, as the glyph was, also where TweetDeck lets an icon's box size itself */
+            content: ""; display: block; width: 1em; height: 1em; background-color: currentColor;
             -webkit-mask: var(--otd-icon) center / contain no-repeat; mask: var(--otd-icon) center / contain no-repeat;
         }
     `);
