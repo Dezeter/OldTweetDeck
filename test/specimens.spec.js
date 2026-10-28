@@ -167,7 +167,8 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
     return {
         label: article.dataset.otdLabel,
         out,
-        square: square ? [Math.round(square.width), Math.round(square.height), text.right <= square.left - 12, !quote || quote.top >= square.bottom] : null,
+        // Firefox lays out in fractions of a pixel: half a pixel either way is the same place
+        square: square ? [Math.round(square.width), Math.round(square.height), text.right <= square.left - 12 + 0.5, !quote || quote.top >= square.bottom - 0.5] : null,
         // for a failure's message
         rects: square ? JSON.stringify({ text: [text.left, text.right, text.width], square: [square.left, square.right], body: [box(media.parentElement).left, box(media.parentElement).right], textDisplay: getComputedStyle(article.querySelector(".tweet-text")).display }) : "",
     };

@@ -63,7 +63,7 @@ const thumbs = page => page.evaluate(() => Object.fromEntries([...document.query
         square: [Math.round(media.width), Math.round(media.height)],
         right: Math.round(tweet.right - media.right),
         // the text and the buttons beside it, not under it
-        beside: text.right <= media.left - 12 && footer.top < media.bottom,
+        beside: text.right <= media.left - 12 + 0.5 && footer.top < media.bottom,
         top: Math.round(media.top - text.top),
         more,
     } : null];

@@ -48,7 +48,8 @@ test("a load TweetDeck gave up on says X didn't answer, and tries again", async 
     await open(page, { template: "column_loading_placeholder", state: "awaiting_backfill" });
     await page.clock.runFor(5000);
     expect(await page.$(".otd-column-state")).toBeNull();
-    await page.clock.runFor(5000);
+    // the column is looked at every 2 s, from the first look: 8 s are past by 11 s whenever that was
+    await page.clock.runFor(6000);
     expect(await state(page)).toEqual(["X не ответил", "Колонка не загрузилась. Обычно помогает ещё одна попытка.", "Повторить"]);
     expect((await look(page)).shapes).toBe(false);
 
