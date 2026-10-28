@@ -93,6 +93,19 @@ test("the font select lists the fonts, writes OTDfont, and goes back to TweetDec
     expect(await page.evaluate(() => localStorage.OTDfont ?? null)).toBeNull();
 });
 
+test("TweetDeck's General tab has \"Super wide\" after its column widths, and picks it", async ({ page }) => {
+    await openSettings(page);
+    await page.evaluate(() => {
+        window.__widths = [];
+        TD.settings.setColumnWidth = value => window.__widths.push(value);
+    });
+    await tab(page, "General");
+    const radios = page.locator('.js-column-size input[name="column-size"]');
+    expect(await radios.evaluateAll(inputs => inputs.map(input => `${input.value}:${input.parentElement.textContent.trim()}`))).toEqual(["narrow:Narrow", "medium:Medium", "wide:Wide", "superwide:Super wide"]);
+    await page.locator('.js-column-size input[value="superwide"]').check();
+    expect(await page.evaluate(() => window.__widths)).toEqual(["superwide"]);
+});
+
 test("switching tabs leaves nothing of the other tab behind", async ({ page }) => {
     await openSettings(page);
     await tab(page, "OldTweetDeck");

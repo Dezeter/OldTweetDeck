@@ -19,7 +19,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
-- [Columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
+- [Super wide columns](#columns) of 400px, [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
 - [A font of your choice](#font) for TweetDeck's text: Golos Text, Onest, Inter or Manrope
@@ -171,6 +171,8 @@ The "…" menu of a tweet has more, after [Better TweetDeck](https://github.com/
 Under other people's tweets there can be **Mute** and **Block** buttons, next to reply, retweet and like. Both ask before doing it. They're off by default; switch them on in [Settings](#settings).
 
 ## Columns
+
+Settings → General → Columns has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
 
