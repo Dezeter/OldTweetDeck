@@ -125,7 +125,7 @@ TweetDeck asks for an open tweet's replies again every minute; the extra pages a
 
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
 
-A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. A direct message still takes a Tweet or an image.
+A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. Such a Tweet shows the quoted one under its media, in columns and opened. A direct message still takes a Tweet or an image.
 
 ## Emoji and GIFs
 
