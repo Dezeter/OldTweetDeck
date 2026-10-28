@@ -15,7 +15,7 @@ test("switches read and write the same localStorage keys as before", async ({ pa
         ["pauseOnHover", true], ["selfThreads", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
-        ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
+        ["emojiPicker", true], ["gifPicker", true], ["medeoFont", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
     expect(result).toMatchObject({ paste: null, group: "0", unknown: "no OldTweetDeck feature nope" });
 });
