@@ -9,24 +9,29 @@ test.use({ locale: "en-US" });
 const X_POLICY = "script-src 'nonce-abc'";
 
 // reloaded: as if the watchdog had reloaded the page a moment ago, so it doesn't again;
-// worker: x.com's service worker answers the page, the ones it lets go are counted in sessionStorage.__unregistered;
+// worker: x.com's service worker answers the page ("registered": it is there, but doesn't), the ones it lets go are
+// counted in sessionStorage.__unregistered; storage: localStorage as the page opens;
 // background: what the background script saw of the page, as content.js answers; false: no answer, nor reloads
-// past the cache, which are counted in sessionStorage.__hardReloads
-async function openWatched(page, { headers, routes, reloaded, worker, background = { status: 200, fromCache: false, stripped: [] }, html } = {}) {
+// past the cache, which are counted in sessionStorage.__hardReloads; what it's told of the service worker is in
+// window.__workerTold
+async function openWatched(page, { headers, routes, reloaded, worker, storage, background = { status: 200, fromCache: false, stripped: [] }, html } = {}) {
     // the page's time stands still between the test's steps
     const now = Date.now();
     await page.clock.install({ time: now });
     await page.clock.pauseAt(now + 1000);
-    if(worker) await page.addInitScript(() => {
+    if(worker) await page.addInitScript(controls => {
         const registration = { unregister: async () => {
             sessionStorage.__unregistered = String(Number(sessionStorage.__unregistered || 0) + 1);
             return true;
         } };
-        Object.defineProperty(navigator, "serviceWorker", { value: { controller: { scriptURL: "https://x.com/sw.js?v=1" }, getRegistrations: async () => [registration] } });
-    });
+        Object.defineProperty(navigator, "serviceWorker", { value: { controller: controls ? { scriptURL: "https://x.com/sw.js?v=1" } : null, getRegistrations: async () => [registration] } });
+    }, worker !== "registered");
+    if(storage) await page.addInitScript(storage => Object.assign(localStorage, storage), storage);
     await page.addInitScript(background => {
-        if(background === false) return;
+        window.__workerTold = [];
         window.addEventListener("message", e => {
+            if(e.data?.action === "otdServiceWorker") window.__workerTold.push(e.data.block);
+            if(background === false) return;
             if(e.data?.action === "otdPage") window.postMessage({ otdPage: background }, "*");
             if(e.data?.action === "otdReload") {
                 sessionStorage.__hardReloads = String(Number(sessionStorage.__hardReloads || 0) + 1);
@@ -111,6 +116,29 @@ test("when x.com's policy blocks the extension's scripts, the page reloads at on
     expect(await page.evaluate(() => window.__same)).toBe(true);
 });
 
+test("when Firefox keeps x.com's policy the background script took off, the page reloads once more; kept again, the panel", async ({ page }) => {
+    // the policy still comes with the page here, as Firefox keeps it when the reload moves the tab to another process
+    await openWatched(page, { headers: { "content-security-policy": X_POLICY }, background: { status: 200, fromCache: false, stripped: ["content-security-policy", "cross-origin-opener-policy", "cross-origin-embedder-policy"] } });
+    await inject(page);
+    await reloaded(page, 1000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("1");
+    await inject(page);
+    await reloaded(page, 1000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
+
+    // no third: the panel, with the reports of both pages before
+    await inject(page);
+    await page.clock.runFor(5000);
+    await expect(panel(page)).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.__hardReloads)).toBe("2");
+    const list = await findings(page);
+    expect(list[0]).toContain("in Firefox sometimes after plain x.com in this tab");
+    expect(list[1]).toBe(RELOADED);
+    const report = await askReport(page);
+    expect(report.match(/\n\nBefore the automatic reload at [^\n]+:\nOldTweetDeck diagnostics\n/g)).toHaveLength(2);
+    expect(report.match(/\nLoaded: [^;\n]+; the background script took off content-security-policy, cross-origin-opener-policy, cross-origin-embedder-policy \(HTTP 200\)\n/g)).toHaveLength(3);
+});
+
 test("stuck with nothing to explain it, the page reloads once and keeps the stuck one's report; stuck again, the panel", async ({ page }) => {
     await openWatched(page);
     await inject(page);
@@ -151,6 +179,21 @@ test("a page x.com's service worker answers: the worker goes and the page reload
         RELOADED,
     ]);
     expect(await page.evaluate(() => sessionStorage.__unregistered)).toBe("1");
+});
+
+test("with x.com's service worker kept off, it goes whenever TweetDeck opens, and the background script is told to keep it off", async ({ page }) => {
+    await openWatched(page, { worker: "registered", storage: { OTDblockServiceWorker: "1" } });
+    await expect.poll(() => page.evaluate(() => sessionStorage.__unregistered ?? null)).toBe("1");
+    expect(await page.evaluate(() => window.__workerTold)).toEqual([true]);
+    // not answering the page, it's no reason to reload
+    await page.clock.runFor(3000);
+    expect(await page.evaluate(() => sessionStorage.__hardReloads ?? null)).toBeNull();
+});
+
+test("without the setting, a worker that doesn't answer the page stays, and the background script is told to let it be", async ({ page }) => {
+    await openWatched(page, { worker: "registered" });
+    await page.clock.runFor(3000);
+    expect(await page.evaluate(() => [window.__workerTold, sessionStorage.__unregistered ?? null, sessionStorage.__hardReloads ?? null])).toEqual([[false], null, null]);
 });
 
 test("a policy in a <meta> of x.com's page, and what the background script took off, are in the report", async ({ page }) => {

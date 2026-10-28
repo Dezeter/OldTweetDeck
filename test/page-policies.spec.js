@@ -22,6 +22,7 @@ test("Firefox's background script takes x.com's page policies off TweetDeck's pa
             webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("send"), onBeforeRequest: event("request") },
             webNavigation: { onCommitted: event("navigation") },
             runtime: { onMessage: event("message"), getURL: path => path },
+            storage: { local: { get: (defaults, done) => done(defaults), set: () => {} } },
         };
         new Function(source)();
         const [listener] = listeners.headers;
@@ -54,6 +55,7 @@ test("Firefox's background script tells the load watchdog what it took off a tab
             webNavigation: { onCommitted: event("navigation") },
             runtime: { onMessage: event("message"), getURL: path => path },
             tabs: { reload: (tabId, options) => reloads.push([tabId, options]) },
+            storage: { local: { get: (defaults, done) => done(defaults), set: () => {} } },
         };
         new Function(source)();
         const ask = (action, tabId) => new Promise(resolve => listeners.message[0].fn({ action }, { tab: { id: tabId } }, resolve));
@@ -99,8 +101,66 @@ test("content.js passes the load watchdog's questions to the background script a
         window.addEventListener("message", e => { if(e.data && "otdPage" in e.data) answers.push(e.data.otdPage); });
         window.postMessage({ action: "otdPage" }, "*");
         window.postMessage({ action: "otdReload" }, "*");
+        window.postMessage({ action: "otdServiceWorker", block: true }, "*");
+        window.postMessage({ action: "otdServiceWorker", block: "yes" }, "*");
         await new Promise(resolve => setTimeout(resolve, 100));
         return { sent, answers };
     }, read("src/content.js"));
-    expect(result).toEqual({ sent: [{ action: "otdPage" }, { action: "otdReload" }], answers: [{ status: 200, fromCache: false, stripped: [] }] });
+    expect(result).toEqual({
+        sent: [{ action: "otdPage" }, { action: "otdReload" }, { action: "otdServiceWorker", block: true }, { action: "otdServiceWorker", block: false }],
+        answers: [{ status: 200, fromCache: false, stripped: [] }],
+    });
+});
+
+test("Firefox's background script keeps x.com's service worker script from loading while the setting says so, and remembers it", async ({ page }) => {
+    await openPage(page);
+    const result = await page.evaluate(async source => {
+        const listeners = {};
+        const stored = { blockServiceWorker: true };
+        const event = name => ({ addListener: (fn, filter, spec) => { (listeners[name] ||= []).push({ fn, filter, spec }); } });
+        window.chrome = {
+            webRequest: { OnHeadersReceivedOptions: {}, onHeadersReceived: event("headers"), onBeforeSendHeaders: event("send"), onBeforeRequest: event("request") },
+            webNavigation: { onCommitted: event("navigation") },
+            runtime: { onMessage: event("message"), getURL: path => path },
+            storage: { local: { get: (defaults, done) => done({ ...defaults, ...stored }), set: items => Object.assign(stored, items) } },
+        };
+        new Function(source)();
+        const worker = listeners.request.find(l => l.filter.urls.includes("https://x.com/sw.js*"));
+        const load = () => worker.fn({ url: "https://x.com/sw.js", type: "script" }) ?? null;
+        const tell = block => listeners.message[0].fn({ action: "otdServiceWorker", block }, { tab: { id: 1 } }, () => {});
+        const remembered = load();
+        tell(false);
+        const off = [load(), { ...stored }];
+        tell(true);
+        const on = [load(), { ...stored }];
+        return { filter: worker.filter.urls, spec: worker.spec, remembered, off, on };
+    }, read("src/background.js"));
+    expect(result).toEqual({
+        filter: ["https://x.com/sw.js*", "https://twitter.com/sw.js*"],
+        spec: ["blocking"],
+        remembered: { cancel: true },
+        off: [null, { blockServiceWorker: false }],
+        on: [{ cancel: true }, { blockServiceWorker: true }],
+    });
+});
+
+test("Chrome's background script keeps x.com's service worker script from loading with rules of its own while the setting says so", async ({ page }) => {
+    await openPage(page);
+    const result = await page.evaluate(async source => {
+        let listener;
+        const updates = [];
+        self.importScripts = () => {};
+        window.chrome = { runtime: { onMessage: { addListener: fn => { listener = fn; } } }, declarativeNetRequest: { updateDynamicRules: update => updates.push(update) } };
+        new Function(source)();
+        listener({ action: "otdServiceWorker", block: true }, { tab: { id: 3 } }, () => {});
+        listener({ action: "otdServiceWorker", block: false }, { tab: { id: 3 } }, () => {});
+        return updates;
+    }, read("src/background3.js"));
+    expect(result).toEqual([
+        { removeRuleIds: [100, 101], addRules: [
+            { id: 100, priority: 1, action: { type: "block" }, condition: { urlFilter: "|https://x.com/sw.js" } },
+            { id: 101, priority: 1, action: { type: "block" }, condition: { urlFilter: "|https://twitter.com/sw.js" } },
+        ] },
+        { removeRuleIds: [100, 101], addRules: [] },
+    ]);
 });

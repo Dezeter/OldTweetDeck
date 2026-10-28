@@ -37,6 +37,20 @@ chrome.webRequest.onHeadersReceived.addListener(
     extraInfoSpec
 );
 
+// Settings "blockServiceWorker": x.com's service worker script isn't loaded, so x.com can't register it again and
+// answer TweetDeck's page from its cache; kept in storage.local
+let blockServiceWorker = false;
+chrome.storage.local.get({ blockServiceWorker: false }, items => {
+    blockServiceWorker = !!items?.blockServiceWorker;
+});
+chrome.webRequest.onBeforeRequest.addListener(
+    function() {
+        if(blockServiceWorker) return { cancel: true };
+    },
+    {urls: ["https://x.com/sw.js*", "https://twitter.com/sw.js*"]},
+    ["blocking"]
+);
+
 chrome.webRequest.onBeforeSendHeaders.addListener(
     function(details) {
         let headers = details.requestHeaders.filter(header => header.name.toLowerCase() !== 'referer');
@@ -177,5 +191,8 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     } else if(request.action === 'otdReload') {
         // past the browser's cache and x.com's service worker, as Ctrl+Shift+R
         if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
+    } else if(request.action === 'otdServiceWorker') {
+        blockServiceWorker = request.block === true;
+        chrome.storage.local.set({ blockServiceWorker });
     }
 });

@@ -1,7 +1,8 @@
 // Load watchdog: when TweetDeck hasn't started 20 s after the page opened, it reloads the page once, when that
 // may help, and then a panel says what went wrong instead of the endless spinner and copies a report for an
 // issue. When x.com's service worker answers the page, or the page's policy blocked the extension's scripts,
-// which is its doing, it lets the worker go and reloads at once. It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the
+// which is its doing, it lets the worker go and reloads at once, and once more when Firefox kept the policy the
+// background script took off. It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the
 // other scripts tell it on "otd-diagnostic" events: the steps of injection.js and the extension files that
 // didn't load, the transaction id solver, TweetDeck's own steps as it starts, the requests to X and X's answers.
 // A content script that runs before injection.js, so it works when everything injection.js adds is blocked; in
@@ -15,9 +16,11 @@
     const DEADLINE = 20000;
     // when the extension's scripts are blocked or missing, TweetDeck won't start, there's no need to wait long
     const DEADLINE_BROKEN = 5000;
-    // one automatic reload, and not again for a while if TweetDeck is stuck after it too
+    // one automatic reload (two when Firefox kept x.com's policy), and not again for a while if TweetDeck is stuck
+    // after it too
     const RELOAD_AT = "OTDautoReloadAt";
     const RELOAD_REPORT = "OTDautoReloadReport";
+    const RELOAD_COUNT = "OTDautoReloads";
     const RELOAD_AGAIN_AFTER = 120000;
     const ISSUES = "https://github.com/Dezeter/OldTweetDeck/issues";
     const RU = (navigator.language || "en").toLowerCase().startsWith("ru");
@@ -25,7 +28,7 @@
         title: "TweetDeck не загрузился",
         noExtension: "Расширение не запустилось на странице: его скрипт не получил ответа. Перезагрузите страницу; если не поможет — перезапустите браузер или переустановите расширение.",
         files: list => `Не загрузились файлы расширения: ${list}. Переустановите расширение и не удаляйте его файлы после установки.`,
-        csp: n => `x.com запретил скрипты расширения (Content-Security-Policy), заблокировано: ${n}. Расширение снимает этот запрет; он остаётся, когда страницу отдаёт service worker x.com из своего кэша или его возвращает другое расширение.`,
+        csp: n => `x.com запретил скрипты расширения (Content-Security-Policy), заблокировано: ${n}. Расширение снимает этот запрет; он остаётся, когда страницу отдаёт service worker x.com из своего кэша, в Firefox — иногда после обычного x.com в этой вкладке, или его возвращает другое расширение.`,
         worker: url => `Страницу TweetDeck отдаёт service worker x.com (${url}), мимо расширения. Удалите его вручную и перезагрузите страницу: about:serviceworkers в Firefox, chrome://serviceworker-internals в Chrome, найдите x.com и нажмите «Unregister».`,
         solver: text => `Не вычисляется x-client-transaction-id, без него X отклоняет часть запросов: ${text}.`,
         auth: "X отвечает 401/403: похоже, вы не вошли в x.com в этом браузере или сессия истекла. Откройте x.com, войдите и перезагрузите эту страницу.",
@@ -42,7 +45,7 @@
         title: "TweetDeck hasn't loaded",
         noExtension: "The extension didn't start on the page: its script got no answer. Reload the page; if that doesn't help, restart the browser or reinstall the extension.",
         files: list => `The extension's files didn't load: ${list}. Reinstall the extension and keep its files after installing.`,
-        csp: n => `x.com blocked the extension's scripts (Content-Security-Policy), ${n} blocked. The extension takes this policy off; it stays when x.com's service worker answers the page from its cache, or another extension puts it back.`,
+        csp: n => `x.com blocked the extension's scripts (Content-Security-Policy), ${n} blocked. The extension takes this policy off; it stays when x.com's service worker answers the page from its cache, in Firefox sometimes after plain x.com in this tab, or when another extension puts it back.`,
         worker: url => `x.com's service worker (${url}) answers TweetDeck's page, past the extension. Remove it by hand and reload the page: about:serviceworkers in Firefox, chrome://serviceworker-internals in Chrome, find x.com and press "Unregister".`,
         solver: text => `x-client-transaction-id can't be computed, and X refuses some requests without it: ${text}.`,
         auth: "X answers 401/403: you're probably not logged in to x.com in this browser or the session expired. Open x.com, log in and reload this page.",
@@ -180,6 +183,14 @@
             return "unknown";
         }
     }
+    // x.com's own pages are cross-origin isolated (COOP and COEP), so is what its service worker answers
+    const isolated = () => {
+        try {
+            return (window.wrappedJSObject || window).crossOriginIsolated ? ", cross-origin isolated" : "";
+        } catch(e) {
+            return "";
+        }
+    };
     function background() {
         if(backgroundSaw === undefined) return "no answer from the background script";
         if(backgroundSaw === null) return "the background script didn't see it";
@@ -237,6 +248,7 @@
         } catch(e) {}
     };
     const reloadedRecently = () => Date.now() - Number(session(RELOAD_AT) || 0) < RELOAD_AGAIN_AFTER;
+    const autoReloads = () => reloadedRecently() ? Number(session(RELOAD_COUNT)) || 1 : 0;
 
     // x.com's service worker can answer TweetDeck's page from its cache, with the page policies the extension takes
     // off what comes from the network (it doesn't see what a service worker answers), and then gets every request
@@ -263,8 +275,23 @@
             for(let i = 0; i < (registrations?.length || 0); i++) if(await registrations[i].unregister()) removedWorkers++;
         } catch(e) {}
     }
+    // Settings "blockServiceWorker": the worker goes whenever TweetDeck opens, and the background script doesn't let
+    // x.com load it again; told on every load, so switching it off lets it back
+    const KEEP_WORKER_OFF = (() => {
+        try {
+            return localStorage.OTDblockServiceWorker === "1";
+        } catch(e) {
+            return false;
+        }
+    })();
+    window.postMessage({ action: "otdServiceWorker", block: KEEP_WORKER_OFF }, "*");
+    if(KEEP_WORKER_OFF) dropServiceWorkers();
     // after a while a reload may help, but not with missing scripts or being logged out
     const reloadMayHelp = () => !scriptsBlocked() && !files.length && ![...failed.values()].some(r => r.status === 401 || r.status === 403);
+    // Firefox may keep x.com's policy on a page the background script took it off: when the reload moves the tab
+    // out of the process of x.com's cross-origin isolated page (what its service worker answered, or x.com itself a
+    // moment before). Another reload, in the same process, has none.
+    const policyKept = () => scriptsBlocked() && !metaPolicy && Array.isArray(backgroundSaw?.stripped) && backgroundSaw.stripped.includes("content-security-policy");
 
     function report() {
         let version = "";
@@ -283,7 +310,7 @@
             `Steps: ${["extension", "page", "scripts"].map(step => `${step} ${steps[step] ? seconds(steps[step]) : "—"}`).join(", ")}; TD ${has("TD") ? "yes" : "no"}, OTD ${has("OTD") ? "yes" : "no"}`,
             `TweetDeck's steps: ${startup.map(s => `${s.key} ${seconds(s.at)}`).join(", ") || "none"}`,
             `Service worker: ${CONTROLLED_BY ? `controls the page (${clean(CONTROLLED_BY)})` : "none"}${removedWorkers ? `, ${removedWorkers} removed` : ""}`,
-            `Loaded: ${navigation()}; ${background()}`,
+            `Loaded: ${navigation()}${isolated()}; ${background()}`,
             `Page policy: ${policy || "nothing blocked"}${metaPolicy ? "; x.com's page has one in a <meta>" : ""}`,
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
@@ -385,14 +412,17 @@
             if(CONTROLLED_BY || scriptsBlocked()) return reload();
             if(waited >= DEADLINE && reloadMayHelp()) return reload();
         }
+        else if(!host && autoReloads() < 2 && policyKept()) return reload();
         if(waited >= DEADLINE || (waited >= DEADLINE_BROKEN && (scriptsBlocked() || files.length))) show();
     }, 1000);
 
     async function reload() {
         clearInterval(timer);
         await dropServiceWorkers();
-        // the stuck page's report stays for the next one
-        session(RELOAD_REPORT, report().split("\n\nBefore the automatic reload")[0]);
+        // the stuck page's report stays for the next one, with the one before it after a recent reload
+        const count = autoReloads() + 1;
+        session(RELOAD_REPORT, count > 1 ? report() : report().split("\n\nBefore the automatic reload")[0]);
+        session(RELOAD_COUNT, String(count));
         session(RELOAD_AT, String(Date.now()));
         // past the browser's cache and the service worker, by the background script; a plain one if that doesn't come
         window.postMessage({ action: "otdReload" }, "*");

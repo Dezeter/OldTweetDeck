@@ -45,5 +45,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if(request.action === 'otdReload') {
         // past the browser's cache and x.com's service worker, as Ctrl+Shift+R
         if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
+    } else if(request.action === 'otdServiceWorker') {
+        // Settings "blockServiceWorker": x.com's service worker script isn't loaded, so x.com can't register it again;
+        // dynamic rules stay until changed
+        chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: SERVICE_WORKER_RULES,
+            addRules: request.block === true ? ["x.com", "twitter.com"].map((host, i) => ({
+                id: SERVICE_WORKER_RULES[i],
+                priority: 1,
+                action: { type: "block" },
+                condition: { urlFilter: `|https://${host}/sw.js` },
+            })) : [],
+        });
     }
 });
+
+const SERVICE_WORKER_RULES = [100, 101];
