@@ -552,6 +552,100 @@ function parseTweet(res) {
     }
 }
 
+// TweetDetail, x.com's own query for a tweet with the ones it replies to and its replies
+function tweetDetailUrl(focalTweetId) {
+    return `https://${location.hostname}/i/api/graphql/KwGBbJZc6DBx8EKmyQSP7g/TweetDetail?variables=${encodeURIComponent(
+        JSON.stringify({
+            focalTweetId,
+            with_rux_injections: false,
+            includePromotedContent: false,
+            withCommunity: true,
+            withQuickPromoteEligibilityTweetFields: true,
+            withBirdwatchNotes: true,
+            withVoice: true,
+            withV2Timeline: true,
+        })
+    )}&features=${encodeURIComponent(
+        JSON.stringify({
+            rweb_lists_timeline_redesign_enabled: false,
+            blue_business_profile_image_shape_enabled: true,
+            responsive_web_graphql_exclude_directive_enabled: true,
+            verified_phone_label_enabled: false,
+            creator_subscriptions_tweet_preview_api_enabled: false,
+            responsive_web_graphql_timeline_navigation_enabled: true,
+            responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+            tweetypie_unmention_optimization_enabled: true,
+            vibe_api_enabled: true,
+            responsive_web_edit_tweet_api_enabled: true,
+            graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+            view_counts_everywhere_api_enabled: true,
+            longform_notetweets_consumption_enabled: true,
+            tweet_awards_web_tipping_enabled: false,
+            freedom_of_speech_not_reach_fetch_enabled: true,
+            standardized_nudges_misinfo: true,
+            tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
+            interactive_text_enabled: true,
+            responsive_web_text_conversations_enabled: false,
+            longform_notetweets_rich_text_read_enabled: true,
+            longform_notetweets_inline_media_enabled: false,
+            responsive_web_enhance_cards_enabled: false,
+        })
+    )}`;
+}
+
+// X's answer to TweetDetail in the shape of /2/timeline/conversation, which TweetDeck asked for replies and X
+// answers 404 to since late October 2026: the tweets and their authors by id, and entries pointing at them. Only
+// the conversation (the tweets above, the tweet, the replies and the cursors to more of them), not "Discover
+// more" and the like. An answer that isn't TweetDetail's comes back as it is.
+function conversationTimeline(data) {
+    const instructions = data?.data?.threaded_conversation_with_injections_v2?.instructions;
+    if (!Array.isArray(instructions)) return data;
+    const tweets = {};
+    const users = {};
+    const tweetOf = content => {
+        if (content?.itemType !== "TimelineTweet") return null;
+        let tweet;
+        try {
+            tweet = parseTweet(content.tweet_results?.result);
+        } catch (e) {
+            return null;
+        }
+        // deleted and withheld ones are tombstones, without a tweet
+        if (!tweet?.id_str) return null;
+        tweets[tweet.id_str] = tweet;
+        users[tweet.user_id_str] = tweet.user;
+        return { id: tweet.id_str, displayType: content.tweetDisplayType || "Tweet" };
+    };
+    // a cursor comes as an item of its own, or in place of the entry's content
+    const cursorOf = content => {
+        if (!content?.value || (content.itemType || content.entryType) !== "TimelineTimelineCursor") return null;
+        return { value: content.value, cursorType: content.cursorType, ...(content.displayTreatment ? { displayTreatment: content.displayTreatment } : {}) };
+    };
+    const entries = [];
+    for (const instruction of instructions) {
+        if (instruction?.type !== "TimelineAddEntries") continue;
+        for (const entry of instruction.entries || []) {
+            const entryId = String(entry?.entryId || "");
+            const { sortIndex } = entry;
+            if (entryId.startsWith("tweet-")) {
+                const tweet = tweetOf(entry.content?.itemContent);
+                if (tweet) entries.push({ entryId, sortIndex, content: { item: { content: { tweet } } } });
+            } else if (entryId.startsWith("conversationthread-")) {
+                // its tweets; its own "show more" cursor TweetDeck never followed
+                const items = (entry.content?.items || [])
+                    .map(item => ({ entryId: String(item?.entryId || "").replace("conversationthread-", "conversationThread-"), tweet: tweetOf(item?.item?.itemContent) }))
+                    .filter(item => item.tweet)
+                    .map(({ entryId, tweet }) => ({ entryId, item: { content: { tweet } } }));
+                if (items.length) entries.push({ entryId: entryId.replace("conversationthread-", "conversationThread-"), sortIndex, content: { timelineModule: { displayType: "VerticalConversation", items } } });
+            } else if (entryId.startsWith("cursor-")) {
+                const cursor = cursorOf(entry.content?.itemContent || entry.content);
+                if (cursor) entries.push({ entryId, sortIndex, content: { operation: { cursor } } });
+            }
+        }
+    }
+    return { globalObjects: { tweets, users }, timeline: { id: "Conversation", instructions: [{ addEntries: { entries } }] } };
+}
+
 function getCurrentUserId() {
     let accounts = TD.storage.accountController.getAll();
     let screen_name = TD.storage.accountController.getUserIdentifier();
@@ -2203,43 +2297,7 @@ const proxyRoutes = [
             xhr.storage.tweet_id = originalUrl.pathname.match(
                 /\/1.1\/statuses\/show\/(\d+).json/
             )[1];
-            xhr.modUrl = `https://${location.hostname}/i/api/graphql/KwGBbJZc6DBx8EKmyQSP7g/TweetDetail?variables=${encodeURIComponent(
-                JSON.stringify({
-                    focalTweetId: xhr.storage.tweet_id,
-                    with_rux_injections: false,
-                    includePromotedContent: false,
-                    withCommunity: true,
-                    withQuickPromoteEligibilityTweetFields: true,
-                    withBirdwatchNotes: true,
-                    withVoice: true,
-                    withV2Timeline: true,
-                })
-            )}&features=${encodeURIComponent(
-                JSON.stringify({
-                    rweb_lists_timeline_redesign_enabled: false,
-                    blue_business_profile_image_shape_enabled: true,
-                    responsive_web_graphql_exclude_directive_enabled: true,
-                    verified_phone_label_enabled: false,
-                    creator_subscriptions_tweet_preview_api_enabled: false,
-                    responsive_web_graphql_timeline_navigation_enabled: true,
-                    responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-                    tweetypie_unmention_optimization_enabled: true,
-                    vibe_api_enabled: true,
-                    responsive_web_edit_tweet_api_enabled: true,
-                    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-                    view_counts_everywhere_api_enabled: true,
-                    longform_notetweets_consumption_enabled: true,
-                    tweet_awards_web_tipping_enabled: false,
-                    freedom_of_speech_not_reach_fetch_enabled: true,
-                    standardized_nudges_misinfo: true,
-                    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-                    interactive_text_enabled: true,
-                    responsive_web_text_conversations_enabled: false,
-                    longform_notetweets_rich_text_read_enabled: true,
-                    longform_notetweets_inline_media_enabled: false,
-                    responsive_web_enhance_cards_enabled: false,
-                })
-            )}`;
+            xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id);
         },
         beforeSendHeaders: (xhr) => {
             xhr.modReqHeaders["Content-Type"] = "application/json";
@@ -2275,43 +2333,7 @@ const proxyRoutes = [
         beforeRequest: (xhr) => {
             let originalUrl = new URL(xhr.originalUrl);
             xhr.storage.tweet_id = originalUrl.searchParams.get("id");
-            xhr.modUrl = `https://${location.hostname}/i/api/graphql/KwGBbJZc6DBx8EKmyQSP7g/TweetDetail?variables=${encodeURIComponent(
-                JSON.stringify({
-                    focalTweetId: xhr.storage.tweet_id,
-                    with_rux_injections: false,
-                    includePromotedContent: false,
-                    withCommunity: true,
-                    withQuickPromoteEligibilityTweetFields: true,
-                    withBirdwatchNotes: true,
-                    withVoice: true,
-                    withV2Timeline: true,
-                })
-            )}&features=${encodeURIComponent(
-                JSON.stringify({
-                    rweb_lists_timeline_redesign_enabled: false,
-                    blue_business_profile_image_shape_enabled: true,
-                    responsive_web_graphql_exclude_directive_enabled: true,
-                    verified_phone_label_enabled: false,
-                    creator_subscriptions_tweet_preview_api_enabled: false,
-                    responsive_web_graphql_timeline_navigation_enabled: true,
-                    responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-                    tweetypie_unmention_optimization_enabled: true,
-                    vibe_api_enabled: true,
-                    responsive_web_edit_tweet_api_enabled: true,
-                    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-                    view_counts_everywhere_api_enabled: true,
-                    longform_notetweets_consumption_enabled: true,
-                    tweet_awards_web_tipping_enabled: false,
-                    freedom_of_speech_not_reach_fetch_enabled: true,
-                    standardized_nudges_misinfo: true,
-                    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: false,
-                    interactive_text_enabled: true,
-                    responsive_web_text_conversations_enabled: false,
-                    longform_notetweets_rich_text_read_enabled: true,
-                    longform_notetweets_inline_media_enabled: false,
-                    responsive_web_enhance_cards_enabled: false,
-                })
-            )}`;
+            xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id);
         },
         beforeSendHeaders: (xhr) => {
             xhr.modReqHeaders["Content-Type"] = "application/json";
@@ -2367,29 +2389,18 @@ const proxyRoutes = [
             });
         },
     },
-    // Tweet replies
+    // Tweet replies: X answers /2/timeline/conversation with 404 since late October 2026, at api.x.com and at
+    // x.com/i/api alike; asked with TweetDetail, as x.com does, and answered in the old shape
     {
         path: /\/2\/timeline\/conversation\/(\d+).json/,
         method: "GET",
         beforeRequest: (xhr) => {
             let originalUrl = new URL(xhr.originalUrl);
-            let params = new URLSearchParams(originalUrl.search);
-
-            params.delete("ext");
-            params.delete("include_ext_has_nft_avatar");
-            params.delete("include_ext_is_blue_verified");
-            params.delete("include_ext_verified_type");
-            params.delete("include_ext_sensitive_media_warning");
-            params.delete("include_ext_media_color");
-
-            // api.x.com doesn't answer this any more (October 2026); x.com's own /i/api does, on the page's origin
-            originalUrl.hostname = location.hostname;
-            originalUrl.pathname = `/i/api${originalUrl.pathname}`;
-            originalUrl.search = params.toString();
-
-            xhr.modUrl = originalUrl.toString();
+            xhr.storage.tweet_id = originalUrl.pathname.match(/\/2\/timeline\/conversation\/(\d+).json/)[1];
+            xhr.modUrl = tweetDetailUrl(xhr.storage.tweet_id);
         },
         beforeSendHeaders: (xhr) => {
+            xhr.modReqHeaders["Content-Type"] = "application/json";
             xhr.modReqHeaders["X-Twitter-Active-User"] = "yes";
             xhr.modReqHeaders["X-Twitter-Client-Language"] = "en";
             xhr.modReqHeaders["Authorization"] =
@@ -2404,7 +2415,8 @@ const proxyRoutes = [
                 console.error(e);
                 return data;
             }
-            if (data.errors && data.errors[0]) {
+            data = conversationTimeline(data);
+            if ((data.errors && data.errors[0]) || !data.globalObjects) {
                 return data;
             }
             for (let id in data.globalObjects.tweets) {
@@ -2440,6 +2452,7 @@ const proxyRoutes = [
 
                 if (!user.default_profile) user.default_profile = false;
                 if (!user.default_profile_image) user.default_profile_image = false;
+                if (!user.entities) user.entities = {};
                 if (!user.entities.description) user.entities.description = { urls: [] };
                 if (!user.entities.description.urls) user.entities.description.urls = [];
                 if (!user.entities.url) user.entities.url = { urls: [] };

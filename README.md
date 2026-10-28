@@ -184,10 +184,10 @@ If TweetDeck hasn't started 20 seconds after the page opened, the page reloads i
 
 ## When X retires an address
 
-X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 2026 `help/configuration` started answering "410 Gone", and replies stopped answering at all; x.com's own `x.com/i/api` still answers the same requests.
+X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 2026 `help/configuration` started answering "410 Gone", and replies stopped answering at all; x.com's own `x.com/i/api` still answers most of the same requests.
 
 - `help/configuration`, which only holds the values compose counts characters with, is answered by the extension with TweetDeck's own defaults.
-- Replies are asked at `x.com/i/api`.
+- Replies are asked with `TweetDetail`, x.com's own query for a tweet with its replies, and handed to TweetDeck in the old shape: since late October 2026 X answers 404 to `2/timeline/conversation` at `x.com/i/api` too.
 - Any other address X stops answering at `api.x.com` (410, a 404 without X's error message, or no answer twice in a row) is asked at `x.com/i/api` from then on. One request fails, the next ones work. If it isn't there either, it goes back. The moved addresses are kept in `localStorage.OTDmovedApi`; removing the key starts over.
 
 ["Copy diagnostics"](#when-tweetdeck-doesnt-load) lists the addresses still asked at `api.x.com` and the moved ones.
