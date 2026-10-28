@@ -75,7 +75,7 @@
 
     function feature(key) {
         const found = FEATURES.find(f => f.key === key);
-        if(!found) throw new Error(`no OldTweetDeck feature ${key}`);
+        if(!found) throw new Error(`no TweeXDeck feature ${key}`);
         return found;
     }
     function isOn(key) {

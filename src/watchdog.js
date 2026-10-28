@@ -22,7 +22,7 @@
     const RELOAD_REPORT = "OTDautoReloadReport";
     const RELOAD_COUNT = "OTDautoReloads";
     const RELOAD_AGAIN_AFTER = 120000;
-    const ISSUES = "https://github.com/Dezeter/OldTweetDeck/issues";
+    const ISSUES = "https://github.com/Dezeter/TweeXDeck/issues";
     const RU = (navigator.language || "en").toLowerCase().startsWith("ru");
     const T = RU ? {
         title: "TweetDeck не загрузился",
@@ -301,7 +301,7 @@
         version ||= document.documentElement.dataset.otdVersion || "?";
         const now = Date.now();
         const lines = [
-            "OldTweetDeck diagnostics",
+            "TweeXDeck diagnostics",
             `Version: ${version}`,
             `Browser: ${navigator.userAgent}`,
             `Page: ${location.origin}${location.pathname}`,
@@ -391,7 +391,7 @@
             issue.target = "_blank";
             issue.rel = "noopener noreferrer";
             panel.append(close, el("div", "font-size: 16px; font-weight: bold; padding-right: 24px;", T.title), list,
-                el("div", "margin-bottom: 10px; color: #657786; font-size: 12px;", `OldTweetDeck · ${T.privacy}`), copyButton, reload, issue);
+                el("div", "margin-bottom: 10px; color: #657786; font-size: 12px;", `TweeXDeck · ${T.privacy}`), copyButton, reload, issue);
             host.attachShadow({ mode: "open" }).append(panel);
         }
         list.replaceChildren(...findings().map(text => el("li", "margin-bottom: 4px;", text)));

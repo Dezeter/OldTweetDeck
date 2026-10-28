@@ -17,7 +17,7 @@ test("switches read and write the same localStorage keys as before", async ({ pa
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
         ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
-    expect(result).toMatchObject({ paste: null, group: "0", unknown: "no OldTweetDeck feature nope" });
+    expect(result).toMatchObject({ paste: null, group: "0", unknown: "no TweeXDeck feature nope" });
 });
 
 test("a feature that is off by default is switched on with \"1\" and its key goes when it's off again", async ({ page }) => {

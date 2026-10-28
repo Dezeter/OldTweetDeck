@@ -127,7 +127,7 @@ test("a newer release on GitHub is announced", async ({}, testInfo) => {
 test("the current release is not announced", async ({}, testInfo) => {
     const { context, page, urls } = await launch(testInfo);
     try {
-        await expect.poll(() => urls.some(u => u.startsWith("https://api.github.com/repos/Dezeter/OldTweetDeck/releases/latest")), { timeout: 20000 }).toBe(true);
+        await expect.poll(() => urls.some(u => u.startsWith("https://api.github.com/repos/Dezeter/TweeXDeck/releases/latest")), { timeout: 20000 }).toBe(true);
         await page.waitForTimeout(1000);
         expect(await page.locator(".otd-notification-modal").count()).toBe(0);
     } finally {

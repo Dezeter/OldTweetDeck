@@ -19,13 +19,13 @@ async function openSettings(page, { storage, dark = false } = {}) {
 const tab = (page, title) => page.locator(".js-setting-list a.list-link").filter({ hasText: title }).click();
 const switches = page => page.evaluate(() => [...document.querySelectorAll("#otd-settings .otd-setting")].map(row => [row.dataset.feature, row.querySelector("i").classList.contains("icon-toggle-on")]));
 
-test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature by section", async ({ page }) => {
+test("an TweeXDeck tab after TweetDeck's own, with a switch for every feature by section", async ({ page }) => {
     await openSettings(page, { storage: { OTDpasteImages: "0" } });
-    expect(await page.$$eval(".js-setting-list a.list-link", links => links.map(a => a.textContent.trim()))).toEqual(["General", "Link Shortening", "Mute", "OldTweetDeck"]);
+    expect(await page.$$eval(".js-setting-list a.list-link", links => links.map(a => a.textContent.trim()))).toEqual(["General", "Link Shortening", "Mute", "TweeXDeck"]);
 
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
     expect(await page.$("#general_settings")).toBeNull();
-    expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("OldTweetDeck");
+    expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("TweeXDeck");
     expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Перевод", "Колонки", "Твиты", "Медиа", "Написание", "Прочее"]);
     expect(await switches(page)).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
@@ -35,14 +35,14 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
         ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
-    expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("OldTweetDeck 5.1.0 · Релизы и обновления · Скопировать диагностику");
-    expect(await page.getAttribute("#otd-settings .otd-settings-about a", "href")).toBe("https://github.com/Dezeter/OldTweetDeck/releases");
+    expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("TweeXDeck 5.1.0 · Релизы и обновления · Скопировать диагностику");
+    expect(await page.getAttribute("#otd-settings .otd-settings-about a", "href")).toBe("https://github.com/Dezeter/TweeXDeck/releases");
     await expect(page.locator("#otd-settings .otd-settings-note")).toBeHidden();
 });
 
 test("switches write the keys the features read, and say a reload is needed", async ({ page }) => {
     await openSettings(page, { storage: { OTDpasteImages: "0" } });
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
 
     await page.click('#otd-settings [data-feature="groupNotifications"] span');
     await page.click('#otd-settings [data-feature="pasteImages"] i');
@@ -63,7 +63,7 @@ test("switches write the keys the features read, and say a reload is needed", as
 
 test("the language select writes OTDgrokTranslateLang and keeps a code it doesn't list", async ({ page }) => {
     await openSettings(page, { storage: { OTDgrokTranslateLang: "eo" } });
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
     const select = page.locator("#otd-settings .otd-settings-lang select");
     await expect(select).toHaveValue("eo");
     expect(await select.locator("option").first().textContent()).toBe("русский (язык браузера)");
@@ -78,7 +78,7 @@ test("the language select writes OTDgrokTranslateLang and keeps a code it doesn'
 
 test("the font select lists the fonts, writes OTDfont, and goes back to TweetDeck's own without the key", async ({ page }) => {
     await openSettings(page, { storage: { OTDfont: "gone" } });
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
     // at the top of "Other"
     expect(await page.$eval('#otd-settings .otd-settings-section[data-section="other"]', group => group.children[1].className)).toBe("otd-settings-font");
     const select = page.locator("#otd-settings .otd-settings-font select");
@@ -108,13 +108,13 @@ test("TweetDeck's General tab has \"Super wide\" after its column widths, and pi
 
 test("switching tabs leaves nothing of the other tab behind", async ({ page }) => {
     await openSettings(page);
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
     await tab(page, "General");
     expect(await page.$("#otd-settings")).toBeNull();
     expect(await page.$("#general_settings")).not.toBeNull();
     await tab(page, "Mute");
-    await tab(page, "OldTweetDeck");
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
+    await tab(page, "TweeXDeck");
     expect(await page.$$("#otd-settings")).toHaveLength(1);
     expect(await page.$("#global-settings > :not(#otd-settings)")).toBeNull();
 });
@@ -125,11 +125,11 @@ test("\"Copy diagnostics\" copies the load watchdog's report", async ({ page }) 
         Object.defineProperty(navigator, "clipboard", { value: { writeText: async text => { window.__copied = text; } } });
     });
     await openSettings(page);
-    await tab(page, "OldTweetDeck");
+    await tab(page, "TweeXDeck");
     const link = page.locator("#otd-settings .otd-settings-diagnostics");
     await link.click();
     await expect(link).toHaveText("Скопировано");
-    expect(await page.evaluate(() => window.__copied)).toMatch(/^OldTweetDeck diagnostics\nVersion: 5\.1\.0\n/);
+    expect(await page.evaluate(() => window.__copied)).toMatch(/^TweeXDeck diagnostics\nVersion: 5\.1\.0\n/);
     await expect(link).toHaveText("Скопировать диагностику", { timeout: 5000 });
 });
 
@@ -137,7 +137,7 @@ test.describe("in English", () => {
     test.use({ locale: "en-US" });
     test("labels follow the browser language", async ({ page }) => {
         await openSettings(page, { dark: true });
-        await tab(page, "OldTweetDeck");
+        await tab(page, "TweeXDeck");
         expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Translation", "Columns", "Tweets", "Media", "Composing", "Other"]);
         expect(await page.textContent('#otd-settings [data-feature="pasteImages"]')).toBe(" Paste images with Ctrl+V");
         expect(await page.locator("#otd-settings .otd-settings-lang select option").first().textContent()).toBe("English (browser language)");

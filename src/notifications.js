@@ -52,7 +52,7 @@ function minVersionCheck(ver, minVer) {
     return true;
 }
 
-const RELEASES_API = 'https://api.github.com/repos/Dezeter/OldTweetDeck/releases/latest';
+const RELEASES_API = 'https://api.github.com/repos/Dezeter/TweeXDeck/releases/latest';
 
 // Tells about a new release of this fork, once per version.
 async function checkForUpdate() {
@@ -69,11 +69,11 @@ async function checkForUpdate() {
     });
     let content = modal.querySelector('.otd-notification-content');
     let link = document.createElement('a');
-    link.href = `https://github.com/Dezeter/OldTweetDeck/releases/tag/${encodeURIComponent(release.tag_name)}`;
+    link.href = `https://github.com/Dezeter/TweeXDeck/releases/tag/${encodeURIComponent(release.tag_name)}`;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = ru ? 'что нового и скачать' : 'release notes and download';
-    content.append(ru ? `Вышла OldTweetDeck ${latest} (у вас ${manifest.version}): ` : `OldTweetDeck ${latest} is out (you have ${manifest.version}): `, link);
+    content.append(ru ? `Вышла новая версия TweeXDeck ${latest} (у вас ${manifest.version}): ` : `TweeXDeck ${latest} is out (you have ${manifest.version}): `, link);
 }
 
 let style = document.createElement('style');
