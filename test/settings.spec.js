@@ -100,9 +100,9 @@ test("the font select lists the fonts, writes OTDfont, and goes back to TweetDec
 test("the search keeps the rows and sections it finds, in either language; a section's title finds all of it", async ({ page }) => {
     await openSettings(page);
     await tab(page, "TweeXDeck");
-    const shown = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings [data-search]:not(.otd-settings-section)")].filter(row => row.offsetParent).map(row => row.dataset.feature || row.className.split(" ").pop()));
-    const sections = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .otd-settings-section")].filter(group => group.offsetParent).map(group => group.dataset.section));
-    const dividers = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .divider-bar")].filter(bar => bar.offsetParent).length);
+    const shown = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings [data-search]:not(.otd-settings-section)")].filter(row => row.getClientRects().length).map(row => row.dataset.feature || row.className.split(" ").pop()));
+    const sections = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .otd-settings-section")].filter(group => group.getClientRects().length).map(group => group.dataset.section));
+    const dividers = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .divider-bar")].filter(bar => bar.getClientRects().length).length);
     const search = page.locator("#otd-settings .otd-settings-search");
     await expect(search).toHaveAttribute("placeholder", "Поиск по настройкам");
 

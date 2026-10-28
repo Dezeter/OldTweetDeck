@@ -83,7 +83,8 @@ test("keyboard focus shows, a click doesn't draw it", async ({ page }) => {
 test("the system's \"reduce motion\" stops TweetDeck's animations, with the switch off too", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await open(page, { storage: { OTDmodernLook: "0" } });
-    expect(await page.evaluate(() => [window.__require(0).fx.off, getComputedStyle(document.querySelector(".chirp-container")).transitionDuration])).toEqual([true, "1e-05s"]);
+    // Chrome writes it "1e-05s", Firefox "0.00001s"
+    expect(await page.evaluate(() => [window.__require(0).fx.off, parseFloat(getComputedStyle(document.querySelector(".chirp-container")).transitionDuration)])).toEqual([true, 0.00001]);
     // switched off: TweetDeck's own colors
     expect(await page.evaluate(() => document.documentElement.classList.contains("otd-modern"))).toBe(false);
     expect((await looks(page)).handle).toBe(2.94);
