@@ -42,7 +42,7 @@ async function openColumn(page, storage) {
         window.__messages = [];
         window.addEventListener("message", e => { if(e.data?.action === "otdDownload") window.__messages.push(e.data); });
     });
-    await addScripts(page, "src/otd-common.js", "src/media-aspect.js", "src/download-media.js");
+    await addScripts(page, "src/otd-common.js", "src/media-layout.js", "src/download-media.js", "src/inline-video.js");
     await page.waitForTimeout(300);
 }
 
@@ -51,8 +51,80 @@ const previews = page => page.evaluate(() => Object.fromEntries([...document.que
     return [article.dataset.key, links.map(link => ({ aspect: link.classList.contains("otd-aspect"), ratio: Math.round(link.getBoundingClientRect().height / link.getBoundingClientRect().width * 100) / 100 }))];
 })));
 
-test("a single image shows in its own proportions, no taller than half the screen", async ({ page }) => {
+// where a tweet's square, text and buttons are, from the tweet's left
+const thumbs = page => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".js-chirp-container > article")].map(article => {
+    const box = el => el && el.getBoundingClientRect();
+    const media = box(article.querySelector(".tweet-body > .js-media"));
+    const text = box(article.querySelector(".tweet-text"));
+    const footer = box(article.querySelector(".tweet-actions"));
+    const tweet = box(article.querySelector(".tweet"));
+    const more = article.querySelector(".tweet-body > .js-media")?.dataset.otdMore ?? null;
+    return [article.dataset.key, media && media.height > 0 ? {
+        square: [Math.round(media.width), Math.round(media.height)],
+        right: Math.round(tweet.right - media.right),
+        // the text and the buttons beside it, not under it
+        beside: text.right <= media.left - 12 + 0.5 && footer.top < media.bottom,
+        top: Math.round(media.top - text.top),
+        more,
+    } : null];
+})));
+
+test("media are a square beside the text: TweetDeck's first of several with \"+1\", a play badge on a video; text alone as it was", async ({ page }) => {
     await openColumn(page);
+    const result = await thumbs(page);
+    const square = { square: [80, 80], right: 0, beside: true, top: 2, more: null };
+    expect(result).toEqual({ "100": square, "200": { ...square, more: "+1" }, "301": square, "400": square, "500": null });
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-key="400"] .is-video'), "::after").width)).toBe("28px");
+    // the second of the two is TweetDeck's, hidden
+    expect(await page.evaluate(() => [...document.querySelectorAll('[data-key="200"] .js-media-preview-container')].map(c => getComputedStyle(c).display))).toEqual(["block", "none"]);
+});
+
+test("switched to whole or strip, the media go back under the text, at once", async ({ page }) => {
+    await openColumn(page);
+    const order = () => page.evaluate(() => [...document.querySelector('[data-key="100"] .tweet-body').children].map(c => c.classList[0]));
+    expect(await order()).toEqual(["js-media", "nbfc", "js-tweet-text", "js-card-container"]);
+    await page.evaluate(() => OTD.setValue(OTD.MEDIA_STORAGE, "strip"));
+    expect(await order()).toEqual(["nbfc", "js-tweet-text", "js-card-container", "js-media"]);
+    expect((await thumbs(page))["100"]).toMatchObject({ square: [274, 130] });
+    await page.evaluate(() => OTD.setValue(OTD.MEDIA_STORAGE, ""));
+    expect((await thumbs(page))["100"]).toMatchObject({ square: [80, 80], beside: true });
+});
+
+test("a video in a square opens its tweet to full width and plays there", async ({ page }) => {
+    await openColumn(page);
+    await page.click('[data-key="400"] .js-media-image-link');
+    expect(await page.evaluate(() => [document.querySelector('[data-key="400"] .tweet-body').classList.contains("otd-has-thumb"), !!document.querySelector('[data-key="400"] .otd-inline-video')])).toEqual([false, true]);
+    expect(await page.evaluate(() => Math.round(document.querySelector('[data-key="400"] .otd-inline-video').getBoundingClientRect().width))).toBe(274);
+});
+
+test("a quote goes under the square, whole; a quoted tweet's media are a smaller square in it", async ({ page }) => {
+    await openColumn(page);
+    const quote = await page.evaluate(() => {
+        const quoted = window.__chirps["100"];
+        const json = { id_str: "600", full_text: "see", text: "see", created_at: new Date().toUTCString(), source: "web", user: quoted.user ? { id_str: "20", screen_name: "bob", name: "bob", profile_image_url_https: "", entities: {} } : null,
+            entities: { hashtags: [], user_mentions: [], symbols: [], urls: [] }, is_quote_status: true, quoted_status_id_str: "100" };
+        const photo = window.__chirps["300"]?.getMedia?.()[0]?.entity || window.__chirps["301"].retweetedStatus.getMedia()[0].entity;
+        const withQuote = window.__client.processTweet({ ...json, quoted_status: { id_str: "100", full_text: "tall", text: "tall", created_at: new Date().toUTCString(), source: "web", user: { id_str: "10", screen_name: "alice", name: "alice", profile_image_url_https: "", entities: {} },
+            entities: { hashtags: [], user_mentions: [], symbols: [], urls: [], media: [photo] }, extended_entities: { media: [photo] } }, entities: { ...json.entities, media: [photo] }, extended_entities: { media: [photo] } });
+        window.__chirps["600"] = withQuote;
+        document.querySelector(".js-chirp-container").insertAdjacentHTML("beforeend", withQuote.render({ mediaPreviewSize: "medium" }));
+        return true;
+    });
+    expect(quote).toBe(true);
+    await page.waitForTimeout(300);
+    const layout = await page.evaluate(() => {
+        const article = document.querySelector('[data-key="600"]');
+        const box = el => el.getBoundingClientRect();
+        const square = box(article.querySelector(".tweet-body > .js-media"));
+        const card = box(article.querySelector(".js-quote-detail"));
+        const inner = box(article.querySelector(".js-quote-detail .js-media"));
+        return { under: card.top >= square.bottom, whole: Math.round(card.width), inQuote: [Math.round(inner.width), Math.round(inner.height)] };
+    });
+    expect(layout).toEqual({ under: true, whole: 274, inQuote: [64, 64] });
+});
+
+test("a single image shows in its own proportions, no taller than half the screen", async ({ page }) => {
+    await openColumn(page, { OTDmedia: "whole" });
     const result = await previews(page);
     // a very tall (1:4) photo: capped at 50vh = 450px
     expect(result["100"]).toHaveLength(1);
@@ -66,10 +138,38 @@ test("a single image shows in its own proportions, no taller than half the scree
     expect(result["400"].every(p => !p.aspect)).toBe(true);
 });
 
-test("OTDmediaAspect=0 keeps TweetDeck's strip", async ({ page }) => {
-    await openColumn(page, { OTDmediaAspect: "0" });
-    const result = await previews(page);
-    expect(Object.values(result).flat().some(p => p.aspect)).toBe(false);
+test("OTDmedia=strip keeps TweetDeck's strip; the switch before 5.15, off, is the strip too", async ({ page }) => {
+    for(const storage of [{ OTDmedia: "strip" }, { OTDmediaAspect: "0" }]) {
+        await openColumn(page, storage);
+        expect(Object.values(await thumbs(page)).filter(Boolean).every(t => t.square[0] === 274)).toBe(true);
+        expect(await page.evaluate(() => [localStorage.OTDmedia, localStorage.OTDmediaAspect ?? null])).toEqual(["strip", null]);
+    }
+    // switched on, it was the default: whole is a choice of its own now, the default is the square
+    await page.evaluate(() => localStorage.clear());
+    await openColumn(page, { OTDmediaAspect: "1" });
+    expect(await page.evaluate(() => [localStorage.OTDmedia ?? null, localStorage.OTDmediaAspect ?? null])).toEqual([null, null]);
+    expect((await thumbs(page))["100"]).toMatchObject({ square: [80, 80] });
+});
+
+test("in a column a large link card is X's small one, its picture beside the title", async ({ page }) => {
+    await openPage(page);
+    await addTweetDeck(page);
+    const cards = await page.evaluate(() => {
+        window.__cards = [];
+        TD.ui.Column.prototype.loadCard = function(chirp) { window.__cards.push([chirp.card.name, chirp.card.binding_values.thumbnail_image_original?.image_value.url ?? null, chirp.id]); };
+        return true;
+    });
+    expect(cards).toBe(true);
+    await addScripts(page, "src/otd-common.js", "src/media-layout.js");
+    expect(await page.evaluate(() => {
+        const picture = { type: "IMAGE", image_value: { url: "https://pbs.twimg.com/card_img/1/large.jpg", width: 1200, height: 628 } };
+        const chirp = { id: "7", card: { name: "summary_large_image", binding_values: { summary_photo_image_original: picture, title: { string_value: "t" } } } };
+        TD.ui.Column.prototype.loadCard.call({}, chirp, "c1");
+        TD.ui.Column.prototype.loadCard.call({}, { id: "8", card: { name: "summary", binding_values: {} } }, "c1");
+        OTD.setValue(OTD.MEDIA_STORAGE, "whole");
+        TD.ui.Column.prototype.loadCard.call({}, chirp, "c1");
+        return [window.__cards, chirp.card.name];
+    })).toEqual([[["summary", "https://pbs.twimg.com/card_img/1/large.jpg", "7"], ["summary", null, "8"], ["summary_large_image", null, "7"]], "summary_large_image"]);
 });
 
 // opens the "…" menu of a tweet the way TweetDeck renders it, and clicks "Download media" if it's there

@@ -137,3 +137,26 @@ test("the load watchdog's report lists the old addresses in use and the moved on
     expect(report).toContain("\nStill asked at api.x.com and answered: /1.1/users/lookup.json ×2, /1.1/dm/conversation/{id}-{id}.json ×1\n");
     expect(report).toMatch(/\nMoved to x\.com\/i\/api: \/1\.1\/blocks\/ids\.json\n {2}\/1\.1\/blocks\/ids\.json moved at \d+ s\n/);
 });
+
+// TweetDeck's link cards draw summary_photo_image_original or thumbnail_image_original, nothing else
+test("a card without the image sizes TweetDeck draws gets its largest one, or the other kind", async ({ page }) => {
+    await open(page);
+    const image = (url, w) => ({ type: "IMAGE", image_value: { url, width: w, height: w / 2 } });
+    const cards = await page.evaluate(([large, small, thumb]) => {
+        const values = card => Object.fromEntries(Object.entries(parseTweetCard({ legacy: card }).binding_values).filter(([key]) => key.endsWith("_original")).map(([key, value]) => [key, value.image_value.url]));
+        const entries = bindings => Object.entries(bindings).map(([key, value]) => ({ key, value }));
+        return [
+            // GraphQL's list of bindings, sizes but no _original
+            values({ name: "summary_large_image", binding_values: entries({ summary_photo_image_small: small, summary_photo_image_large: large, title: { type: "STRING", string_value: "t" } }) }),
+            // a summary card with a thumbnail only
+            values({ name: "summary", binding_values: { thumbnail_image: thumb } }),
+            // what's there stays
+            values({ name: "summary_large_image", binding_values: { summary_photo_image_original: small, summary_photo_image_large: large } }),
+        ];
+    }, [image("https://pbs.twimg.com/card_img/1/large.jpg", 1200), image("https://pbs.twimg.com/card_img/1/small.jpg", 300), image("https://pbs.twimg.com/card_img/2/thumb.jpg", 400)]);
+    expect(cards).toEqual([
+        { summary_photo_image_original: "https://pbs.twimg.com/card_img/1/large.jpg", thumbnail_image_original: "https://pbs.twimg.com/card_img/1/large.jpg" },
+        { thumbnail_image_original: "https://pbs.twimg.com/card_img/2/thumb.jpg", summary_photo_image_original: "https://pbs.twimg.com/card_img/2/thumb.jpg" },
+        { summary_photo_image_original: "https://pbs.twimg.com/card_img/1/small.jpg", thumbnail_image_original: "https://pbs.twimg.com/card_img/1/small.jpg" },
+    ]);
+});

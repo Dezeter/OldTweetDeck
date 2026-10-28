@@ -6482,9 +6482,9 @@ document.body.addEventListener("click", function (e) {
                 v = {},
                 T = {};
             v.NEW_COMPOSER_OPT_IN = "new_composer_opt_in";
-            // TweeXDeck: "superwide" columns, 400px, after TweetDeck's three
+            // TweeXDeck: "superwide" columns, 400px, after TweetDeck's three, and "flex" ones that share the window
             var w = ["previous_splash_version", "dataminr_auth_token"],
-                b = ["narrow", "medium", "wide", "superwide"];
+                b = ["narrow", "medium", "wide", "superwide", "flex"];
             v.COLUMN_WIDTH_VALUES = b;
             var y = ["smallest", "small", "medium", "large", "largest"];
             v.FONT_SIZE_VALUES = y;
@@ -18721,7 +18721,7 @@ document.body.addEventListener("click", function (e) {
         "use strict";
         i.r(t),
             (t.default =
-                '<fieldset id="general_settings"> <legend>{{_i}}General Settings{{/i}}</legend> <div class="control-group"> <div> <i class="js-streaming-updates icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="streaming-updates"></i> <span class="margin-l--4">{{_i}}Stream Tweets in realtime{{/i}}</span> </div> <div> <i class="js-show-startup-notifications icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-startup-notifications"></i> <span class="margin-l--4">{{_i}}Show notifications on startup{{/i}}</span> </div> <div> <i class="js-display-sensitive-media icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="display-sensitive-media"></i> <span class="margin-l--4">{{_i}}Display media that may contain sensitive content{{/i}}</span> </div> <div> <i class="js-auto-play-gifs icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="auto-play-gifs"></i> <span class="margin-l--4">{{_i}}Autoplay GIFs{{/i}}</span> </div> <div> <i class="js-enable-auto-expand icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="enable-auto-expand"></i> <span class="margin-l--4">{{_i}}Enable tweet auto expand (TweeXDeck){{/i}}</span> </div> <div> <i class="js-show-all-replies-in-home icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-all-replies-in-home"></i> <span class="margin-l--4">{{_i}}Show all replies in home column (TweeXDeck){{/i}}</span> </div> <div class="divider-bar"></div> <div class="cf"> <div class="obj-left js-theme"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Theme{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="dark"> {{_i}}Dark{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="light"> {{_i}}Light{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="system"> {{_i}}System{{/i}} </label> </div> <div class="obj-left js-column-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Columns{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="narrow"> {{_i}}Narrow{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="wide"> {{_i}}Wide{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="superwide"> {{_i}}Super wide{{/i}} </label> </div> <div class="obj-left js-font-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Font size{{/i}}</b></label> <label class="txt-size--12 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="smallest"> {{_i}}Smallest{{/i}} </label> <label class="txt-size--13 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="small"> {{_i}}Small{{/i}} </label> <label class="txt-size--14 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="txt-size--15 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="large"> {{_i}}Large{{/i}} </label> <label class="txt-size--16 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="largest"> {{_i}}Largest{{/i}} </label> </div> </div> </div> <div class="mdl-links"> {{> app_links}} </div> </fieldset>');
+                '<fieldset id="general_settings"> <legend>{{_i}}General Settings{{/i}}</legend> <div class="control-group"> <div> <i class="js-streaming-updates icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="streaming-updates"></i> <span class="margin-l--4">{{_i}}Stream Tweets in realtime{{/i}}</span> </div> <div> <i class="js-show-startup-notifications icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-startup-notifications"></i> <span class="margin-l--4">{{_i}}Show notifications on startup{{/i}}</span> </div> <div> <i class="js-display-sensitive-media icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="display-sensitive-media"></i> <span class="margin-l--4">{{_i}}Display media that may contain sensitive content{{/i}}</span> </div> <div> <i class="js-auto-play-gifs icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="auto-play-gifs"></i> <span class="margin-l--4">{{_i}}Autoplay GIFs{{/i}}</span> </div> <div> <i class="js-enable-auto-expand icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="enable-auto-expand"></i> <span class="margin-l--4">{{_i}}Enable tweet auto expand (TweeXDeck){{/i}}</span> </div> <div> <i class="js-show-all-replies-in-home icon icon-small icon-toggle-off color-twitter-blue js-toggle-switch is-actionable align-top" id="show-all-replies-in-home"></i> <span class="margin-l--4">{{_i}}Show all replies in home column (TweeXDeck){{/i}}</span> </div> <div class="divider-bar"></div> <div class="cf"> <div class="obj-left js-theme"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Theme{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="dark"> {{_i}}Dark{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="light"> {{_i}}Light{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-theme-radio touch-larger-label" name="theme" value="system"> {{_i}}System{{/i}} </label> </div> <div class="obj-left js-column-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Columns{{/i}}</b></label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="narrow"> {{_i}}Narrow{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="wide"> {{_i}}Wide{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="superwide"> {{_i}}Super wide{{/i}} </label> <label class="fixed-width-label radio"> <input type="radio" class="js-settings-radio js-column-size-radio touch-larger-label" name="column-size" value="flex"> {{_i}}Flex{{/i}} </label> </div> <div class="obj-left js-font-size"> <label class="fixed-width-label txt-uppercase touch-larger-label"><b>{{_i}}Font size{{/i}}</b></label> <label class="txt-size--12 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="smallest"> {{_i}}Smallest{{/i}} </label> <label class="txt-size--13 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="small"> {{_i}}Small{{/i}} </label> <label class="txt-size--14 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="medium"> {{_i}}Medium{{/i}} </label> <label class="txt-size--15 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="large"> {{_i}}Large{{/i}} </label> <label class="txt-size--16 fixed-width-label radio"> <input type="radio" class="js-settings-radio js-font-size-radio" name="font-size" value="largest"> {{_i}}Largest{{/i}} </label> </div> </div> </div> <div class="mdl-links"> {{> app_links}} </div> </fieldset>');
     },
     function (e, t, i) {
         "use strict";
@@ -39841,6 +39841,8 @@ document.body.addEventListener("click", function (e) {
                 medium: 290,
                 wide: 330,
                 superwide: 380,
+                // TweeXDeck: what the narrowest flex column has
+                flex: 290,
                 temporary: 350,
             }),
             (TD.services.TwitterMedia.MAX_THUMB_WIDTH = 90),
@@ -39940,6 +39942,27 @@ document.body.addEventListener("click", function (e) {
                     detail: {
                         width: 380,
                         height: 380,
+                    },
+                },
+                // TweeXDeck: flex columns, 310 to 480px, take superwide's previews and fit medium's detail
+                flex: {
+                    stream: {
+                        small: {
+                            width: 162,
+                            height: 104,
+                        },
+                        medium: {
+                            width: 283,
+                            height: 175,
+                        },
+                        large: {
+                            width: 400,
+                            height: 400,
+                        },
+                    },
+                    detail: {
+                        width: 290,
+                        height: 290,
                     },
                 },
             }),
@@ -45160,8 +45183,9 @@ document.body.addEventListener("click", function (e) {
             (n.updateColumnSize = function () {
                 var e = TD.settings.getColumnWidth(),
                     t = (0, o.default)(document.body);
-                // TweeXDeck: superwide is wide (its smaller media, labels shown) with columns of 400px
-                switch ((t.removeClass("is-narrow-columns is-medium-columns is-wide-columns is-superwide-columns"), e)) {
+                // TweeXDeck: superwide is wide (its smaller media, labels shown) with columns of 400px; flex is
+                // superwide with columns that share the window
+                switch ((t.removeClass("is-narrow-columns is-medium-columns is-wide-columns is-superwide-columns is-flex-columns"), e)) {
                     case "narrow":
                         t.addClass("is-narrow-columns");
                         break;
@@ -45173,6 +45197,9 @@ document.body.addEventListener("click", function (e) {
                         break;
                     case "superwide":
                         t.addClass("is-wide-columns is-superwide-columns");
+                        break;
+                    case "flex":
+                        t.addClass("is-wide-columns is-superwide-columns is-flex-columns");
                 }
                 (0, o.default)(document).trigger("uiColumnWidthChange", {
                     columnWidth: e,

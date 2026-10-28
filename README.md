@@ -19,9 +19,9 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
 - [Pasting images](#pasting-images) into the compose box with Ctrl+V
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
-- [Whole images](#media) in columns instead of cropped strips, [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
+- [Media as a small square beside the text](#media), or whole, instead of TweetDeck's cropped strips; [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
-- [Super wide columns](#columns) of 400px, [columns that fit the window](#columns), [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
+- [Super wide columns](#columns) of 400px, [flex columns that share the window](#columns), [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Tweet shapes while a column loads](#loading-and-empty-columns), and a plain message with a button when it's empty or X didn't answer
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
@@ -99,7 +99,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | "Redraft" in your tweet's menu | `OTDredraft` |
 | "Mute #hashtag" and "Mute tweets from …" in the tweet menu | `OTDmuteFromMenu` |
 | Mute and Block buttons under tweets (off by default, `'1'` turns it on) | `OTDrowMuteBlock` |
-| Whole images in columns | `OTDmediaAspect` |
+| Media in columns (a square beside the text without the key) | `OTDmedia`: `'whole'` or `'strip'` |
 | Videos playing in the tweet | `OTDinlineVideo` |
 | "Download media" in the tweet menu | `OTDdownloadMedia` |
 | "Copy links to media" in the tweet menu | `OTDcopyMediaLinks` |
@@ -109,7 +109,6 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Better readability: contrast, larger buttons, keyboard focus | `OTDmodernLook` |
 | Lights out (off by default, `'1'` turns it on) | `OTDlightsOut` |
 | Theme following the system's (TweetDeck's own pick without the key) | `OTDthemeSystem`: `'1'` |
-| Columns fitting the window | `OTDfitColumns` |
 | Density (TweetDeck's compact without the key) | `OTDdensity`: `'comfortable'` |
 | SVG icons | `OTDsvgIcons` |
 | Font (TweetDeck's own without the key) | `OTDfont`: `'golos'`, `'onest'`, `'inter'` or `'manrope'` |
@@ -166,7 +165,15 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 ## Media
 
-A tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
+Settings → TweeXDeck → Media → "Media in columns" sets how a tweet's photos and videos show in a column:
+
+- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Several photos are TweetDeck's grid in the square (or the first one with "+2"), a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
+- **Whole**: a tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
+- **A strip, as in TweetDeck**.
+
+The tweet opened in a column, and columns set to TweetDeck's "Large" media previews, keep TweetDeck's own.
+
+A link card shows its picture also when X sends it in other sizes than the one TweetDeck reads.
 
 A click on a video plays it right in the tweet instead of TweetDeck's media window: in its own proportions, no taller than half the screen, with the browser's controls and full screen. One video plays at a time, it pauses when scrolled away, and the volume is remembered. Ctrl+click or a middle click opens TweetDeck's window as before; GIFs play in place as TweetDeck has them.
 
@@ -186,7 +193,7 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 Settings → General → Columns has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
 
-Columns that don't fill the window share it: each grows from the width picked in the settings up to 480px, so three columns on a wide screen don't leave half of it empty. With more columns than fit, they keep their width and the row scrolls as before.
+After them, **Flex**: columns that share the window, each from 310 up to 480px, so three columns on a wide screen don't leave half of it empty; with more columns than fit, they keep 310px and the row scrolls as before. Media in flex columns are sized as in super wide ones. The other widths stay as wide as they say.
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is. TweetDeck's "N New Tweets" over the column counts the ones that came; it, or a scroll to the top, brings them in, and with the pointer still over the column it holds still again.
 
@@ -204,7 +211,7 @@ Settings → TweeXDeck → Appearance has, in one place:
 
 - **Theme**: light, dark, or as the system, which follows the system's light or dark mode as it changes. "System" is in Settings → General → Theme too.
 - **Lights out**: the dark theme in x.com's black instead of TweetDeck's dark blue, for OLED screens.
-- **Column width** and **columns fitting the window** (see [Columns](#columns)).
+- **Column width**, flex included (see [Columns](#columns)).
 - **Density**: TweetDeck's compact one, or comfortable, with more room around a tweet and its text from 15px, for reading a few columns rather than many.
 - **Font** (see [Font](#font)).
 - **New icons**: TweetDeck's icon font replaced by sharp SVG icons in x.com's style, from [Lucide](https://lucide.dev). A liked heart stays red and filled, a retweet green; the icons Lucide has no match for (the bird, switches, badges) keep the font.
@@ -214,7 +221,9 @@ TweetDeck's look is also brought up to today's accessibility standards (WCAG 2.2
 - The light theme's grey text, icons and links are darker: handles and times at 6.1:1 instead of 2.9:1, links at 5.1:1 instead of 2.8:1, the icons under a tweet at 6.1:1 instead of 2.0:1. The dark theme already passed and keeps its colors.
 - The buttons under a tweet take a 32px circle around their 18px icons, tinted on hover as on x.com, so they're easier to hit.
 - Keyboard focus shows as a blue ring (TweetDeck took it off everywhere); a click doesn't draw it.
-- Tweet text has more room between lines (1.4), @handles are 13px instead of 12, and counts don't jump as they change.
+- Tweet text has more room between lines (1.4), @handles are 13px instead of 12, counts don't jump as they change, and there are 6px between a tweet's text and its buttons instead of 3.
+- A quoted tweet's text is in the tweet's own color, as on x.com: TweetDeck's grey was 3.6:1 in the dark theme.
+- A notification's "Name retweeted" or "Name liked" stays on one line, with a 20px avatar and a long name cut short, instead of the action wrapping under the name.
 
 With "reduce motion" on in the system, TweetDeck's animations stop, whatever the switch.
 
@@ -251,6 +260,7 @@ X is retiring the old API addresses TweetDeck asks at `api.x.com`. In October 20
 
 - `npm test` runs the tests: TweetDeck's own code with these scripts on stubbed pages, in Chromium and Firefox, and the unpacked extension in Chromium. They need Playwright's browsers once: `npx playwright install chromium firefox`.
 - `npm run build` packs `build/TweeXDeckChrome.zip` and `build/TweeXDeckFirefox.zip`. Publishing a release attaches them to it.
+- `test/specimens.spec.js` draws every kind of tweet (photos, video, GIF, quotes, link cards, a poll, notifications, an opened tweet) in both themes and several widths, and checks their layout; `SPECIMENS_OUT=specimens npx playwright test test/specimens.spec.js --project=chromium` also saves a picture of each.
 
 ## FAQ
 

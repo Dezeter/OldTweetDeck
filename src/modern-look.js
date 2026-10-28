@@ -3,7 +3,11 @@
 //   action row (2.9:1 and 2.0:1 before), #1570c4 for links (2.8:1 before); the dark theme already passes;
 // - the action row's buttons take a 32px circle around their 18px icons, tinted on hover as on x.com;
 // - keyboard focus shows (TweetDeck takes the outline off everywhere), for the pointer it stays as it was;
-// - tweet text at line-height 1.4 instead of 1.29, @handles at 13px instead of 12, counts in tabular figures.
+// - tweet text at line-height 1.4 instead of 1.29, @handles at 13px instead of 12, counts in tabular figures,
+//   6px between a tweet's text and its buttons instead of 3;
+// - a quoted tweet's text in the tweet's color, as on x.com: TweetDeck's grey is 3.6:1 in the dark theme;
+// - a notification's "Name retweeted" / "Name liked" on one line: a 20px avatar, the name, the action in grey,
+//   a long name cut with "…" (TweetDeck's wraps the action under a 24px avatar).
 // Whatever the switch, the system's "reduce motion" stops TweetDeck's animations, CSS and jQuery ones.
 // Loaded by injection.js after otd-common.js. Switch "modernLook", applies without a reload.
 (() => {
@@ -51,6 +55,17 @@
 
         html.otd-modern .stream-item .js-tweet-text.tweet-text, html.otd-modern .tweet-detail .js-tweet-text.tweet-text, html.otd-modern .quoted-tweet .js-quoted-tweet-text { line-height: 1.4; }
         html.otd-modern .tweet-header .account-inline .username { font-size: 13px; }
+        html.otd-modern .tweet-footer, html.dark.otd-modern .tweet-footer { margin-top: 6px; }
+        html.otd-modern .quoted-tweet, html.dark.otd-modern .quoted-tweet { color: inherit; }
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc {
+            display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; line-height: 20px; white-space: nowrap; color: #536471;
+        }
+        html.dark.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc { color: #8899a6; }
+        /* the line and its time on one middle, not on the avatar's baseline */
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc,
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .tweet-timestamp { align-self: center; }
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc > .avatar { flex: none; width: 20px; height: 20px; margin: 0; border-radius: 50%; }
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc > .account-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         html.otd-modern .tweet-action, html.otd-modern .tweet-detail-action, html.otd-modern .tweet-timestamp, html.otd-modern .like-count, html.otd-modern .retweet-count, html.otd-modern .reply-count { font-variant-numeric: tabular-nums; }
     `);
 })();

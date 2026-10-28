@@ -69,7 +69,7 @@ async function main() {
             load("/src/group-notifications.js"),
             load("/src/clean-links.js"),
             load("/src/absolute-time.js"),
-            load("/src/media-aspect.js"),
+            load("/src/media-layout.js"),
             load("/src/inline-video.js"),
             load("/src/download-media.js"),
             load("/src/pause-on-hover.js"),

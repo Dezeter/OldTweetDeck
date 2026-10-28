@@ -12,8 +12,6 @@
     const FEATURES = [
         { key: "lightsOut", storage: "OTDlightsOut", section: "appearance", default: false,
             label: { ru: "Lights out: тёмная тема чёрная, как на x.com, для OLED-экранов", en: "Lights out: the dark theme in black, as on x.com, for OLED screens" } },
-        { key: "fitColumns", storage: "OTDfitColumns", section: "appearance",
-            label: { ru: "Колонки по ширине окна: если место остаётся, колонки растягиваются до 480 px", en: "Columns fit the window: with room to spare, columns grow up to 480px" } },
         { key: "svgIcons", storage: "OTDsvgIcons", section: "appearance",
             label: { ru: "Новые иконки: чёткие SVG в стиле x.com вместо шрифта TweetDeck", en: "New icons: sharp SVG in x.com's style instead of TweetDeck's font" } },
         { key: "modernLook", storage: "OTDmodernLook", section: "appearance",
@@ -52,8 +50,6 @@
             label: { ru: "«Игнорировать #хэштег» и «Игнорировать твиты из …» в меню твита", en: "\"Mute #hashtag\" and \"Mute tweets from …\" in the tweet menu" } },
         { key: "rowMuteBlock", storage: "OTDrowMuteBlock", section: "tweets", default: false,
             label: { ru: "Кнопки «Игнорировать» и «Заблокировать» под твитами", en: "\"Mute\" and \"Block\" buttons under tweets" } },
-        { key: "mediaAspect", storage: "OTDmediaAspect", section: "media",
-            label: { ru: "Одиночные картинки в колонке целиком, без обрезки", en: "Single images in columns whole, not cropped" } },
         { key: "inlineVideo", storage: "OTDinlineVideo", section: "media",
             label: { ru: "Видео играют прямо в твите, а не в отдельном окне", en: "Videos play right in the tweet, not in a separate window" } },
         { key: "downloadMedia", storage: "OTDdownloadMedia", section: "media",
@@ -79,6 +75,8 @@
     // TweetDeck's density, picked in the settings tab and drawn by layout.js: TweetDeck's own, compact, without
     // the key, or "comfortable"
     const DENSITY_STORAGE = "OTDdensity";
+    // how media show in a column (media-layout.js): a square beside the text without the key, "whole" or "strip"
+    const MEDIA_STORAGE = "OTDmedia";
     // "1" while TweetDeck's theme follows the system's (theme.js)
     const THEME_SYSTEM_STORAGE = "OTDthemeSystem";
     const FONTS = [
@@ -374,5 +372,5 @@
         html.dark .dropdown-menu [data-otd-action], .dropdown-menu .is-selected [data-otd-action] { color: #fff; }
     `);
 
-    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, FONT_STORAGE, FONTS, DENSITY_STORAGE, THEME_SYSTEM_STORAGE, isOn, setOn, setValue, onChange, isLive, htmlClassWhileOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
+    window.OTD = { UI_LANG, VERSION, BASE_URL, FEATURES, LANG_STORAGE, FONT_STORAGE, FONTS, DENSITY_STORAGE, THEME_SYSTEM_STORAGE, MEDIA_STORAGE, isOn, setOn, setValue, onChange, isLive, htmlClassWhileOn, targetLang, label, cookie, sleep, xHeaders, chirpFor, actionsChirp, openMenuChirp, mediaFiles, notify, attachFiles, addComposerButton, jQuery, addStyle, watch };
 })();

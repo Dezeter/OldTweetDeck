@@ -192,6 +192,15 @@ function parseTweetCard(card) {
     const bindings = Array.isArray(legacy.binding_values)
         ? Object.fromEntries(legacy.binding_values.filter(entry => entry?.key && entry.value).map(entry => [entry.key, entry.value]))
         : legacy.binding_values || {};
+    // TweetDeck's cards show summary_photo_image_original and thumbnail_image_original only; a card X sends
+    // without them gets the largest image it has, or the other one of the two
+    for (const prefix of ["summary_photo_image", "thumbnail_image", "photo_image_full_size", "player_image"]) {
+        if (bindings[`${prefix}_original`]?.image_value?.url) continue;
+        const best = ["_x_large", "_large", "", "_small"].map(suffix => bindings[prefix + suffix]).find(value => value?.image_value?.url);
+        if (best) bindings[`${prefix}_original`] = best;
+    }
+    if (!bindings.summary_photo_image_original && bindings.thumbnail_image_original) bindings.summary_photo_image_original = bindings.thumbnail_image_original;
+    if (!bindings.thumbnail_image_original && bindings.summary_photo_image_original) bindings.thumbnail_image_original = bindings.summary_photo_image_original;
     const normalized = { ...legacy, binding_values: bindings };
     if (legacy.name !== "unified_card") return normalized;
     try {

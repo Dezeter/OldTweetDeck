@@ -13,14 +13,16 @@
         ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
             diagnostics: "Скопировать диагностику", copied: "Скопировано", search: "Поиск по настройкам", nothing: "Ничего не нашлось",
             theme: "Тема", themes: { light: "светлая", dark: "тёмная", system: "как в системе" },
-            columnWidth: "Ширина колонок", widths: { narrow: "узкие", medium: "средние", wide: "широкие", superwide: "очень широкие" },
+            columnWidth: "Ширина колонок", widths: { narrow: "узкие", medium: "средние", wide: "широкие", superwide: "очень широкие", flex: "по ширине окна (flex)" },
             density: "Плотность", densities: { "": "компактно, как в TweetDeck", comfortable: "свободно: больше воздуха, текст от 15 px" },
+            media: "Картинки в колонках", medias: { "": "миниатюра сбоку", whole: "целиком", strip: "полосой, как в TweetDeck" },
             sections: { appearance: "Внешний вид", translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
         en: { lang: "Translate to", browser: "browser language", font: "Font", systemFont: "system, as in TweetDeck", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
             diagnostics: "Copy diagnostics", copied: "Copied", search: "Search settings", nothing: "Nothing found",
             theme: "Theme", themes: { light: "light", dark: "dark", system: "as the system" },
-            columnWidth: "Column width", widths: { narrow: "narrow", medium: "medium", wide: "wide", superwide: "super wide" },
+            columnWidth: "Column width", widths: { narrow: "narrow", medium: "medium", wide: "wide", superwide: "super wide", flex: "fit the window (flex)" },
             density: "Density", densities: { "": "compact, as in TweetDeck", comfortable: "comfortable: more room, text from 15px" },
+            media: "Media in columns", medias: { "": "a thumbnail beside the text", whole: "whole", strip: "a strip, as in TweetDeck" },
             sections: { appearance: "Appearance", translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
     };
     const LABEL = OTD.label(LABELS);
@@ -118,11 +120,17 @@
         localStorage[OTD.DENSITY_STORAGE] === "comfortable" ? "comfortable" : "", value => OTD.setValue(OTD.DENSITY_STORAGE, value),
         [LABELS.ru.density, LABELS.en.density], changed, OTD.DENSITY_STORAGE);
 
+    // media-layout.js
+    const mediaRow = changed => selectRow("otd-settings-media", LABEL.media, ["", "whole", "strip"].map(media => [media, LABEL.medias[media]]),
+        ["whole", "strip"].includes(localStorage[OTD.MEDIA_STORAGE]) ? localStorage[OTD.MEDIA_STORAGE] : "", value => OTD.setValue(OTD.MEDIA_STORAGE, value),
+        [LABELS.ru.media, LABELS.en.media, ...Object.values(LABELS.ru.medias), ...Object.values(LABELS.en.medias)], changed, OTD.MEDIA_STORAGE);
+
     // the rows of a section: its features' switches, and under "Appearance" the selects before the switch they go with
     function sectionRows(section, changed) {
         const rows = [];
         const before = {
-            appearance: { lightsOut: [themeRow], fitColumns: [widthRow], svgIcons: [densityRow, fontRow] },
+            appearance: { lightsOut: [themeRow], svgIcons: [widthRow, densityRow, fontRow] },
+            media: { inlineVideo: [mediaRow] },
         }[section] || {};
         for(const feature of OTD.FEATURES.filter(f => f.section === section)) {
             for(const row of before[feature.key] || []) rows.push(row(changed));

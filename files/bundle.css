@@ -11724,6 +11724,18 @@ h6 {
 .is-superwide-columns .column {
     width: 400px;
 }
+/* TweeXDeck: flex columns share the window, from 310px up to 480px; with more than fit the row scrolls */
+.is-flex-columns .app-columns {
+    display: flex;
+}
+.is-flex-columns .column {
+    flex: 1 0 310px;
+    width: auto;
+    max-width: 480px;
+}
+.is-flex-columns .app-columns > .placeholder {
+    flex: none;
+}
 .is-superwide-columns .live-video-container {
     height: 224px;
 }
@@ -32375,6 +32387,17 @@ html.dark .is-wide-columns .live-video-container {
 /* TweeXDeck: superwide columns, 400px, the rest as wide */
 html.dark .is-superwide-columns .column {
     width: 400px;
+}
+html.dark .is-flex-columns .app-columns {
+    display: flex;
+}
+html.dark .is-flex-columns .column {
+    flex: 1 0 310px;
+    width: auto;
+    max-width: 480px;
+}
+html.dark .is-flex-columns .app-columns > .placeholder {
+    flex: none;
 }
 html.dark .is-superwide-columns .live-video-container {
     height: 224px;
