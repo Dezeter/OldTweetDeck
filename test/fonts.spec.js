@@ -62,7 +62,8 @@ test("without a font picked, or with one that isn't there, TweetDeck keeps its o
         expect(asked).toEqual([]);
         // TweetDeck's icons are the only font
         expect(await page.evaluate(() => [...document.fonts].map(f => f.family.replace(/"/g, "")))).toEqual(["tweetdeckregular"]);
-        expect(await fontOf(page, ".Button")).toBe('"Helvetica Neue", Helvetica, Arial, sans-serif');
+        // Chrome quotes a family name with a space, Firefox doesn't
+        expect((await fontOf(page, ".Button")).replace(/"/g, "")).toBe("Helvetica Neue, Helvetica, Arial, sans-serif");
     }
 });
 
