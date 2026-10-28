@@ -7,6 +7,9 @@ const fs = require("fs");
 const path = require("path");
 const { openPage, addTweetDeck, addAccount, addScripts } = require("./helpers");
 
+// pictures sharp on a high-density screen
+if(process.env.SPECIMENS_OUT) test.use({ deviceScaleFactor: 2 });
+
 const COLORS = ["#7a5cfa", "#e0245e", "#17bf63", "#ffad1f", "#1d9bf0", "#f45d22", "#794bc4", "#00a5a5"];
 // a picture of the given proportions, in place of X's media
 const picture = (w, h, i) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${COLORS[i % 8]}"/><stop offset="1" stop-color="${COLORS[(i + 3) % 8]}"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#g)"/><circle cx="${w * .7}" cy="${h * .3}" r="${Math.min(w, h) * .12}" fill="#fff" opacity=".7"/><path d="M0 ${h} L${w * .35} ${h * .55} L${w * .6} ${h * .8} L${w * .8} ${h * .6} L${w} ${h} Z" fill="#000" opacity=".25"/></svg>`;
