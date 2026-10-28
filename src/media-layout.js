@@ -104,17 +104,17 @@
         /* whole: the strip's height becomes the image's proportion; !important over the dark theme's copy of the rule */
         html.otd-media-whole .js-media-image-link.otd-aspect { height: 0 !important; padding-top: min(50vh, var(--otd-aspect)) !important; background-size: cover; background-position: center; }
 
-        /* thumb: an 80px square at the right, 64px in a quote */
-        ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px 0 6px 12px; overflow: hidden; border-radius: 12px; }
-        ${M[1]} { --otd-thumb: 64px; margin: 0 0 4px 10px; border-radius: 10px; }
-        /* a column beside it: the text, "Replying to", the buttons (in a GIF's tweet TweetDeck's markup puts them in the body) */
-        html.otd-media-thumb .otd-has-thumb > .tweet-text, html.otd-media-thumb .otd-quote-thumb > .js-quoted-tweet-text,
-        html.otd-media-thumb .otd-has-thumb ~ .tweet-footer, html.otd-media-thumb .otd-has-thumb .tweet-footer { display: flow-root; }
-        /* in a quote, its author's line too, cut short with "…" */
-        html.otd-media-thumb .otd-quote-thumb > .tweet-header { display: flow-root; }
+        /* thumb: a column for the text, "Replying to" and the buttons (in a GIF's tweet TweetDeck's markup puts them in
+           the body), and an 80px square in the 92px kept at its right; 64px in 74px in a quote. The square floats into
+           the padding, so the column doesn't hang on how a browser fits a block beside a float */
+        html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { padding-right: 92px; }
+        html.otd-media-thumb .otd-quote-thumb { padding-right: 74px; }
+        ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px -92px 6px 0; overflow: hidden; border-radius: 12px; }
+        ${M[1]} { --otd-thumb: 64px; margin: 0 -74px 4px 0; border-radius: 10px; }
+        /* in a quote, its author's line cut short with "…" */
         html.otd-media-thumb .otd-quote-thumb > .tweet-header > .account-link, html.otd-media-thumb .otd-quote-thumb > .tweet-header .nbfc { display: block; }
-        /* a quote under it, whole */
-        html.otd-media-thumb .otd-has-thumb > .js-quote-detail { clear: right; }
+        /* a quote under the square, whole */
+        html.otd-media-thumb .otd-has-thumb > .js-quote-detail { clear: right; margin-right: -92px; }
         ${both(" > .js-media-preview-container")} { width: 100%; height: 100%; min-height: 0 !important; margin: 0 !important; }
         ${both(" > .js-media-preview-container ~ .js-media-preview-container")} { display: none; }
         ${both(" .media-item")}, ${both(" .media-grid-container")} {

@@ -131,3 +131,20 @@ test("a notification's \"Name retweeted\" stays on one line, a long name cut sho
     await page.evaluate(() => OTD.setOn("modernLook", false));
     expect((await header())[0]).toBeGreaterThan(22);
 });
+
+test("a notification's time is on the middle of its line", async ({ page }) => {
+    await open(page);
+    const middles = await page.evaluate(() => {
+        const entities = { description: { urls: [] }, url: { urls: [] } };
+        const me = { id_str: "1", id: 1, screen_name: "me", name: "me", profile_image_url_https: "", entities };
+        const them = { id_str: "41", id: 41, screen_name: "bad", name: "Badlynasty", entities, profile_image_url_https: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#17bf63"/></svg>') };
+        const target = { id_str: "9", full_text: "mine", text: "mine", created_at: new Date().toUTCString(), source: "web", user: me, entities: { hashtags: [], symbols: [], urls: [], user_mentions: [] } };
+        const ts = Date.now();
+        const [chirp] = TD.services.TwitterAction.processRESTAction({ action: "favorite", created_at: new Date(ts).toUTCString(), max_position: `${ts}`, min_position: `${ts}`, sources: [them], sources_size: 1, targets: [target], targets_size: 1, target_objects: [target], target_objects_size: 1 }, window.__account);
+        document.querySelector(".js-chirp-container").insertAdjacentHTML("afterbegin", chirp.render({}));
+        const middle = el => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+        const header = document.querySelector(".activity-header");
+        return Math.abs(middle(header.querySelector(".nbfc .account-link")) - middle(header.querySelector(".tweet-timestamp")));
+    });
+    expect(middles).toBeLessThan(2);
+});

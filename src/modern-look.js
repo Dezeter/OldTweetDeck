@@ -61,6 +61,9 @@
             display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; line-height: 20px; white-space: nowrap; color: #536471;
         }
         html.dark.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc { color: #8899a6; }
+        /* the line and its time on one middle, not on the avatar's baseline */
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc,
+        html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .tweet-timestamp { align-self: center; }
         html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc > .avatar { flex: none; width: 20px; height: 20px; margin: 0; border-radius: 50%; }
         html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc > .account-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
         html.otd-modern .tweet-action, html.otd-modern .tweet-detail-action, html.otd-modern .tweet-timestamp, html.otd-modern .like-count, html.otd-modern .retweet-count, html.otd-modern .reply-count { font-variant-numeric: tabular-nums; }

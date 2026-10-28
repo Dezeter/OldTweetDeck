@@ -154,7 +154,12 @@ async function shoot(page, name) {
 const layout = page => page.evaluate(() => [...document.querySelectorAll("article[data-otd-label]")].filter(a => a.offsetParent).map(article => {
     const box = el => el?.getBoundingClientRect();
     const tweet = box(article);
-    const out = [...article.querySelectorAll("*")].filter(el => el.offsetParent && !el.closest(".js-tweet-actions")).some(el => box(el).right > tweet.right + 0.5 || box(el).left < tweet.left - 0.5);
+    // what shows: an element clipped by a box of its own inside the tweet doesn't stick out of it
+    const clipped = el => {
+        for(let up = el.parentElement; up && up !== article; up = up.parentElement) if(getComputedStyle(up).overflowX !== "visible") return true;
+        return false;
+    };
+    const out = [...article.querySelectorAll("*")].filter(el => el.offsetParent && !el.closest(".js-tweet-actions") && !clipped(el)).some(el => box(el).right > tweet.right + 0.5 || box(el).left < tweet.left - 0.5);
     const media = article.querySelector(".tweet-body > .js-media");
     const square = media && box(media);
     const text = box(article.querySelector(".tweet-text"));

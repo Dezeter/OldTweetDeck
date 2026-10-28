@@ -72,6 +72,8 @@ test("\"System\" follows the system's theme once TweetDeck is ready, and as it c
     await page.emulateMedia({ colorScheme: "dark" });
     await page.emulateMedia({ colorScheme: "light" });
     expect(await page.evaluate(() => window.__sets)).toEqual(["dark", "light", "dark"]);
+    // Firefox tells the page of the system's change a little later
+    await expect.poll(() => page.evaluate(() => matchMedia("(prefers-color-scheme: dark)").matches)).toBe(false);
     await page.evaluate(() => TD.settings.setTheme("system"));
     expect(await page.evaluate(() => [localStorage.OTDthemeSystem, window.__theme])).toEqual(["1", "light"]);
 });
