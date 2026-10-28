@@ -10,6 +10,8 @@
     // A feature is on by default unless it says default: false; localStorage[storage] "0" or "1" overrides that.
     // settings.js shows them as switches, by section, in this order.
     const FEATURES = [
+        { key: "modernLook", storage: "OTDmodernLook", section: "appearance",
+            label: { ru: "Улучшенная читаемость: контрастная светлая тема, крупные кнопки под твитом, видимый фокус клавиатуры", en: "Better readability: higher-contrast light theme, larger tweet buttons, visible keyboard focus" } },
         { key: "grokTranslate", storage: "OTDgrokTranslate", section: "translation",
             label: { ru: "Переводить твиты через Grok", en: "Translate tweets with Grok" } },
         { key: "articlesTranslate", storage: "OTDarticlesTranslate", section: "translation",

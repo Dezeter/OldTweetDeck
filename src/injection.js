@@ -53,6 +53,7 @@ async function main() {
             // otd-common.js first: the others use window.OTD
             load("/src/otd-common.js"),
             load("/src/fonts.js"),
+            load("/src/modern-look.js"),
             load("/src/grok-translate.js"),
             load("/src/hide-home-replies.js"),
             load("/src/self-threads.js"),

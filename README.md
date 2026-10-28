@@ -103,6 +103,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
+| Better readability: contrast, larger buttons, keyboard focus | `OTDmodernLook` |
 | Font (TweetDeck's own without the key) | `OTDfont`: `'golos'`, `'onest'`, `'inter'` or `'manrope'` |
 | Keeping x.com's service worker off (off by default, `'1'` turns it on) | `OTDblockServiceWorker` |
 | Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
@@ -182,9 +183,20 @@ A thread, where the author replies to themselves, looks the way TweetDeck showed
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
+## Appearance
+
+TweetDeck's look is brought up to today's accessibility standards (WCAG 2.2 AA) where it fell short, switched in Settings → TweeXDeck → Appearance:
+
+- The light theme's grey text, icons and links are darker: handles and times at 6.1:1 instead of 2.9:1, links at 5.1:1 instead of 2.8:1, the icons under a tweet at 6.1:1 instead of 2.0:1. The dark theme already passed and keeps its colors.
+- The buttons under a tweet take a 32px circle around their 18px icons, tinted on hover as on x.com, so they're easier to hit.
+- Keyboard focus shows as a blue ring (TweetDeck took it off everywhere); a click doesn't draw it.
+- Tweet text has more room between lines (1.4), @handles are 13px instead of 12, and counts don't jump as they change.
+
+With "reduce motion" on in the system, TweetDeck's animations stop, whatever the switch.
+
 ## Font
 
-Settings → TweeXDeck → Other → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
+Settings → TweeXDeck → Appearance → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
 
 ## Instant replies
 

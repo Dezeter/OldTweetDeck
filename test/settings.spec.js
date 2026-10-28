@@ -26,9 +26,9 @@ test("an TweeXDeck tab after TweetDeck's own, with a switch for every feature by
     await tab(page, "TweeXDeck");
     expect(await page.$("#general_settings")).toBeNull();
     expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("TweeXDeck");
-    expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Перевод", "Колонки", "Твиты", "Медиа", "Написание", "Прочее"]);
+    expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Внешний вид", "Перевод", "Колонки", "Твиты", "Медиа", "Написание", "Прочее"]);
     expect(await switches(page)).toEqual([
-        ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
+        ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
         ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
@@ -79,8 +79,8 @@ test("the language select writes OTDgrokTranslateLang and keeps a code it doesn'
 test("the font select lists the fonts, writes OTDfont, and goes back to TweetDeck's own without the key", async ({ page }) => {
     await openSettings(page, { storage: { OTDfont: "gone" } });
     await tab(page, "TweeXDeck");
-    // at the top of "Other"
-    expect(await page.$eval('#otd-settings .otd-settings-section[data-section="other"]', group => group.children[1].className)).toBe("otd-settings-font");
+    // at the top of "Appearance"
+    expect(await page.$eval('#otd-settings .otd-settings-section[data-section="appearance"]', group => group.children[1].className)).toBe("otd-settings-font");
     const select = page.locator("#otd-settings .otd-settings-font select");
     // a font that isn't there any more is the system one
     await expect(select).toHaveValue("");
@@ -138,7 +138,7 @@ test.describe("in English", () => {
     test("labels follow the browser language", async ({ page }) => {
         await openSettings(page, { dark: true });
         await tab(page, "TweeXDeck");
-        expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Translation", "Columns", "Tweets", "Media", "Composing", "Other"]);
+        expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Appearance", "Translation", "Columns", "Tweets", "Media", "Composing", "Other"]);
         expect(await page.textContent('#otd-settings [data-feature="pasteImages"]')).toBe(" Paste images with Ctrl+V");
         expect(await page.locator("#otd-settings .otd-settings-lang select option").first().textContent()).toBe("English (browser language)");
     });

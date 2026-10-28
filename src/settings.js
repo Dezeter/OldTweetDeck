@@ -10,10 +10,10 @@
     const LABEL = OTD.label({
         ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
             diagnostics: "Скопировать диагностику", copied: "Скопировано",
-            sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
+            sections: { appearance: "Внешний вид", translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
         en: { lang: "Translate to", browser: "browser language", font: "Font", systemFont: "system, as in TweetDeck", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
             diagnostics: "Copy diagnostics", copied: "Copied",
-            sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
+            sections: { appearance: "Appearance", translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
     });
     const LANGUAGES = ["ru", "en", "uk", "be", "kk", "de", "fr", "es", "it", "pt", "pl", "cs", "nl", "sv", "fi", "tr", "ar", "fa", "he", "hi", "id", "vi", "th", "ja", "ko", "zh"];
 
@@ -114,7 +114,7 @@
             const title = el("label", "txt-uppercase touch-larger-label");
             title.append(el("b", null, LABEL.sections[section]));
             group.append(title);
-            if(section === "other") group.append(fontRow(changed));
+            if(section === "appearance") group.append(fontRow(changed));
             for(const feature of OTD.FEATURES.filter(f => f.section === section)) group.append(toggleRow(feature, changed));
             // the reader's translate button uses the language too, so it stays with translation off
             if(section === "translation") group.append(languageRow(changed));
