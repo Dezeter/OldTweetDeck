@@ -36,6 +36,44 @@ test("a column at its top is held while the pointer is over it, and let go after
     expect(await scrollTop(page, "c1")).toBe(300);
 });
 
+test("holding a column doesn't move its tweets on the screen, nor do the ones that come meanwhile", async ({ page }) => {
+    await open(page);
+    const first = () => page.evaluate(() => Math.round(document.querySelector('[data-column="c1"] article').getBoundingClientRect().top * 100) / 100);
+    const before = await first();
+    await page.hover('[data-column="c1"] article');
+    expect(await scrollTop(page, "c1")).toBe(1);
+    expect(await first()).toBe(before);
+    await page.mouse.move(890, 590);
+    expect(await scrollTop(page, "c1")).toBe(0);
+    expect(await first()).toBe(before);
+
+    // a tweet comes while held: it goes above, and the column scrolls by its height (TweetDeck, or the browser's
+    // scroll anchoring), so the one read stays
+    await page.hover('[data-column="c1"] article');
+    await page.evaluate(() => {
+        const scroller = document.querySelector('[data-column="c1"] .js-column-scroller');
+        const container = scroller.querySelector(".js-chirp-container");
+        const read = container.firstElementChild;
+        const top = read.getBoundingClientRect().top;
+        container.insertAdjacentHTML("afterbegin", '<article class="new" style="height:120px">new</article>');
+        scroller.scrollTop += read.getBoundingClientRect().top - top;
+        read.id = "read";
+    });
+    const read = () => page.evaluate(() => Math.round(document.getElementById("read").getBoundingClientRect().top * 100) / 100);
+    expect(await read()).toBe(before);
+    await page.mouse.move(890, 590);
+    expect(await scrollTop(page, "c1")).toBe(120);
+    expect(await read()).toBe(before);
+});
+
+test("a column too short to scroll isn't touched", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => { document.querySelector('[data-column="c1"] .js-chirp-container').replaceChildren(); });
+    await page.hover('[data-column="c1"]');
+    expect(await page.evaluate(() => document.querySelector('[data-column="c1"] .js-column-scroller').className)).not.toContain("otd-held");
+    expect(await page.evaluate(() => document.querySelector('[data-column="c1"] .js-column-scroller').scrollHeight)).toBe(400);
+});
+
 test("OTDpauseOnHover=0 leaves the columns alone", async ({ page }) => {
     await open(page, { OTDpauseOnHover: "0" });
     await page.hover('[data-column="c1"] article');

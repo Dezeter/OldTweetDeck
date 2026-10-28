@@ -82,16 +82,15 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
         expect(errors.filter(e => /OTD/.test(e))).toEqual([]);
         // the page loads the emoji list from the extension when the picker opens
         expect(await page.evaluate(async () => (await (await fetch(`${OTD.BASE_URL}files/emoji.json`)).json()).emoji.length)).toBeGreaterThan(1800);
-        // and Medeo Sans for TweetDeck's text
-        await expect.poll(() => page.evaluate(() => [...document.fonts].filter(f => f.family.replace(/"/g, "") === "Medeo Sans" && f.status === "loaded").length)).toBe(2);
-        expect(urls.filter(u => u.includes("/files/fonts/")).map(u => new URL(u).protocol)).toEqual(["chrome-extension:", "chrome-extension:"]);
+        // and a font for TweetDeck's text when one is picked; TweetDeck's own until then
+        expect(await page.evaluate(async () => (await (await fetch(`${OTD.BASE_URL}files/fonts/golos/cyrillic.woff2`)).arrayBuffer()).byteLength)).toBeGreaterThan(10000);
+        expect(urls.filter(u => u.includes("/files/fonts/")).map(u => new URL(u).pathname)).toEqual(["/files/fonts/golos/cyrillic.woff2"]);
         expect(await page.locator("iframe[srcdoc]").count()).toBe(0);
         expect(urls.filter(u => /abs\.twimg\.com\/.*vendor\./.test(u))).toEqual([]);
         expect(urls.filter(u => /dimden|oldtd\.org|raw\.githubusercontent\.com/.test(u))).toEqual([]);
 
         // logged out (X answers 401 here), TweetDeck shows its login form, and the load watchdog stays away
         await expect(page.locator(".js-login-form")).toBeVisible();
-        expect(await page.evaluate(() => getComputedStyle(document.querySelector(".js-login-form")).fontFamily)).toMatch(/^"Medeo Sans", /);
         const report = await page.evaluate(() => {
             let report = "";
             document.addEventListener("otd-diagnostic-report", e => { report = e.detail; });

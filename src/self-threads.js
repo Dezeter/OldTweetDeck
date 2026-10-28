@@ -1,10 +1,13 @@
 // Threads, where the author replies to themselves, as TweetDeck showed them when X still marked such tweets
 // (self_thread, which X's answers don't have any more): no "Replying to @author" over its tweets, but "Show this
-// thread" under them. Tweets of a thread next to each other in a column, the newest on top as the column has
-// them, are joined by a line between the avatars, and "Show this thread" stays where the next one isn't right
-// below. Loaded by injection.js after otd-common.js. Switch "selfThreads".
+// thread" under them. Tweets of a thread next to each other in a column are joined by a line between the
+// avatars, and "Show this thread" stays only under the earliest of them. With "threadsOldestFirst" they read
+// from the first down, the way they were written; the column keeps them newest first in its page, as TweetDeck
+// puts new tweets next to the ones there, and only shows them the other way round (flex order).
+// Loaded by injection.js after otd-common.js. Switches "selfThreads" and "threadsOldestFirst".
 (() => {
     if(!OTD.isOn("selfThreads")) return;
+    const OLDEST_FIRST = OTD.isOn("threadsOldestFirst");
     const Status = window.TD?.services?.TwitterStatus;
     if(!Status?.prototype?.isInThread || !Status.prototype.render) return;
 
@@ -28,20 +31,45 @@
         return isInThread.call(this) || (rendering > 0 && selfReply(this.retweetedStatus || this));
     };
 
+    // every run of joined tweets the other way round where it stands; the rest keep their place. The order of all
+    // of the column's children only while it has one, a flex column otherwise looks as TweetDeck's own
+    function showOldestFirst(container, children, items, joined) {
+        const order = children.map((child, i) => i);
+        let reversed = false;
+        for(let i = 0; i < items.length; i++) {
+            if(!joined[i] || (i > 0 && joined[i - 1])) continue;
+            let end = i;
+            while(joined[end]) end++;
+            const first = children.indexOf(items[i]);
+            for(let k = 0; k <= end - i; k++) order[first + k] = first + (end - i) - k;
+            reversed = true;
+        }
+        container.classList.toggle("otd-threads-oldest-first", reversed);
+        children.forEach((child, i) => {
+            const value = reversed ? String(order[i]) : "";
+            if(child.style.order !== value) child.style.order = value;
+        });
+    }
+
     OTD.watch(() => {
         const lines = [];
         for(const container of document.querySelectorAll(".js-column .js-chirp-container")) {
-            const items = [...container.children].filter(el => el.matches("article.js-stream-item"));
+            const children = [...container.children];
+            const items = children.filter(el => el.matches("article.js-stream-item"));
             const chirps = items.map(item => OTD.chirpFor(item));
             // a tweet replying to its own author's tweet right below it; retweets are someone else's doing
             const joined = items.map((item, i) => {
                 const chirp = chirps[i], next = chirps[i + 1];
-                return !!chirp && !!next && !chirp.retweetedStatus && !next.retweetedStatus && selfReply(chirp) && String(chirp.inReplyToID) === String(next.id);
+                return !!chirp && !!next && item.nextElementSibling === items[i + 1] && !chirp.retweetedStatus && !next.retweetedStatus && selfReply(chirp) && String(chirp.inReplyToID) === String(next.id);
             });
+            if(OLDEST_FIRST) showOldestFirst(container, children, items, joined);
             items.forEach((item, i) => {
-                const down = joined[i], up = i > 0 && joined[i - 1];
+                // the one it replies to is below it, or above it the other way round
+                const [down, up] = OLDEST_FIRST ? [i > 0 && joined[i - 1], joined[i]] : [joined[i], i > 0 && joined[i - 1]];
                 item.classList.toggle("otd-thread-down", down);
                 item.classList.toggle("otd-thread-up", up);
+                // "Show this thread" only on the earliest of the run, when there's more of it before
+                item.classList.toggle("otd-thread-continues", joined[i]);
                 const avatar = (down || up) && item.querySelector(".tweet-header .tweet-img");
                 for(const [where, on] of [["down", down], ["up", up]]) {
                     if(on && avatar) lines.push({ item, where, avatar });
@@ -80,6 +108,7 @@
     OTD.addStyle(`
         .otd-thread-down, .otd-thread-up { position: relative; }
         .otd-thread-line { position: absolute; width: 2px; border-radius: 1px; background: rgba(136, 153, 166, .5); pointer-events: none; }
-        .otd-thread-down .js-show-this-thread { display: none !important; }
+        .otd-thread-continues .js-show-this-thread { display: none !important; }
+        .js-chirp-container.otd-threads-oldest-first { display: flex; flex-direction: column; }
     `);
 })();

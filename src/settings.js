@@ -1,5 +1,5 @@
-// The OldTweetDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, and
-// the language to translate to. They write the localStorage keys the features read on load, so changes apply
+// The OldTweetDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, the
+// language to translate to and the font. They write the localStorage keys the features read on load, so changes apply
 // after a reload. Loaded by injection.js after otd-common.js.
 (() => {
     const GlobalSettings = window.TD?.components?.GlobalSettings;
@@ -8,10 +8,10 @@
     const TAB = "oldtweetdeck";
     const RELEASES = "https://github.com/Dezeter/OldTweetDeck/releases";
     const LABEL = OTD.label({
-        ru: { lang: "Переводить на", browser: "язык браузера", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
+        ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
             diagnostics: "Скопировать диагностику", copied: "Скопировано",
             sections: { translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
-        en: { lang: "Translate to", browser: "browser language", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
+        en: { lang: "Translate to", browser: "browser language", font: "Font", systemFont: "system, as in TweetDeck", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
             diagnostics: "Copy diagnostics", copied: "Copied",
             sections: { translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
     });
@@ -74,6 +74,23 @@
         return row;
     }
 
+    // fonts.js draws the one picked here; TweetDeck's own without the key
+    function fontRow(changed) {
+        const row = el("div", "otd-settings-font");
+        const label = el("label", null, `${LABEL.font} `);
+        const select = document.createElement("select");
+        select.append(new Option(LABEL.systemFont, ""), ...OTD.FONTS.map(font => new Option(font.name, font.key)));
+        select.value = OTD.FONTS.some(font => font.key === localStorage[OTD.FONT_STORAGE]) ? localStorage[OTD.FONT_STORAGE] : "";
+        select.addEventListener("change", () => {
+            if(select.value) localStorage[OTD.FONT_STORAGE] = select.value;
+            else localStorage.removeItem(OTD.FONT_STORAGE);
+            changed();
+        });
+        label.append(select);
+        row.append(label);
+        return row;
+    }
+
     function build() {
         const fieldset = el("fieldset");
         fieldset.id = "otd-settings";
@@ -97,6 +114,7 @@
             const title = el("label", "txt-uppercase touch-larger-label");
             title.append(el("b", null, LABEL.sections[section]));
             group.append(title);
+            if(section === "other") group.append(fontRow(changed));
             for(const feature of OTD.FEATURES.filter(f => f.section === section)) group.append(toggleRow(feature, changed));
             // the reader's translate button uses the language too, so it stays with translation off
             if(section === "translation") group.append(languageRow(changed));
@@ -162,7 +180,8 @@
         #otd-settings .otd-setting > span { flex: 1; }
         #otd-settings a { color: #1da1f2; }
         #otd-settings .otd-settings-lang { margin: 6px 0 0 30px; }
-        #otd-settings .otd-settings-lang select { margin-left: 6px; max-width: 220px; }
+        #otd-settings .otd-settings-font { margin: 0 0 6px; }
+        #otd-settings .otd-settings-lang select, #otd-settings .otd-settings-font select { margin-left: 6px; max-width: 220px; }
         #otd-settings .otd-settings-note, #otd-settings .otd-settings-about { margin-top: 10px; font-size: 12px; }
     `);
 })();

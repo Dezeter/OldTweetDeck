@@ -22,7 +22,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
-- [The Medeo Sans font](#font) for all of TweetDeck's text
+- [A font of your choice](#font) for TweetDeck's text: Golos Text, Onest, Inter or Manrope
 - [A Settings tab](#settings) to switch each of these on and off
 
 ## Installation
@@ -84,6 +84,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Grouping notifications | `OTDgroupNotifications` |
 | Holding a column under the pointer | `OTDpauseOnHover` |
 | An author's threads without "Replying to @author", joined by a line | `OTDselfThreads` |
+| An author's threads in a column from the first tweet down | `OTDthreadsOldestFirst` |
 | Unread in the tab title | `OTDtabTitle` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
@@ -100,7 +101,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
-| Medeo Sans font | `OTDmedeoFont` |
+| Font (TweetDeck's own without the key) | `OTDfont`: `'golos'`, `'onest'`, `'inter'` or `'manrope'` |
 | Keeping x.com's service worker off (off by default, `'1'` turns it on) | `OTDblockServiceWorker` |
 | Reloading once and telling why TweetDeck didn't load | `OTDloadWatchdog` |
 
@@ -173,13 +174,13 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is; the new ones show up when the pointer leaves.
 
-A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column (the newest on top, as always) are joined by a line between the avatars.
+A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
 ## Font
 
-All of TweetDeck's text (tweets, columns, menus, buttons and fields) is in [Medeo Sans](https://github.com/DNFDEVS/medeo-font), a free font for Latin and Cyrillic by DNF. The font comes with the extension and loads from its files, nothing is downloaded. Icons keep TweetDeck's own font; Japanese, Chinese and emoji come from the system fonts as before. Settings → OldTweetDeck → Other switches it off.
+Settings → OldTweetDeck → Other → Font sets all of TweetDeck's text (tweets, columns, menus, buttons and fields) in one of four free fonts for Latin and Cyrillic: [Golos Text](https://github.com/googlefonts/golos-text), [Onest](https://github.com/simpals/onest), [Inter](https://github.com/rsms/inter) or [Manrope](https://github.com/sharanda/manrope). By default TweetDeck keeps its own system fonts. The fonts come with the extension and load from its files, nothing is downloaded. Icons keep TweetDeck's own font; other scripts (Greek, Japanese, Chinese) and emoji come from the system fonts as before.
 
 ## Instant replies
 
@@ -226,4 +227,4 @@ This can not be fixed. Since Twitter made likes private, the API to retrieve lik
 MIT, see [LICENSE](LICENSE). Copyright dimden (the original OldTweetDeck) and Dezeter (this fork).  
 The `x-client-transaction-id` algorithm in `src/challenge.js` is ported from [x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id) by Lami (MIT).  
 TweetDeck's own code in `files/` (`bundle.js`, `vendor.js`, `bundle.css`) belongs to X Corp., as in the original project.  
-Medeo Sans in `files/fonts/` (`medeo-font` 1.0.0-rc.4.1) is by DNF, based on Geist and Inter, under the SIL Open Font License 1.1, see [files/fonts/Medeo-LICENSE.txt](files/fonts/Medeo-LICENSE.txt).
+The fonts in `files/fonts/` (Golos Text, Onest, Inter, Manrope, from [Fontsource](https://fontsource.org)'s variable packages, Latin and Cyrillic) are by their authors under the SIL Open Font License 1.1, see `files/fonts/<font>/OFL.txt`.

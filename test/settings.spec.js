@@ -29,10 +29,10 @@ test("an OldTweetDeck tab after TweetDeck's own, with a switch for every feature
     expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Перевод", "Колонки", "Твиты", "Медиа", "Написание", "Прочее"]);
     expect(await switches(page)).toEqual([
         ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
-        ["pauseOnHover", true], ["selfThreads", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
+        ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["mediaAspect", true], ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
-        ["emojiPicker", true], ["gifPicker", true], ["medeoFont", true], ["blockServiceWorker", false], ["loadWatchdog", true],
+        ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
     ]);
     expect(await page.textContent('#otd-settings [data-feature="groupNotifications"]')).toBe(" Группировать лайки, ретвиты и подписки в уведомлениях");
     expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("OldTweetDeck 5.1.0 · Релизы и обновления · Скопировать диагностику");
@@ -74,6 +74,23 @@ test("the language select writes OTDgrokTranslateLang and keeps a code it doesn'
     await select.selectOption("");
     expect(await page.evaluate(() => localStorage.OTDgrokTranslateLang ?? null)).toBeNull();
     await expect(page.locator("#otd-settings .otd-settings-note")).toBeVisible();
+});
+
+test("the font select lists the fonts, writes OTDfont, and goes back to TweetDeck's own without the key", async ({ page }) => {
+    await openSettings(page, { storage: { OTDfont: "gone" } });
+    await tab(page, "OldTweetDeck");
+    // at the top of "Other"
+    expect(await page.$eval('#otd-settings .otd-settings-section[data-section="other"]', group => group.children[1].className)).toBe("otd-settings-font");
+    const select = page.locator("#otd-settings .otd-settings-font select");
+    // a font that isn't there any more is the system one
+    await expect(select).toHaveValue("");
+    expect(await select.locator("option").allTextContents()).toEqual(["системный, как в TweetDeck", "Golos Text", "Onest", "Inter", "Manrope"]);
+
+    await select.selectOption("onest");
+    expect(await page.evaluate(() => localStorage.OTDfont)).toBe("onest");
+    await expect(page.locator("#otd-settings .otd-settings-note")).toBeVisible();
+    await select.selectOption("");
+    expect(await page.evaluate(() => localStorage.OTDfont ?? null)).toBeNull();
 });
 
 test("switching tabs leaves nothing of the other tab behind", async ({ page }) => {
