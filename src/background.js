@@ -41,7 +41,7 @@ function stripPolicies(details) {
 // Firefox applies what the extensions' listeners return in the order they started listening, and a CSP one of them
 // sets after this one took x.com's off is merged with nothing and stays: an extension that rewrites x.com's policy
 // (to let its own scripts in) and started listening later gives the page x.com's policy back. Listening anew
-// before each request for TweetDeck's page and before the watchdog's reload makes this listener the last one.
+// before each request for TweetDeck's page makes this listener the last one.
 let stripping = null;
 function listenLast() {
     const listener = details => stripPolicies(details);
@@ -212,10 +212,6 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         const page = pages[sender.tab?.id] || null;
         sendResponse(page);
         return page;
-    } else if(request.action === 'otdReload') {
-        // past the browser's cache and x.com's service worker, as Ctrl+Shift+R, with this script's listener last
-        listenLast();
-        if(sender.tab?.id !== undefined) chrome.tabs.reload(sender.tab.id, { bypassCache: true });
     } else if(request.action === 'otdServiceWorker') {
         blockServiceWorker = request.block === true;
         chrome.storage.local.set({ blockServiceWorker });

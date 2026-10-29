@@ -1,8 +1,10 @@
 // Load watchdog: when TweetDeck hasn't started 20 s after the page opened, it reloads the page once, when that
 // may help, and then a panel says what went wrong instead of the endless spinner and copies a report for an
 // issue. When x.com's service worker answers the page, or the page's policy blocked the extension's scripts,
-// which is its doing, it lets the worker go and reloads at once, once more when Firefox kept the policy the
-// background script took off, and a last time half a minute after the first, as a reload by hand helped then.
+// which is its doing, it lets the worker go and loads the page again at once, once more when Firefox kept the
+// policy the background script took off, and a last time half a minute after the first. Its loads, and the
+// panel's button, are new loads of TweetDeck's address, not reloads of the tab's history entry: Firefox kept
+// x.com's policy on an entry back from plain x.com, and on every reload of it.
 // It hears what the page shows (scripts blocked by Content-Security-Policy, script errors) and what the other
 // scripts tell it on "otd-diagnostic" events: the steps of injection.js and the extension files that
 // didn't load, the transaction id solver, TweetDeck's own steps as it starts, the requests to X and X's answers.
@@ -26,6 +28,20 @@
     const RELOAD_AGAIN_AFTER = 120000;
     // the last try with x.com's policy kept, after the first reload: a reload by hand that long after loaded TweetDeck
     const KEPT_RETRY_AFTER = 30000;
+    // the watchdog's loads go to TweetDeck's address with this mark, so they're new loads and not the tab's history
+    // entry again; it leaves the address as the page opens
+    const LOAD_MARK = "otd-load";
+    const MARKED = (() => {
+        try {
+            const url = new URL(location.href);
+            if(!url.searchParams.has(LOAD_MARK)) return false;
+            url.searchParams.delete(LOAD_MARK);
+            history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    })();
     const ISSUES = "https://github.com/Dezeter/TweeXDeck/issues";
     const RU = (navigator.language || "en").toLowerCase().startsWith("ru");
     const T = RU ? {
@@ -43,6 +59,7 @@
         errors: (text, more) => `Ошибка в скриптах: ${text}${more ? ` (и ещё ${more})` : ""}.`,
         waiting: list => `X не отвечает на запросы TweetDeck: ${list}. Обычно помогает перезагрузка страницы.`,
         reloaded: "Страница уже перезагружалась сама, это не помогло.",
+        oldPolicy: "Это политика другой загрузки, не та, что пришла сейчас: Firefox оставил её этой странице. Помогает новая загрузка адреса, а не перезагрузка, кнопка «Перезагрузить» ниже так и делает.",
         nothing: "Явных ошибок не видно: возможно, X отвечает медленно. Подождите или перезагрузите страницу.",
         privacy: "В диагностике нет cookies и токенов, её можно приложить к issue.",
         copy: "Скопировать диагностику", copied: "Скопировано", reload: "Перезагрузить", report: "Сообщить о проблеме", close: "Скрыть",
@@ -62,6 +79,7 @@
         errors: (text, more) => `A script error: ${text}${more ? ` (and ${more} more)` : ""}.`,
         waiting: list => `X doesn't answer TweetDeck's requests: ${list}. A reload usually helps.`,
         reloaded: "The page was reloaded automatically already, it didn't help.",
+        oldPolicy: "The policy is another load's, not the one that came now: Firefox kept it for this page. A new load of the address helps, not a reload; the Reload button below does that.",
         nothing: "No errors in sight: X may be slow to answer. Wait or reload the page.",
         privacy: "The report has no cookies or tokens, it can go into an issue.",
         copy: "Copy diagnostics", copied: "Copied", reload: "Reload", report: "Report a problem", close: "Hide",
@@ -104,6 +122,10 @@
     let policy = "";
     let blockedBy = "";
     const policies = new Set();
+    // the nonces of the policy, and of x.com's own scripts in this response: a policy without the response's is
+    // another load's, which Firefox kept
+    const policyNonces = new Set();
+    const pageNonces = new Set();
     let metaPolicy = false;
     let answered = 0;
     let solver = null;
@@ -151,12 +173,14 @@
         policy ||= mask(e.originalPolicy).slice(0, 600);
         blockedBy ||= mask(directive(e.originalPolicy, String(e.effectiveDirective || ""))).slice(0, 600);
         if(policies.size < 10) policies.add(String(e.originalPolicy || ""));
+        for(const nonce of String(e.originalPolicy || "").matchAll(/'nonce-([^']+)'/g)) if(policyNonces.size < 10) policyNonces.add(nonce[1]);
         const where = e.sourceFile ? ` ${clean(e.sourceFile)}${e.lineNumber ? `:${e.lineNumber}` : ""}` : "";
         tally(csp, `${e.effectiveDirective} ${e.blockedURI}${where}`, { directive: e.effectiveDirective, blocked: clean(e.blockedURI) || "inline", where });
     }, true);
     // x.com's own page, until injection.js replaces it
     const metaWatch = new MutationObserver(() => {
         if(document.querySelector('meta[http-equiv="Content-Security-Policy" i]')) metaPolicy = true;
+        for(const script of document.querySelectorAll("script")) if(script.nonce && pageNonces.size < 10) pageNonces.add(script.nonce);
     });
     metaWatch.observe(document, { childList: true, subtree: true });
     // content.js asks the background script
@@ -235,6 +259,9 @@
         return `the background script took off ${stripped || "nothing"} (HTTP ${backgroundSaw.status}${backgroundSaw.fromCache ? ", from the cache" : ""}${seen(backgroundSaw.at)})${left}`;
     }
     const putBack = () => Array.isArray(backgroundSaw?.left) && backgroundSaw.left.includes("content-security-policy");
+    // known only when both have nonces
+    const otherLoadsPolicy = () => policyNonces.size > 0 && pageNonces.size > 0 && ![...pageNonces].some(nonce => policyNonces.has(nonce));
+    const nonces = set => [...set].map(nonce => `${nonce.slice(0, 6)}…`).join(", ");
 
     const pageWindow = () => window.wrappedJSObject || window;
     const has = name => {
@@ -259,6 +286,7 @@
         const blocked = scriptsBlocked();
         if(blocked) list.push(T.csp(blocked));
         if(blocked && putBack()) list.push(T.putBack);
+        if(blocked && otherLoadsPolicy()) list.push(T.oldPolicy);
         if(CONTROLLED_BY) list.push(T.worker(clean(CONTROLLED_BY)));
         if(solver && !solver.ok) list.push(T.solver(solver.text));
         const responses = [...failed.values()];
@@ -354,9 +382,10 @@
             `Steps: ${["extension", "page", "scripts"].map(step => `${step} ${steps[step] ? seconds(steps[step]) : "—"}`).join(", ")}; TD ${has("TD") ? "yes" : "no"}, OTD ${has("OTD") ? "yes" : "no"}`,
             `TweetDeck's steps: ${startup.map(s => `${s.key} ${seconds(s.at)}`).join(", ") || "none"}`,
             `Service worker: ${CONTROLLED_BY ? `controls the page (${clean(CONTROLLED_BY)})` : "none"}${removedWorkers ? `, ${removedWorkers} removed` : ""}`,
-            `Loaded: ${navigation()}${isolated()}${ASKED_AT ? `, ${((START - ASKED_AT) / 1000).toFixed(1)} s after the automatic reload was asked` : ""}; ${background()}`,
+            `Loaded: ${navigation()}${isolated()}${MARKED ? ", the watchdog's new load" : ""}${ASKED_AT ? `, ${((START - ASKED_AT) / 1000).toFixed(1)} s after the automatic reload was asked` : ""}; ${background()}`,
             `Page policy: ${policy || "nothing blocked"}${metaPolicy ? "; x.com's page has one in a <meta>" : ""}${policies.size > 1 ? `; ${policies.size} policies blocked scripts` : ""}`,
             ...(blockedBy ? [`Blocked by: ${blockedBy}`] : []),
+            ...(policyNonces.size ? [`Nonces: the policy's ${nonces(policyNonces)}; x.com's scripts' ${nonces(pageNonces) || "none"}${pageNonces.size ? (otherLoadsPolicy() ? ", none of them in the policy: another load's policy" : ", in the policy: this load's") : ""}`] : []),
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
@@ -430,7 +459,7 @@
                 setTimeout(() => { copyButton.textContent = T.copy; }, 2000);
             });
             const reload = el("button", BUTTON, T.reload);
-            reload.addEventListener("click", () => location.reload());
+            reload.addEventListener("click", newLoad);
             const issue = el("a", BUTTON, T.report);
             issue.href = ISSUES;
             issue.target = "_blank";
@@ -471,8 +500,13 @@
         session(RELOAD_COUNT, String(count));
         if(count === 1) session(RELOAD_FIRST, String(Date.now()));
         session(RELOAD_AT, String(Date.now()));
-        // past the browser's cache and the service worker, by the background script; a plain one if that doesn't come
-        window.postMessage({ action: "otdReload" }, "*");
-        setTimeout(() => location.reload(), 2000);
+        newLoad();
+    }
+    // a new load of TweetDeck's address: its own history entry and policy, past the browser's cache (a new address)
+    // and the service worker let go
+    function newLoad() {
+        const url = new URL(location.href);
+        url.searchParams.set(LOAD_MARK, Date.now().toString(36));
+        location.replace(url.href);
     }
 })();
