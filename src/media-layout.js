@@ -1,10 +1,12 @@
 // How a tweet's photos and videos show in a column, picked in Settings → TweeXDeck → Media (OTD.MEDIA_STORAGE),
 // applied at once:
-// - "thumb", the default: a small square at the right of the text, the text, "Replying to" and the buttons in a
-//   column beside it, a quoted tweet under it at full width. Of several photos the square has the first with "+2";
-//   a video has a play badge, a GIF "GIF". A quoted tweet's media is a smaller square in the
-//   quote. A click opens TweetDeck's media window as before; a video, with inline video on, opens the tweet back to
-//   full width and plays there;
+// - "thumb", the default: in a column with room for it, a small square at the right of the text, the text and
+//   "Replying to" in a column beside it, a quoted tweet and the buttons under it at full width. Of several photos the
+//   square has the first with "+2"; a video has a play badge, a GIF "GIF". A quoted tweet's media is a smaller
+//   square in the quote. A click opens TweetDeck's media window as before; a video, with inline video on, opens the
+//   tweet back to full width and plays there. In a narrower column, where the text beside a square would be a few
+//   words a line, and for a GIF that a reply is, TweetDeck's own preview under the text, full width and cropped
+//   low, as X and the others show media in a timeline;
 // - "whole": a single photo whole, in its own proportions and no taller than half the screen, instead of TweetDeck's
 //   strip; several photos and videos as TweetDeck has them;
 // - "strip": TweetDeck's own strip.
@@ -21,8 +23,33 @@
     const apply = () => {
         document.documentElement.classList.toggle("otd-media-thumb", mode() === "thumb");
         document.documentElement.classList.toggle("otd-media-whole", mode() === "whole");
-        for(const media of document.querySelectorAll("[data-otd-thumb]")) place(media);
+        for(const media of document.querySelectorAll("[data-otd-thumb]")) fit(media);
     };
+    // A square only where the text beside it keeps 208px: a tweet's body 300px wide (TweetDeck's super wide and
+    // wider flex columns); in narrower ones it'd be a few words a line. By column, measured on one of its tweets,
+    // again when the window or a column changes
+    const SIDE_FROM = 300;
+    function roomy(column) {
+        const body = column.querySelector(".js-stream-item .tweet-body");
+        const width = body ? body.getBoundingClientRect().width : 0;
+        if(width > 0) column.dataset.otdMediaSide = width >= SIDE_FROM ? "1" : "0";
+        return column.dataset.otdMediaSide !== "0";
+    }
+    // a GIF a reply is: the answer itself, whole and playing
+    function gifReply(media) {
+        if(media.closest(".js-quote-detail") || !media.querySelector(".is-gif")) return false;
+        const chirp = OTD.chirpFor(media);
+        return !!(chirp?.retweetedStatus || chirp)?.inReplyToID;
+    }
+    // the square or TweetDeck's own, for a tweet's or a quote's media: the box it's in says which
+    function fit(media) {
+        const box = media.parentElement;
+        if(!box || media.dataset.otdThumb === "off") return;
+        const column = media.closest(".js-column");
+        const square = mode() === "thumb" && !("otdOpened" in media.dataset) && (!column || roomy(column)) && !gifReply(media);
+        box.classList.toggle(media.dataset.otdThumb === "quote" ? "otd-quote-thumb" : "otd-has-thumb", square);
+        place(media);
+    }
     // A square floats at the start of what it's beside, so the text goes beside it and not under it; elsewhere
     // the media goes back where TweetDeck put it: after a tweet's card container, at the end of a quote.
     function place(media) {
@@ -58,17 +85,25 @@
             link.classList.add("otd-aspect");
             link.style.setProperty("--otd-aspect", `${(size.h / size.w * 100).toFixed(2)}%`);
         }
+        // a column that got wider or narrower than a square needs: its media again
+        for(const column of document.querySelectorAll(".js-column[data-otd-media-side]")) {
+            const was = column.dataset.otdMediaSide;
+            if(roomy(column) !== (was === "1")) for(const media of column.querySelectorAll("[data-otd-thumb]")) fit(media);
+        }
         // thumb: the tweets and quotes with media, and how many photos past the first
         for(const media of document.querySelectorAll(".js-stream-item .tweet-body > .js-media:not([data-otd-thumb]), .js-stream-item .js-quote-detail > div > .js-media:not([data-otd-thumb])")) {
-            media.dataset.otdThumb = "";
-            if(media.closest(".js-tweet-detail")) continue;
-            media.parentElement.classList.add(media.closest(".js-quote-detail") ? "otd-quote-thumb" : "otd-has-thumb");
+            if(media.closest(".js-tweet-detail")) {
+                media.dataset.otdThumb = "off";
+                continue;
+            }
+            media.dataset.otdThumb = media.closest(".js-quote-detail") ? "quote" : "tweet";
             const more = media.querySelectorAll(":scope > .js-media-preview-container, :scope > [class^='media-grid-'] > .media-image-container").length - 1;
             if(more > 0) media.dataset.otdMore = `+${more}`;
-            place(media);
+            fit(media);
         }
     }
-    OTD.watch(scan);
+    const rescan = OTD.watch(scan);
+    window.addEventListener("resize", rescan);
 
     // a card is drawn for a column by TD.ui.Column's loadCard (the detail view draws its own): in thumb mode a
     // summary_large_image goes as a summary, with the large picture as its thumbnail
@@ -89,8 +124,9 @@
         if(mode() !== "thumb" || !OTD.isOn("inlineVideo") || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
         const box = e.target.closest?.('.js-media .js-media-preview-container.is-video a[rel="mediaPreview"]')?.closest(".otd-has-thumb, .otd-quote-thumb");
         if(!box) return;
-        box.classList.remove("otd-has-thumb", "otd-quote-thumb");
-        place(box.querySelector(":scope > .js-media"));
+        const media = box.querySelector(":scope > .js-media");
+        media.dataset.otdOpened = "";
+        fit(media);
     }, true);
 
     const mask = shape => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${shape}</svg>`)}")`;
@@ -104,12 +140,15 @@
         /* whole: the strip's height becomes the image's proportion; !important over the dark theme's copy of the rule */
         html.otd-media-whole .js-media-image-link.otd-aspect { height: 0 !important; padding-top: min(50vh, var(--otd-aspect)) !important; background-size: cover; background-position: center; }
 
-        /* thumb: a column for the text, "Replying to", "Show this thread" and the buttons (in a GIF's tweet TweetDeck's
-           markup puts them in the body), and an 80px square in the 92px kept at its right; 64px in 74px in a quote. The
-           square floats into the padding, so the column doesn't hang on how a browser fits a block beside a float */
-        html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .js-show-this-thread, html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { padding-right: 92px; }
+        /* thumb: a column for the text, "Replying to" and "Show this thread", and an 80px square in the 92px kept at its
+           right; 64px in 74px in a quote. The square floats into the padding, so the column doesn't hang on how a
+           browser fits a block beside a float. The buttons go under it at full width, the last line of the tweet
+           (in a GIF's tweet TweetDeck's markup puts them in the body) */
+        html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .js-show-this-thread { padding-right: 92px; }
+        html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { clear: right; }
+        html.otd-media-thumb .otd-has-thumb > .tweet-footer { clear: right; margin-right: -92px; }
         html.otd-media-thumb .otd-quote-thumb { padding-right: 74px; }
-        html.otd-media-thumb .otd-has-thumb > :not(.js-media):not(.js-quote-detail), html.otd-media-thumb .otd-quote-thumb > :not(.js-media) { max-width: 100%; box-sizing: border-box; }
+        html.otd-media-thumb .otd-has-thumb > :not(.js-media):not(.js-quote-detail):not(.tweet-footer), html.otd-media-thumb .otd-quote-thumb > :not(.js-media) { max-width: 100%; box-sizing: border-box; }
         ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px -92px 6px 0; overflow: hidden; border-radius: 12px; }
         ${M[1]} { --otd-thumb: 64px; margin: 0 -74px 4px 0; border-radius: 10px; }
         /* a hairline round it, as on x.com: a dark picture on the dark theme doesn't melt into the column */

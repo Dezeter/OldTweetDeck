@@ -52,7 +52,7 @@
         { label: L.addColumn, shortcut: { key: "A" }, apply: () => trigger("uiShowAddColumn") },
         { label: L.search, shortcut: { key: "S" }, apply: () => trigger("uiAppSearchFocus") },
         { label: L.settings, apply: () => new TD.components.GlobalSettings() },
-        { label: L.ours, apply: () => new TD.components.GlobalSettings().switchTab("oldtweetdeck") },
+        { label: L.ours, apply: () => new TD.components.GlobalSettings().switchTab("otd-appearance") },
         { label: L.shortcuts, shortcut: { key: "?" }, apply: () => trigger("uiShowKeyboardShortcutList") },
         ...choice(L.theme, ["light", "dark", "system"], L.themes, theme, value => settings().setTheme(value)),
         ...toggle("lightsOut"),

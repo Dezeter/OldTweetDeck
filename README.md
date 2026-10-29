@@ -22,6 +22,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Links straight to the site](#links-and-time) instead of t.co, and [exact tweet times](#links-and-time) if you like
 - [Media as a small square beside the text](#media), or whole, instead of TweetDeck's cropped strips; [videos that play right in the tweet](#media), and [downloading media](#media) or copying its links from the tweet menu
 - [Redrafting your tweet, muting a hashtag or an app](#tweet-menu) from the tweet menu, [Mute and Block buttons](#tweet-menu) under tweets
+- [Short headers](#columns): "↩ @name" for "Replying to", your own tweet in a notification without your name over it again
 - [Super wide columns](#columns) of 400px, [flex columns that share the window](#columns), [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Tweet shapes while a column loads](#loading-and-empty-columns), and a plain message with a button when it's empty or X didn't answer
 - [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
@@ -77,7 +78,7 @@ When a new release is out, TweeXDeck tells you about it once. Download it from t
 
 ## Settings
 
-Settings → TweeXDeck has a switch for every feature below, all on by default, and the language to translate to; under "Appearance" also TweetDeck's own theme and column width, the density and the font. A field at the top finds a setting by any word of it, in Russian or English. What's under "Appearance" applies at once; the rest after a reload, and the tab says when one is needed, with a link for it.
+TweeXDeck's settings are tabs of TweetDeck's own settings dialog, under a "TweeXDeck" heading after General, Link Shortening and Mute: Appearance, Translation, Columns, Tweets, Media, Composing and Other. They have a switch for every feature below, all on by default, and the language to translate to. All of the look is under Appearance: TweetDeck's own theme, column width and text size, which General now points to instead of showing them, with Lights out, the density, the font, the icons and readability. A field at the top of each tab finds a setting by any word of it, in Russian or English, in all of the tabs. What's under Appearance applies at once; the rest after a reload, and the tab says when one is needed, with a link for it. The dialog is larger than TweetDeck's, up to 1000 by 760 pixels, and fits a smaller window.
 
 The same settings are kept in `localStorage`, so they can also be changed from the browser console on the TweetDeck tab (`"0"` turns a feature off, removing the key turns it back on):
 
@@ -92,6 +93,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | An author's threads without "Replying to @author", joined by a line | `OTDselfThreads` |
 | An author's threads in a column from the first tweet down | `OTDthreadsOldestFirst` |
 | Unread in the tab title | `OTDtabTitle` |
+| Short headers | `OTDcompactHeaders` |
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
@@ -174,7 +176,7 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 Settings → TweeXDeck → Media → "Media in columns" sets how a tweet's photos and videos show in a column:
 
-- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Of several photos the square has the first, with "+2" for the others, a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
+- **A square beside the text**, the default, in a column wide enough for it (a tweet's text 300px wide: super wide and wider flex columns): an 80px square at the right, the text and "Replying to" in a column beside it, the buttons under it as the tweet's last line. In a narrower column the text beside a square would be a few words a line, so the media are TweetDeck's own preview under the text, full width and cropped low, as X and other apps show them in a timeline; the column changes over as it's widened or narrowed. A GIF that is a reply plays whole, as TweetDeck shows it. Of several photos the square has the first, with "+2" for the others, a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
 - **Whole**: a tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 - **A strip, as in TweetDeck**.
 
@@ -198,7 +200,7 @@ Under other people's tweets there can be **Mute** and **Block** buttons, next to
 
 ## Columns
 
-Settings → General → Columns has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
+Settings → Appearance → Column width has a fourth width after TweetDeck's narrow, medium and wide: **Super wide**, 400px, with images and video sized for it.
 
 After them, **Flex**: columns that share the window, each from 310 up to 480px, so three columns on a wide screen don't leave half of it empty; with more columns than fit, they keep 310px and the row scrolls as before. Media in flex columns are sized as in super wide ones. The other widths stay as wide as they say.
 
@@ -207,6 +209,8 @@ A column scrolled to the top doesn't move down with new tweets while the pointer
 A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under their text, over the buttons. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
+
+Headers are shorter: "↩ @name" instead of "Replying to @name" (the words stay for screen readers), and in a column wide enough, on the line of the author's name. A notification that someone liked or retweeted your own tweet doesn't put your name and handle over the tweet again: one line says who did it, as on x.com.
 
 ## Loading and empty columns
 

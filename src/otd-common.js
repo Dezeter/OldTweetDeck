@@ -34,6 +34,8 @@
             label: { ru: "Загрузка и пустые колонки: заготовки твитов вместо «Loading…», понятный текст и кнопка, если пусто или X не ответил", en: "Loading and empty columns: tweet shapes instead of \"Loading…\", a plain message and a button when it's empty or X didn't answer" } },
         { key: "tabTitle", storage: "OTDtabTitle", section: "columns",
             label: { ru: "Непрочитанное в заголовке вкладки: «(3) TweetDeck»", en: "Unread in the tab title: \"(3) TweetDeck\"" } },
+        { key: "compactHeaders", storage: "OTDcompactHeaders", section: "columns",
+            label: { ru: "Короткие заголовки: «↩ @имя» вместо «Replying to», в широкой колонке — в строке с автором; в уведомлении о своём твите — без своего имени над ним", en: "Short headers: \"↩ @name\" instead of \"Replying to\", on the author's line in a wide column; a notification of your own tweet without your name over it" } },
         { key: "loadAllReplies", storage: "OTDloadAllReplies", section: "tweets",
             label: { ru: "Загружать все ответы при просмотре твита", en: "Load all replies when viewing a tweet" } },
         { key: "instantReplies", storage: "OTDinstantReplies", section: "tweets",

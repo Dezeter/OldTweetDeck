@@ -94,6 +94,10 @@
             content: ""; display: block; width: 1em; height: 1em; margin-top: calc((1lh - 1em) / 2); background-color: currentColor;
             -webkit-mask: var(--otd-icon) center / contain no-repeat; mask: var(--otd-icon) center / contain no-repeat;
         }
+        /* the search button's margins are for the glyph on its text line, which put the icon 5px under the middle of
+           the round button of the condensed bar: the icon in the middle of the button, on a line its own height */
+        html.otd-svg-icons .app-header.is-condensed .app-search-fake { display: flex; align-items: center; justify-content: center; padding: 0 !important; }
+        html.otd-svg-icons .app-search-fake .icon { margin: 0; line-height: 1; }
     `);
     OTD.htmlClassWhileOn("svgIcons", "otd-svg-icons");
 })();

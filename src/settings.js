@@ -1,28 +1,38 @@
-// The TweeXDeck tab in TweetDeck's settings: a switch for every feature in OTD.FEATURES, by section, the
-// language to translate to, and under "Appearance" TweetDeck's theme and column width with ours: density and font.
-// A search field filters them all. A label "What: how" shows as a title with a hint under it. Switches write the
-// localStorage keys the features read; what a script listens to (OTD.onChange) applies at once, the rest after a
-// reload, and the tab says so. Loaded by injection.js after otd-common.js.
+// TweeXDeck's tabs in TweetDeck's settings, under a "TweeXDeck" heading after TweetDeck's own: one for each section
+// of OTD.FEATURES, a switch for every feature in it, the language to translate to under "Translation", and under
+// "Appearance" all of the look: TweetDeck's theme, column width and font size with ours, Lights out, density, font,
+// icons and readability. TweetDeck's General tab keeps its other settings and points to "Appearance" for those.
+// A search field on each tab finds a setting in any of them. A label "What: how" shows as a title with a hint
+// under it. Switches write the localStorage keys the features read; what a script listens to (OTD.onChange)
+// applies at once, the rest after a reload, and the tab says so. The dialog is larger than TweetDeck's, up to the
+// window. Loaded by injection.js after otd-common.js.
 (() => {
     const GlobalSettings = window.TD?.components?.GlobalSettings;
     if(!GlobalSettings) return;
 
-    const TAB = "oldtweetdeck";
+    // a section's tab is "otd-<section>"; the heading over them is a tab that opens nothing
+    const TAB = "otd-";
+    const HEADING = "otd-heading";
+    const SECTIONS = [...new Set(OTD.FEATURES.map(f => f.section))];
     const RELEASES = "https://github.com/Dezeter/TweeXDeck/releases";
     const LABELS = {
         ru: { lang: "Переводить на", browser: "язык браузера", font: "Шрифт", systemFont: "системный, как в TweetDeck", reload: "Применится после перезагрузки.", reloadNow: "Перезагрузить", releases: "Релизы и обновления",
             diagnostics: "Скопировать диагностику", copied: "Скопировано", search: "Поиск по настройкам", nothing: "Ничего не нашлось",
             theme: "Тема", themes: { light: "светлая", dark: "тёмная", system: "как в системе" },
             columnWidth: "Ширина колонок", widths: { narrow: "узкие", medium: "средние", wide: "широкие", superwide: "очень широкие", flex: "по ширине окна (flex)" },
+            fontSize: "Размер текста", fontSizes: { smallest: "самый мелкий", small: "мелкий", medium: "средний", large: "крупный", largest: "самый крупный" },
+            general: ["Тема, ширина колонок, размер текста и остальной вид — во вкладке ", "«Внешний вид»", "."],
             density: "Плотность", densities: { "": "компактно, как в TweetDeck", comfortable: "свободно: больше воздуха, текст от 15 px" },
-            media: "Картинки в колонках", medias: { "": "миниатюра сбоку", whole: "целиком", strip: "полосой, как в TweetDeck" },
+            media: "Картинки в колонках", medias: { "": "миниатюра сбоку в широкой колонке, под текстом в узкой", whole: "целиком", strip: "полосой, как в TweetDeck" },
             sections: { appearance: "Внешний вид", translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" } },
         en: { lang: "Translate to", browser: "browser language", font: "Font", systemFont: "system, as in TweetDeck", reload: "Applies after a reload.", reloadNow: "Reload now", releases: "Releases and updates",
             diagnostics: "Copy diagnostics", copied: "Copied", search: "Search settings", nothing: "Nothing found",
             theme: "Theme", themes: { light: "light", dark: "dark", system: "as the system" },
             columnWidth: "Column width", widths: { narrow: "narrow", medium: "medium", wide: "wide", superwide: "super wide", flex: "fit the window (flex)" },
+            fontSize: "Text size", fontSizes: { smallest: "smallest", small: "small", medium: "medium", large: "large", largest: "largest" },
+            general: ["The theme, column width, text size and the rest of the look are in the ", "\"Appearance\"", " tab."],
             density: "Density", densities: { "": "compact, as in TweetDeck", comfortable: "comfortable: more room, text from 15px" },
-            media: "Media in columns", medias: { "": "a thumbnail beside the text", whole: "whole", strip: "a strip, as in TweetDeck" },
+            media: "Media in columns", medias: { "": "a thumbnail beside the text in a wide column, under it in a narrow one", whole: "whole", strip: "a strip, as in TweetDeck" },
             sections: { appearance: "Appearance", translation: "Translation", columns: "Columns", tweets: "Tweets", media: "Media", compose: "Composing", other: "Other" } },
     };
     const LABEL = OTD.label(LABELS);
@@ -115,6 +125,8 @@
         [LABELS.ru.theme, LABELS.en.theme, "dark", "light", "system"], changed, null);
     const widthRow = changed => selectRow("otd-settings-width", LABEL.columnWidth, (TD.settings.COLUMN_WIDTH_VALUES || ["narrow", "medium", "wide"]).map(width => [width, LABEL.widths[width] || width]),
         TD.settings.getColumnWidth(), value => TD.settings.setColumnWidth(value), [LABELS.ru.columnWidth, LABELS.en.columnWidth], changed, null);
+    const fontSizeRow = changed => selectRow("otd-settings-font-size", LABEL.fontSize, ["smallest", "small", "medium", "large", "largest"].map(size => [size, LABEL.fontSizes[size]]),
+        TD.settings.getFontSize?.() || "medium", value => TD.settings.setFontSize(value), [LABELS.ru.fontSize, LABELS.en.fontSize], changed, null);
     // layout.js
     const densityRow = changed => selectRow("otd-settings-density", LABEL.density, ["", "comfortable"].map(density => [density, LABEL.densities[density]]),
         localStorage[OTD.DENSITY_STORAGE] === "comfortable" ? "comfortable" : "", value => OTD.setValue(OTD.DENSITY_STORAGE, value),
@@ -129,7 +141,7 @@
     function sectionRows(section, changed) {
         const rows = [];
         const before = {
-            appearance: { lightsOut: [themeRow], svgIcons: [widthRow, densityRow, fontRow] },
+            appearance: { lightsOut: [themeRow], svgIcons: [widthRow, fontSizeRow, densityRow, fontRow] },
             media: { inlineVideo: [mediaRow] },
         }[section] || {};
         for(const feature of OTD.FEATURES.filter(f => f.section === section)) {
@@ -141,9 +153,11 @@
         return rows;
     }
 
-    // hides the rows the query isn't in, and the sections left empty; a section's title finds all its rows
+    // hides the rows the query isn't in, and the sections left empty; a section's title finds all its rows. Without a
+    // query the tab's own section shows, with one every section it finds
     function filter(fieldset, query) {
         query = query.trim().toLowerCase();
+        fieldset.classList.toggle("is-searching", !!query);
         let first = true;
         let found = false;
         for(const group of fieldset.querySelectorAll(".otd-settings-section")) {
@@ -153,7 +167,7 @@
                 row.hidden = !all && !row.dataset.search.includes(query);
                 any ||= !row.hidden;
             }
-            group.hidden = !any;
+            group.hidden = !any || (!query && group.dataset.section !== fieldset.dataset.section);
             const divider = group.previousElementSibling;
             if(divider?.classList.contains("divider-bar")) divider.hidden = group.hidden || first;
             if(any) first = false;
@@ -162,9 +176,10 @@
         fieldset.querySelector(".otd-settings-nothing").hidden = found;
     }
 
-    function build() {
+    function build(tab) {
         const fieldset = el("fieldset");
         fieldset.id = "otd-settings";
+        fieldset.dataset.section = tab;
         fieldset.append(el("legend", null, "TweeXDeck"));
 
         const search = el("input", "otd-settings-search");
@@ -187,8 +202,7 @@
             if(storage && !OTD.isLive(storage)) note.classList.remove("is-hidden");
         };
 
-        const sections = [...new Set(OTD.FEATURES.map(f => f.section))];
-        sections.forEach((section, i) => {
+        SECTIONS.forEach((section, i) => {
             if(i) fieldset.append(el("div", "divider-bar"));
             const group = el("div", "control-group otd-settings-section");
             group.dataset.section = section;
@@ -199,8 +213,8 @@
             fieldset.append(group);
         });
         const nothing = el("div", "otd-settings-nothing txt-mute", LABEL.nothing);
-        nothing.hidden = true;
         fieldset.append(nothing);
+        filter(fieldset, "");
 
         const about = el("div", "otd-settings-about txt-mute", `TweeXDeck${OTD.VERSION ? ` ${OTD.VERSION}` : ""} · `);
         const releases = el("a", null, LABEL.releases);
@@ -232,27 +246,67 @@
         return fieldset;
     }
 
+    // in General, where its theme, column width and font size were: the way to "Appearance"
+    function pointToAppearance(settings) {
+        const general = document.getElementById("general_settings");
+        if(!general || general.querySelector(".otd-general-note")) return;
+        const [before, link, after] = LABEL.general;
+        const note = el("div", "otd-general-note txt-mute", before);
+        const open = el("a", null, link);
+        open.href = "#";
+        open.addEventListener("click", e => {
+            e.preventDefault();
+            settings.switchTab(`${TAB}appearance`);
+        });
+        note.append(open, after);
+        (general.querySelector(".control-group") || general).append(note);
+    }
+
     const proto = GlobalSettings.prototype;
     const getInfo = proto.getInfo;
     proto.getInfo = function() {
         const info = getInfo.apply(this, arguments);
-        info.tabs.push({ title: "TweeXDeck", action: TAB });
+        info.tabs.push({ title: "TweeXDeck", action: HEADING }, ...SECTIONS.map(section => ({ title: LABEL.sections[section], action: `${TAB}${section}` })));
         return info;
     };
-    // TweetDeck's switchTab renders its own tabs into the form; ours is drawn after it switched
+    // TweetDeck's switchTab renders its own tabs into the form; ours are drawn after it switched
     const switchTab = proto.switchTab;
     proto.switchTab = function(tab) {
+        if(tab === HEADING) return;
+        // "oldtweetdeck", the one tab before 5.15.4
+        if(tab === "oldtweetdeck") tab = `${TAB}appearance`;
         const form = document.getElementById("global-settings");
-        if(this.currentTabName === TAB && tab !== TAB) form?.replaceChildren();
-        switchTab.apply(this, arguments);
-        if(tab === TAB && form && !form.querySelector("#otd-settings")) {
+        const ours = name => typeof name === "string" && name.startsWith(TAB);
+        if(ours(this.currentTabName) && tab !== this.currentTabName) form?.replaceChildren();
+        switchTab.call(this, tab, ...[...arguments].slice(1));
+        document.getElementById("settings-modal")?.classList.add("otd-settings-modal");
+        if(ours(tab) && form && form.querySelector("#otd-settings")?.dataset.section !== tab.slice(TAB.length)) {
             // its teardown event belongs to the tab it already tore down
             this.teardownEvent = null;
-            form.replaceChildren(build());
+            form.replaceChildren(build(tab.slice(TAB.length)));
         }
+        if(tab === "general") pointToAppearance(this);
     };
 
     OTD.addStyle(`
+        /* the dialog up to 1000 by 760, in the window; the tabs' list and the tab beside it fill it */
+        #settings-modal.otd-settings-modal > .mdl { width: min(1000px, calc(100vw - 32px)); height: min(760px, calc(100vh - 32px)); }
+        /* under the header to the bottom: the tabs, the tab, the "Done" button */
+        #settings-modal.otd-settings-modal > .mdl > .mdl-inner { display: flex; flex-direction: column; bottom: 0; }
+        #settings-modal.otd-settings-modal .mdl-content { display: flex; flex: 1; min-height: 0; height: auto; }
+        #settings-modal.otd-settings-modal .mdl-column-sml { flex: none; width: 220px; height: auto; }
+        #settings-modal.otd-settings-modal .mdl-column-lrg { flex: 1; width: auto; min-width: 0; height: auto; }
+        #settings-modal.otd-settings-modal .mdl-content .l-column-scrollv { height: 100%; }
+        #settings-modal.otd-settings-modal .mdl-col-settings > form { max-width: 640px; }
+        /* "TweeXDeck" over its tabs */
+        #settings-modal .js-setting-list a[data-action="${HEADING}"] { pointer-events: none; padding-top: 18px; padding-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; opacity: .65; }
+        #settings-modal .js-setting-list a[data-action="${HEADING}"] .chev-right { display: none; }
+        /* TweetDeck's theme, column width and font size are under "Appearance" */
+        #general_settings .divider-bar, #general_settings .js-theme, #general_settings .js-column-size, #general_settings .js-font-size { display: none; }
+        #general_settings .otd-general-note { margin-top: 14px; font-size: 13px; }
+        #general_settings .otd-general-note a { color: #1da1f2; }
+        /* a tab's own section, or every section the search finds */
+        #otd-settings:not(.is-searching) .divider-bar { display: none; }
         #otd-settings .otd-settings-section > label { display: block; margin-bottom: 4px; }
         /* a long label wraps next to its switch, not under it */
         #otd-settings .otd-setting { display: flex; align-items: flex-start; margin-bottom: 6px; cursor: pointer; }

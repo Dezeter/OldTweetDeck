@@ -78,7 +78,7 @@ test("TweetDeck starts and signs its requests to X, loading nothing from elsewhe
 
         // this extension's scripts are all in, otd-common.js before the rest
         expect(await page.evaluate(() => typeof window.OTD?.watch)).toBe("function");
-        expect(await page.evaluate(() => [OTD.VERSION, TD.components.GlobalSettings.prototype.getInfo().tabs.map(t => t.action)])).toEqual([VERSION, ["general", "services", "filter", "oldtweetdeck"]]);
+        expect(await page.evaluate(() => [OTD.VERSION, TD.components.GlobalSettings.prototype.getInfo().tabs.map(t => t.action)])).toEqual([VERSION, ["general", "services", "filter", "otd-heading", "otd-appearance", "otd-translation", "otd-columns", "otd-tweets", "otd-media", "otd-compose", "otd-other"]]);
         expect(errors.filter(e => /OTD/.test(e))).toEqual([]);
         // the page loads the emoji list from the extension when the picker opens
         expect(await page.evaluate(async () => (await (await fetch(`${OTD.BASE_URL}files/emoji.json`)).json()).emoji.length)).toBeGreaterThan(1800);
