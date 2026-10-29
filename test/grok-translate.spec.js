@@ -16,7 +16,7 @@ const RESPONSES = {
 
 // test/fixtures/columns.html: TweetDeck-like columns with English, Russian and Japanese tweets, quotes,
 // a detail view, a composer quote and a DM. Grok's fetch and the solver are stubbed.
-async function open(page, { responses = RESPONSES, rateLimitFirst = false, storage } = {}) {
+async function open(page, { responses = RESPONSES, rateLimitFirst = false, storage, prepare } = {}) {
     await page.addInitScript(({ responses, rateLimitFirst }) => {
         window.__calls = [];
         window.__articleClicks = 0;
@@ -34,6 +34,7 @@ async function open(page, { responses = RESPONSES, rateLimitFirst = false, stora
     }, { responses, rateLimitFirst });
     await openPage(page, { html: "test/fixtures/columns.html", storage });
     await page.evaluate(() => document.querySelectorAll("article").forEach(a => a.addEventListener("click", () => window.__articleClicks++)));
+    if(prepare) await page.evaluate(prepare);
     await addScripts(page, "src/otd-common.js", "src/grok-translate.js");
 }
 const calls = page => page.evaluate(() => window.__calls);
@@ -142,6 +143,22 @@ test("paragraphs are kept, with a small gap instead of an empty line", async ({ 
     for(const gap of result.gaps) expect(gap).toBeLessThan(result.lineHeight / 2);
     expect(result.anchors).toEqual([true, "example.com/page", "#news"]);
     await expect.poll(() => page.evaluate(() => [...document.querySelectorAll("#q200 .otd-grok-tr > .otd-grok-para")].map(p => p.textContent))).toEqual(["Одна строка"]);
+});
+
+test("a token's id Grok gives back is the text's cashtag for that token, not another one of the text", async ({ page }) => {
+    const TOKEN = "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062";
+    await open(page, {
+        responses: { 100: R(`Говорим о ${TOKEN} и почему $SNP лучше, чем solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU`) },
+        // as cashtags.js draws the token, its id kept; TweetDeck's own $SNP; an id cashtags.js hasn't drawn yet
+        prepare: () => {
+            const cash = (ticker, token) => `<a href="https://twitter.com/search?q=%24${ticker}" rel="hashtag" target="_blank" class="link-complex${token ? " otd-smarttag" : ""}"${token ? ` data-otd-token="${token}"` : ""}><span class="hash">$</span><span class="link-complex-target">${ticker}</span></a>`;
+            document.querySelector("#a100 .js-tweet-text").innerHTML = `Why ${cash("SNP")} beats ${cash("Index", "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062")} and solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU`;
+        },
+    });
+    await expect.poll(() => page.evaluate(() => document.querySelector("#a100 .otd-grok-tr")?.textContent), { timeout: 10000 })
+        .toBe("Говорим о $Index и почему $SNP лучше, чем solana:7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU");
+    expect(await page.evaluate(() => [...document.querySelectorAll("#a100 .otd-grok-tr a")].map(a => [a.textContent, a.dataset.otdToken || null])))
+        .toEqual([["$Index", "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062"], ["$SNP", null]]);
 });
 
 test("translations are cached: a re-rendered tweet and a reload need no requests", async ({ page, context }) => {

@@ -1,6 +1,8 @@
 // X's smart cashtags, as x.com shows them:
 // - a token its text names by id ("robinhood:0x56910d…") is "$Index", a cashtag of TweetDeck's own, which opens
-//   TweetDeck's search for it, the token's name and id in its tooltip;
+//   TweetDeck's search for it, the token's name and id in its tooltip. By what X said of the tweet, or, as the
+//   timelines' queries TweetDeck asks are older than smart tags and leave them out, by the id's look in the text,
+//   its ticker from SmartTagAttachmentQuery: an id X has no asset for stays as it is;
 // - an asset the tweet attaches is a card under the text: its logo and chain, name, ticker, price, change in 24 h
 //   and a chart of that day, from X's SmartTagAttachmentQuery; a click searches its cashtag, as the text's does.
 //   It's asked as x.com asks it, for the day in 5-minute steps; without the query's id there's no card.
@@ -133,34 +135,63 @@
         return box;
     }
 
-    // a smart tag's text in a tweet's text, the tweet's or a quote's
+    // the text's own, not a link's
+    function textNodes(text) {
+        const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+        const nodes = [];
+        for(let node = walker.nextNode(); node; node = walker.nextNode()) if(!node.parentElement.closest("a")) nodes.push(node);
+        return nodes;
+    }
+    // a smart tag's text in a tweet's text, the tweet's, a quote's or a translation's, each time it's there. The
+    // link keeps the id, for the translation to put it back where its text has the id (grok-translate.js)
     function tagText(text, tags) {
         if(!text) return;
         for(const tag of tags) {
             if(!tag.ticker) continue;
-            const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
-            const found = [];
-            for(let node = walker.nextNode(); node; node = walker.nextNode()) if(node.data.includes(tag.text)) found.push(node);
-            for(const node of found) {
-                const at = node.data.indexOf(tag.text);
-                const rest = node.splitText(at);
-                rest.data = rest.data.slice(tag.text.length);
-                const link = cashtagLink(tag.ticker, "otd-smarttag");
-                link.title = tag.name ? `${tag.name} · ${tag.id}` : tag.id;
-                rest.before(link);
+            for(let rest of textNodes(text).filter(node => node.data.includes(tag.text))) {
+                for(let at; (at = rest.data.indexOf(tag.text)) >= 0;) {
+                    rest = rest.splitText(at);
+                    rest.data = rest.data.slice(tag.text.length);
+                    const link = cashtagLink(tag.ticker, "otd-smarttag");
+                    link.title = tag.name ? `${tag.name} · ${tag.id}` : tag.id;
+                    link.dataset.otdToken = tag.id;
+                    rest.before(link);
+                }
             }
         }
     }
 
+    // a token's id as X writes it in a text, the chain and the contract: as grok-translate.js keeps it whole
+    const TOKEN = /(?<![\w:/])[a-z][a-z0-9_-]{1,20}:(?:0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})(?![\w/])/g;
+    // its ticker and name, for as long as the page is open; asked again later when X didn't answer
+    const tickers = new Map();
+    function tickerOf(restId) {
+        if(!tickers.has(restId)) tickers.set(restId, asset(restId).then(found => {
+            if(found?.ticker) return { id: restId, text: restId, ticker: String(found.ticker), name: String(found.name || "") };
+            tickers.delete(restId);
+            return null;
+        }));
+        return tickers.get(restId);
+    }
+    // the ids in a text that what X said of the tweet didn't tag: "$Ticker" once X says what they are
+    function tagFound(text, known = []) {
+        if(!text || !QUERY_ID) return;
+        const ids = new Set(textNodes(text).flatMap(node => node.data.match(TOKEN) || []));
+        for(const tag of known) ids.delete(tag.text);
+        for(const id of ids) tickerOf(id).then(tag => {
+            if(tag && text.isConnected) tagText(text, [tag]);
+        });
+    }
+
     function scan() {
-        const store = data();
-        if(!store?.size) return;
+        const store = data() || new Map();
         for(const item of document.querySelectorAll(".js-stream-item[data-key]:not([data-otd-cashtags]), .js-tweet-detail .js-stream-item:not([data-otd-cashtags])")) {
             item.dataset.otdCashtags = "";
             const chirp = OTD.chirpFor(item);
             const tweet = chirp?.retweetedStatus || chirp?.targetTweet || chirp;
             const known = tweet && store.get(String(tweet.id));
             const text = item.querySelector(".js-tweet-text:not(.js-quoted-tweet-text)");
+            tagFound(text, known?.tags);
             if(known) {
                 tagText(text, known.tags);
                 let after = text;
@@ -173,8 +204,14 @@
             }
             for(const quote of item.querySelectorAll(".js-quote-detail[data-tweet-id]")) {
                 const quoted = store.get(quote.dataset.tweetId);
+                tagFound(quote.querySelector(".js-quoted-tweet-text"), quoted?.tags);
                 if(quoted) tagText(quote.querySelector(".js-quoted-tweet-text"), quoted.tags);
             }
+        }
+        // a translation made before an id's ticker came keeps the id
+        for(const translation of document.querySelectorAll(".otd-grok-tr:not([data-otd-cashtags])")) {
+            translation.dataset.otdCashtags = "";
+            tagFound(translation);
         }
     }
     OTD.watch(scan);

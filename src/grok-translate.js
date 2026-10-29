@@ -215,10 +215,11 @@
             if(!IS_LINK.test(part)) { node.append(part); continue; }
 
             if(IS_TOKEN.test(part)) {
-                // on-chain cashtags come back as "chain:contract", put the original cashtag back
+                // on-chain cashtags come back as "chain:contract", put the original cashtag back: the one for this
+                // token (cashtags.js keeps its id), not another cashtag of the text; without it, the id
                 const addr = part.slice(part.indexOf(":") + 1).toLowerCase();
                 const free = ctx.cash.filter(a => !ctx.cashUsed.has(a));
-                const src = free.find(a => (a.getAttribute("href") || "").toLowerCase().includes(addr)) || free[0];
+                const src = free.find(a => `${a.dataset.otdToken || ""} ${a.getAttribute("href") || ""}`.toLowerCase().includes(addr));
                 if(src) { ctx.cashUsed.add(src); node.append(src.cloneNode(true)); }
                 else node.append(part);
                 continue;
