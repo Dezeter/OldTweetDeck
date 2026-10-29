@@ -148,3 +148,42 @@ test("a notification's time is on the middle of its line", async ({ page }) => {
     });
     expect(middles).toBeLessThan(2);
 });
+
+test("a blank line between paragraphs is a 0.45em gap, none before the first or after the last; the text keeps its newlines", async ({ page }) => {
+    await open(page);
+    await page.evaluate(() => {
+        const user = { id_str: "40", screen_name: "dan", name: "dan", profile_image_url_https: "", entities: {} };
+        const TEXT = "first words\n\nsecond\n \n\nthird";
+        const chirp = window.__client.processTweet({ id_str: "5", full_text: TEXT, text: TEXT, created_at: new Date().toUTCString(), source: "web", user, entities: { hashtags: [], symbols: [], urls: [], user_mentions: [] } });
+        // blank lines before and after it too, as a link taken off the end leaves them
+        document.querySelector(".js-chirp-container").insertAdjacentHTML("beforeend", chirp.render({}).replace("first words", "\n\nfirst words").replace("third", "third\n\n"));
+    });
+    const look = () => page.evaluate(() => {
+        const text = document.querySelector('[data-key="5"] .tweet-text');
+        const css = getComputedStyle(text);
+        const range = document.createRange();
+        const top = word => {
+            const node = [...text.childNodes].find(n => n.nodeType === Node.TEXT_NODE && n.data.includes(word));
+            range.setStart(node, node.data.indexOf(word));
+            range.setEnd(node, node.data.indexOf(word) + word.length);
+            return range.getBoundingClientRect().top;
+        };
+        const em = px => Math.round(px / parseFloat(css.fontSize) * 100) / 100;
+        return {
+            gaps: [...text.querySelectorAll(".otd-para-gap")].map(gap => getComputedStyle(gap).display),
+            // from a paragraph's line to the next one's, past the line itself, in font sizes; and a line's height
+            pitch: [top("second") - top("first"), top("third") - top("second")].map(px => em(px - parseFloat(css.lineHeight))),
+            line: em(parseFloat(css.lineHeight)),
+            first: em(top("first") - text.getBoundingClientRect().top) < 0.5,
+            words: text.textContent,
+        };
+    });
+    await expect.poll(look).toMatchObject({ gaps: ["none", "block", "block", "none"], pitch: [0.45, 0.45], first: true });
+    expect((await look()).words).toBe("\n\nfirst words\n\nsecond\n \n\nthird\n\n");
+    // switched off, the blank lines TweetDeck's text has: one, two
+    await page.evaluate(() => OTD.setOn("modernLook", false));
+    const off = await look();
+    expect(off.gaps).toEqual(["inline", "inline", "inline", "inline"]);
+    expect(off.pitch[0]).toBeCloseTo(off.line, 1);
+    expect(off.pitch[1]).toBeCloseTo(off.line * 2, 1);
+});

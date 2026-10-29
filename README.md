@@ -234,6 +234,7 @@ TweetDeck's look is also brought up to today's accessibility standards (WCAG 2.2
 - Keyboard focus shows as a blue ring (TweetDeck took it off everywhere); a click doesn't draw it.
 - Tweet text has more room between lines (1.4), @handles are 13px instead of 12, counts don't jump as they change, and there are 6px between a tweet's text and its buttons instead of 3.
 - In Chrome 133, Firefox 154 and later, tweet text is trimmed to the top of its capitals and its baseline (CSS `text-box: trim-both cap alphabetic`): the space round it is set by the layout, not by the font's leading. Its first line lines up with the top of a media square beside it, and there are 9px from the name to the text and from the text to the buttons.
+- A blank line between paragraphs is a gap of 0.45em, as between the paragraphs of a translation, instead of an empty line of the text's full height; none before the first paragraph or after the last. The newlines stay in the text, for copying and for the translation.
 - A quoted tweet's text is in the tweet's own color, as on x.com: TweetDeck's grey was 3.6:1 in the dark theme.
 - A notification's "Name retweeted" or "Name liked" stays on one line, with a 20px avatar and a long name cut short, instead of the action wrapping under the name.
 
