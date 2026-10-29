@@ -4,7 +4,9 @@
 // - the action row's buttons take a 32px circle around their 18px icons, tinted on hover as on x.com;
 // - keyboard focus shows (TweetDeck takes the outline off everywhere), for the pointer it stays as it was;
 // - tweet text at line-height 1.4 instead of 1.29, @handles at 13px instead of 12, counts in tabular figures,
-//   6px between a tweet's text and its buttons instead of 3;
+//   6px between a tweet's text and its buttons instead of 3; where the browser trims text to its capitals and
+//   baseline (text-box), 9px from the name to them and from them to the buttons; a blank line between
+//   paragraphs 0.45em, not a whole line; the same for a translation;
 // - a quoted tweet's text in the tweet's color, as on x.com: TweetDeck's grey is 3.6:1 in the dark theme;
 // - a notification's "Name retweeted" / "Name liked" on one line: a 20px avatar, the name, the action in grey,
 //   a long name cut with "…" (TweetDeck's wraps the action under a 24px avatar).
@@ -28,7 +30,45 @@
     OTD.htmlClassWhileOn("modernLook", "otd-modern");
 
     const ACTIONS = ".tweet-action, .tweet-detail-action";
+    // a tweet's text in a column and opened, a quote's
+    const OWN = ["html.otd-modern .stream-item:not(.otd-notif-compact) :is(.js-tweet-text, .otd-grok-tr).tweet-text", "html.otd-modern .tweet-detail :is(.js-tweet-text, .otd-grok-tr).tweet-text"].join(", ");
+    const QUOTED = "html.otd-modern .quoted-tweet :is(.js-quoted-tweet-text, .otd-grok-tr)";
+    const TEXT = ["html.otd-modern .stream-item :is(.js-tweet-text, .otd-grok-tr).tweet-text", "html.otd-modern .tweet-detail :is(.js-tweet-text, .otd-grok-tr).tweet-text", QUOTED].join(", ");
+    const TRIMMED = `${OWN}, ${QUOTED}`;
     const RESTING = ":not(:hover):not(:focus):not(:active):not(.is-selected)";
+    // TweetDeck's text is pre-wrap: a blank line is an empty line of the text's height, 1.4em, which can't be set
+    // apart from it. Its newlines go in a span of their own, a block 0.45em tall; they stay in the text for its
+    // readers (the translation, copying) and show as before with the switch off.
+    const BLANK = /(\n(?:[^\S\n]*\n)+)/;
+    function paragraphs(text) {
+        text.dataset.otdParas = "";
+        const walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+        const found = [];
+        for(let node; (node = walk.nextNode());) if(BLANK.test(node.data)) found.push(node);
+        for(const node of found) node.replaceWith(...node.data.split(BLANK).map((part, i) => {
+            if(i % 2 === 0) return part;
+            const gap = document.createElement("span");
+            gap.className = "otd-para-gap";
+            gap.textContent = part;
+            return gap;
+        }).filter(part => part !== ""));
+        // nothing but space before it or after it: no paragraph to set apart
+        const range = document.createRange();
+        const empty = () => !range.toString().trim() && !range.cloneContents().querySelector("img");
+        for(const gap of text.querySelectorAll(".otd-para-gap")) {
+            range.selectNodeContents(text);
+            range.setEndBefore(gap);
+            let edge = empty();
+            range.selectNodeContents(text);
+            range.setStartAfter(gap);
+            edge ||= empty();
+            gap.classList.toggle("otd-para-edge", edge);
+        }
+    }
+    OTD.watch(() => {
+        for(const text of document.querySelectorAll(":is(.js-tweet-text, .js-quoted-tweet-text).with-linebreaks:not([data-otd-paras])")) paragraphs(text);
+    });
+
     OTD.addStyle(`
         html.otd-modern:not(.dark) .txt-mute,
         html.otd-modern:not(.dark) .txt-mute a:not(:hover):not(:focus),
@@ -57,7 +97,22 @@
         html.otd-modern :focus-visible:not(input):not(textarea):not(select):not([contenteditable]) { outline: 2px solid #1d9bf0 !important; outline-offset: 2px; }
         html.otd-modern ${ACTIONS.split(", ").map(s => `${s}:focus-visible`).join(", ")} { outline-offset: 6px; border-radius: 50%; }
 
-        html.otd-modern .stream-item .js-tweet-text.tweet-text, html.otd-modern .tweet-detail .js-tweet-text.tweet-text, html.otd-modern .quoted-tweet .js-quoted-tweet-text { line-height: 1.4; }
+        /* the text, and its translation (grok-translate.js), a copy of it without TweetDeck's js- class */
+        ${TEXT} { line-height: 1.4; }
+        /* tweet text from the top of its capitals to its baseline (CSS text-box, Chrome 133, Firefox 154): the space
+           round it is the margins', not the font's, so its first line lines up with a square beside it, and the
+           name, the text and the buttons are 9px apart. TweetDeck's text is overflow: hidden, which would cut
+           what's past those lines, the tails of "у" and "р"; it breaks long words anyway. Not a liked tweet's three
+           lines in a notification, cut with "…" */
+        @supports (text-box: trim-both cap alphabetic) {
+            ${TRIMMED} { text-box: trim-both cap alphabetic; overflow: visible; margin-top: 4px; }
+            ${OWN} { margin-bottom: 8px; }
+        }
+        /* a blank line between paragraphs: 0.45em, as between a translation's (paragraphs), none before the first or
+           after the last; in a liked tweet's three lines in a notification, a space */
+        html.otd-modern .otd-para-gap { display: block; height: .45em; overflow: hidden; }
+        html.otd-modern .otd-para-gap.otd-para-edge { display: none; }
+        html.otd-modern .otd-notif-compact .otd-para-gap { display: inline; height: auto; }
         html.otd-modern .tweet-header .account-inline .username { font-size: 13px; }
         html.otd-modern .tweet-footer, html.dark.otd-modern .tweet-footer { margin-top: 6px; }
         html.otd-modern .quoted-tweet, html.dark.otd-modern .quoted-tweet { color: inherit; }

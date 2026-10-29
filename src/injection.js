@@ -60,6 +60,7 @@ async function main() {
             load("/src/grok-translate.js"),
             load("/src/hide-home-replies.js"),
             load("/src/self-threads.js"),
+            load("/src/compact-headers.js"),
             load("/src/conversation-replies.js"),
             load("/src/paste-images.js"),
             load("/src/x-articles.js"),

@@ -16,20 +16,27 @@ async function openSettings(page, { storage, dark = false } = {}) {
         new TD.components.GlobalSettings();
     }, dark);
 }
-const tab = (page, title) => page.locator(".js-setting-list a.list-link").filter({ hasText: title }).click();
+const tab = (page, title) => page.locator(".js-setting-list a.list-link").filter({ hasText: new RegExp(`^${title}$`) }).click();
+const TABS = { appearance: "Внешний вид", translation: "Перевод", columns: "Колонки", tweets: "Твиты", media: "Медиа", compose: "Написание", other: "Прочее" };
+// the tab of a feature's section
+const tabOf = async (page, key) => tab(page, TABS[await page.evaluate(key => OTD.FEATURES.find(f => f.key === key).section, key)]);
 const switches = page => page.evaluate(() => [...document.querySelectorAll("#otd-settings .otd-setting")].map(row => [row.dataset.feature, row.querySelector("i").classList.contains("icon-toggle-on")]));
 
-test("an TweeXDeck tab after TweetDeck's own, with a switch for every feature by section", async ({ page }) => {
+test("TweeXDeck's tabs after TweetDeck's own, one for each section, a switch for every feature in them", async ({ page }) => {
     await openSettings(page, { storage: { OTDpasteImages: "0" } });
-    expect(await page.$$eval(".js-setting-list a.list-link", links => links.map(a => a.textContent.trim()))).toEqual(["General", "Link Shortening", "Mute", "TweeXDeck"]);
+    expect(await page.$$eval(".js-setting-list a.list-link", links => links.map(a => a.textContent.trim()))).toEqual(["General", "Link Shortening", "Mute", "TweeXDeck", ...Object.values(TABS)]);
+    // the heading opens nothing
+    expect(await page.$eval('.js-setting-list a[data-action="otd-heading"]', a => getComputedStyle(a).pointerEvents)).toBe("none");
 
-    await tab(page, "TweeXDeck");
+    await tab(page, "Внешний вид");
     expect(await page.$("#general_settings")).toBeNull();
-    expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("TweeXDeck");
+    expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("Внешний вид");
+    // the tab's own section shows; the others are there for the search
+    expect(await page.$$eval("#otd-settings .otd-settings-section", groups => groups.filter(g => g.getClientRects().length).map(g => g.dataset.section))).toEqual(["appearance"]);
     expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Внешний вид", "Перевод", "Колонки", "Твиты", "Медиа", "Написание", "Прочее"]);
     expect(await switches(page)).toEqual([
         ["lightsOut", false], ["svgIcons", true], ["modernLook", true], ["grokTranslate", true], ["articlesTranslate", true], ["hideHomeReplies", true], ["groupNotifications", true],
-        ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["skeletons", true], ["tabTitle", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true], ["smartCashtags", true],
+        ["pauseOnHover", true], ["selfThreads", true], ["threadsOldestFirst", true], ["skeletons", true], ["tabTitle", true], ["compactHeaders", true], ["loadAllReplies", true], ["instantReplies", true], ["articles", true], ["smartCashtags", true],
         ["cleanLinks", true], ["absoluteTime", false], ["redraft", true], ["muteFromMenu", true], ["rowMuteBlock", false],
         ["inlineVideo", true], ["downloadMedia", true], ["copyMediaLinks", true], ["pasteImages", false],
         ["emojiPicker", true], ["gifPicker", true], ["blockServiceWorker", false], ["loadWatchdog", true],
@@ -39,7 +46,7 @@ test("an TweeXDeck tab after TweetDeck's own, with a switch for every feature by
     expect(await page.$$eval('#otd-settings [data-feature="selfThreads"] span', spans => spans.map(span => span.firstChild.textContent))).toEqual(["Треды автора", "Без «Replying to @автор», соседние твиты треда соединены линией"]);
     // "Appearance" has TweetDeck's theme and column width, and density and font, with the switches they go with
     expect(await page.$$eval('#otd-settings .otd-settings-section[data-section="appearance"] > div', rows => rows.map(row => row.dataset.feature || row.className.replace("otd-settings-select ", "")))).toEqual(
-        ["otd-settings-theme", "lightsOut", "otd-settings-width", "otd-settings-density", "otd-settings-font", "svgIcons", "modernLook"]);
+        ["otd-settings-theme", "lightsOut", "otd-settings-width", "otd-settings-font-size", "otd-settings-density", "otd-settings-font", "svgIcons", "modernLook"]);
     expect(await page.textContent("#otd-settings .otd-settings-about")).toBe("TweeXDeck 5.1.0 · Релизы и обновления · Скопировать диагностику");
     expect(await page.getAttribute("#otd-settings .otd-settings-about a", "href")).toBe("https://github.com/Dezeter/TweeXDeck/releases");
     await expect(page.locator("#otd-settings .otd-settings-note")).toBeHidden();
@@ -47,18 +54,20 @@ test("an TweeXDeck tab after TweetDeck's own, with a switch for every feature by
 
 test("switches write the keys the features read, and say a reload is needed", async ({ page }) => {
     await openSettings(page, { storage: { OTDpasteImages: "0" } });
-    await tab(page, "TweeXDeck");
 
+    await tab(page, "Колонки");
     await page.click('#otd-settings [data-feature="groupNotifications"] span');
+    await tab(page, "Написание");
     await page.click('#otd-settings [data-feature="pasteImages"] i');
     expect(await page.evaluate(() => [localStorage.OTDgroupNotifications, localStorage.OTDpasteImages ?? null])).toEqual(["0", null]);
     expect(Object.fromEntries(await switches(page))).toMatchObject({ groupNotifications: false, pasteImages: true });
     await expect(page.locator("#otd-settings .otd-settings-note")).toBeVisible();
     expect(await page.textContent("#otd-settings .otd-settings-note")).toBe("Применится после перезагрузки. Перезагрузить");
 
-    // every switch, both ways
+    // every switch, both ways, on its tab
     const features = (await switches(page)).map(([key]) => key);
     for(const key of features) {
+        await tabOf(page, key);
         await page.click(`#otd-settings [data-feature="${key}"]`);
         await page.click(`#otd-settings [data-feature="${key}"]`);
     }
@@ -68,7 +77,7 @@ test("switches write the keys the features read, and say a reload is needed", as
 
 test("the language select writes OTDgrokTranslateLang and keeps a code it doesn't list", async ({ page }) => {
     await openSettings(page, { storage: { OTDgrokTranslateLang: "eo" } });
-    await tab(page, "TweeXDeck");
+    await tab(page, "Перевод");
     const select = page.locator("#otd-settings .otd-settings-lang select");
     await expect(select).toHaveValue("eo");
     expect(await select.locator("option").first().textContent()).toBe("русский (язык браузера)");
@@ -83,7 +92,7 @@ test("the language select writes OTDgrokTranslateLang and keeps a code it doesn'
 
 test("the font select lists the fonts, writes OTDfont, and goes back to TweetDeck's own without the key", async ({ page }) => {
     await openSettings(page, { storage: { OTDfont: "gone" } });
-    await tab(page, "TweeXDeck");
+    await tab(page, "Внешний вид");
     const select = page.locator("#otd-settings .otd-settings-font select");
     // a font that isn't there any more is the system one
     await expect(select).toHaveValue("");
@@ -97,9 +106,9 @@ test("the font select lists the fonts, writes OTDfont, and goes back to TweetDec
     expect(await page.evaluate(() => localStorage.OTDfont ?? null)).toBeNull();
 });
 
-test("the search keeps the rows and sections it finds, in either language; a section's title finds all of it", async ({ page }) => {
+test("the search on a tab finds rows of every tab, in either language; a section's title finds all of it", async ({ page }) => {
     await openSettings(page);
-    await tab(page, "TweeXDeck");
+    await tab(page, "Внешний вид");
     const shown = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings [data-search]:not(.otd-settings-section)")].filter(row => row.getClientRects().length).map(row => row.dataset.feature || row.className.split(" ").pop()));
     const sections = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .otd-settings-section")].filter(group => group.getClientRects().length).map(group => group.dataset.section));
     const dividers = () => page.evaluate(() => [...document.querySelectorAll("#otd-settings .divider-bar")].filter(bar => bar.getClientRects().length).length);
@@ -130,12 +139,18 @@ test("the search keeps the rows and sections it finds, in either language; a sec
     expect(await sections()).toEqual([]);
     await expect(page.locator("#otd-settings .otd-settings-nothing")).toHaveText("Ничего не нашлось");
     await search.fill("");
-    expect(await sections()).toEqual(["appearance", "translation", "columns", "tweets", "media", "compose", "other"]);
-    expect(await dividers()).toBe(6);
+    expect(await sections()).toEqual(["appearance"]);
+    expect(await dividers()).toBe(0);
     await expect(page.locator("#otd-settings .otd-settings-nothing")).toBeHidden();
+    // two sections found, a line between them
+    await search.fill("шрифт");
+    await search.fill("медиа");
+    await search.fill("ссылк");
+    expect((await sections()).length).toBeGreaterThan(1);
+    expect(await dividers()).toBe((await sections()).length - 1);
 });
 
-test("what applies at once doesn't ask for a reload: TweetDeck's theme and column width, and what a script listens to", async ({ page }) => {
+test("what applies at once doesn't ask for a reload: TweetDeck's theme, column width and font size, and what a script listens to", async ({ page }) => {
     await openSettings(page);
     await page.evaluate(() => {
         window.__set = [];
@@ -143,10 +158,12 @@ test("what applies at once doesn't ask for a reload: TweetDeck's theme and colum
         TD.settings.getColumnWidth = () => "wide";
         TD.settings.setTheme = value => window.__set.push(`theme ${value}`);
         TD.settings.setColumnWidth = value => window.__set.push(`width ${value}`);
+        TD.settings.getFontSize = () => "large";
+        TD.settings.setFontSize = value => window.__set.push(`font size ${value}`);
         // as layout.js does
         OTD.onChange("OTDdensity", () => window.__set.push(`density ${localStorage.OTDdensity}`));
     });
-    await tab(page, "TweeXDeck");
+    await tab(page, "Внешний вид");
     const note = page.locator("#otd-settings .otd-settings-note");
     const theme = page.locator("#otd-settings .otd-settings-theme select");
     await expect(theme).toHaveValue("dark");
@@ -156,9 +173,13 @@ test("what applies at once doesn't ask for a reload: TweetDeck's theme and colum
     await expect(width).toHaveValue("wide");
     expect(await width.locator("option").allTextContents()).toEqual(["узкие", "средние", "широкие", "очень широкие", "по ширине окна (flex)"]);
     await width.selectOption("flex");
+    const size = page.locator("#otd-settings .otd-settings-font-size select");
+    await expect(size).toHaveValue("large");
+    expect(await size.locator("option").allTextContents()).toEqual(["самый мелкий", "мелкий", "средний", "крупный", "самый крупный"]);
+    await size.selectOption("small");
     const density = page.locator("#otd-settings .otd-settings-density select");
     await density.selectOption("comfortable");
-    expect(await page.evaluate(() => window.__set)).toEqual(["theme system", "width flex", "density comfortable"]);
+    expect(await page.evaluate(() => window.__set)).toEqual(["theme system", "width flex", "font size small", "density comfortable"]);
     await expect(note).toBeHidden();
 
     // nothing listens to the switch here
@@ -181,56 +202,65 @@ test("a change in another tab reaches who listens", async ({ page }) => {
 
 test("the media select: a square beside the text, whole or TweetDeck's strip, in OTDmedia", async ({ page }) => {
     await openSettings(page, { storage: { OTDmedia: "bogus" } });
-    await tab(page, "TweeXDeck");
+    await tab(page, "Медиа");
     const select = page.locator('#otd-settings .otd-settings-section[data-section="media"] .otd-settings-media select');
     await expect(select).toHaveValue("");
-    expect(await select.locator("option").allTextContents()).toEqual(["миниатюра сбоку", "целиком", "полосой, как в TweetDeck"]);
+    expect(await select.locator("option").allTextContents()).toEqual(["миниатюра сбоку в широкой колонке, под текстом в узкой", "целиком", "полосой, как в TweetDeck"]);
     await select.selectOption("whole");
     expect(await page.evaluate(() => localStorage.OTDmedia)).toBe("whole");
     await select.selectOption("");
     expect(await page.evaluate(() => localStorage.OTDmedia ?? null)).toBeNull();
 });
 
-test("TweetDeck's General tab has \"Super wide\" and \"Flex\" after its column widths, and picks them", async ({ page }) => {
+test("TweetDeck's General tab keeps its own settings, its theme, column width and font size are a link to \"Appearance\"", async ({ page }) => {
     await openSettings(page);
-    await page.evaluate(() => {
-        window.__widths = [];
-        TD.settings.setColumnWidth = value => window.__widths.push(value);
-    });
     await tab(page, "General");
-    const radios = page.locator('.js-column-size input[name="column-size"]');
-    expect(await radios.evaluateAll(inputs => inputs.map(input => `${input.value}:${input.parentElement.textContent.trim()}`))).toEqual(["narrow:Narrow", "medium:Medium", "wide:Wide", "superwide:Super wide", "flex:Flex"]);
-    await page.locator('.js-column-size input[value="superwide"]').check();
-    await page.locator('.js-column-size input[value="flex"]').check();
-    expect(await page.evaluate(() => window.__widths)).toEqual(["superwide", "flex"]);
+    expect(await page.$$eval("#general_settings :is(.js-theme, .js-column-size, .js-font-size)", groups => groups.map(g => g.getClientRects().length))).toEqual([0, 0, 0]);
+    await expect(page.locator("#general_settings .otd-general-note")).toHaveText("Тема, ширина колонок, размер текста и остальной вид — во вкладке «Внешний вид».");
+    await page.click("#general_settings .otd-general-note a");
+    expect(await page.$eval(".js-setting-list li.selected", li => li.textContent.trim())).toBe("Внешний вид");
+    expect(await page.$eval("#otd-settings", fieldset => fieldset.dataset.section)).toBe("appearance");
+    // its streaming and media switches stay
+    await tab(page, "General");
+    await expect(page.locator("#general_settings #streaming-updates")).toBeVisible();
 });
 
-test("TweetDeck's General tab has \"System\" after its themes, checked while the theme follows the system's", async ({ page }) => {
+test("TweetDeck's own column width and theme radios, under it, still take \"Super wide\", \"Flex\" and \"System\"", async ({ page }) => {
     await openSettings(page, { storage: { OTDthemeSystem: "1" } });
     await page.evaluate(() => {
-        window.__themes = [];
+        window.__set = [];
         TD.settings.getTheme = () => "dark";
-        TD.settings.setTheme = value => window.__themes.push(value);
+        TD.settings.setColumnWidth = value => window.__set.push(value);
+        TD.settings.setTheme = value => window.__set.push(value);
     });
     await tab(page, "General");
-    const radios = page.locator('.js-theme input[name="theme"]');
-    expect(await radios.evaluateAll(inputs => inputs.map(input => `${input.value}:${input.parentElement.textContent.trim()}:${input.checked}`))).toEqual(["dark:Dark:false", "light:Light:false", "system:System:true"]);
-    await page.locator('.js-theme input[value="light"]').check();
-    await page.locator('.js-theme input[value="system"]').check();
-    expect(await page.evaluate(() => window.__themes)).toEqual(["light", "system"]);
+    expect(await page.$$eval('.js-column-size input[name="column-size"]', inputs => inputs.map(input => `${input.value}:${input.parentElement.textContent.trim()}`))).toEqual(["narrow:Narrow", "medium:Medium", "wide:Wide", "superwide:Super wide", "flex:Flex"]);
+    expect(await page.$$eval('.js-theme input[name="theme"]', inputs => inputs.map(input => `${input.value}:${input.checked}`))).toEqual(["dark:false", "light:false", "system:true"]);
+    await page.evaluate(() => ['.js-column-size input[value="superwide"]', '.js-column-size input[value="flex"]', '.js-theme input[value="light"]', '.js-theme input[value="system"]'].forEach(selector => document.querySelector(selector).click()));
+    expect(await page.evaluate(() => window.__set)).toEqual(["superwide", "flex", "light", "system"]);
 });
 
 test("switching tabs leaves nothing of the other tab behind", async ({ page }) => {
     await openSettings(page);
-    await tab(page, "TweeXDeck");
+    await tab(page, "Внешний вид");
     await tab(page, "General");
     expect(await page.$("#otd-settings")).toBeNull();
     expect(await page.$("#general_settings")).not.toBeNull();
     await tab(page, "Mute");
-    await tab(page, "TweeXDeck");
-    await tab(page, "TweeXDeck");
-    expect(await page.$$("#otd-settings")).toHaveLength(1);
+    await tab(page, "Колонки");
+    await tab(page, "Колонки");
+    await tab(page, "Твиты");
+    expect(await page.$$eval("#otd-settings", sets => sets.map(set => set.dataset.section))).toEqual(["tweets"]);
     expect(await page.$("#global-settings > :not(#otd-settings)")).toBeNull();
+});
+
+test("the palette's \"TweeXDeck settings\" and the tab before 5.15.4 open \"Appearance\"; the dialog fits the window", async ({ page }) => {
+    await openSettings(page);
+    await page.evaluate(() => document.querySelector(".js-dismiss")?.click());
+    await page.evaluate(() => new TD.components.GlobalSettings().switchTab("oldtweetdeck"));
+    expect(await page.$eval("#otd-settings", fieldset => fieldset.dataset.section)).toBe("appearance");
+    const box = await page.$eval("#settings-modal > .mdl", mdl => { const r = mdl.getBoundingClientRect(); return [r.left >= 0, r.top >= 0, r.right <= innerWidth, r.bottom <= innerHeight, Math.round(r.width), Math.round(r.height)]; });
+    expect(box).toEqual([true, true, true, true, 968, 728]);
 });
 
 test("\"Copy diagnostics\" copies the load watchdog's report", async ({ page }) => {
@@ -239,7 +269,7 @@ test("\"Copy diagnostics\" copies the load watchdog's report", async ({ page }) 
         Object.defineProperty(navigator, "clipboard", { value: { writeText: async text => { window.__copied = text; } } });
     });
     await openSettings(page);
-    await tab(page, "TweeXDeck");
+    await tab(page, "Прочее");
     const link = page.locator("#otd-settings .otd-settings-diagnostics");
     await link.click();
     await expect(link).toHaveText("Скопировано");
@@ -251,7 +281,7 @@ test.describe("in English", () => {
     test.use({ locale: "en-US" });
     test("labels follow the browser language", async ({ page }) => {
         await openSettings(page, { dark: true });
-        await tab(page, "TweeXDeck");
+        await tab(page, "Appearance");
         expect(await page.$$eval("#otd-settings .otd-settings-section > label", labels => labels.map(l => l.textContent))).toEqual(["Appearance", "Translation", "Columns", "Tweets", "Media", "Composing", "Other"]);
         expect(await page.textContent('#otd-settings [data-feature="pasteImages"]')).toBe(" Paste images with Ctrl+V");
         expect(await page.locator("#otd-settings .otd-settings-lang select option").first().textContent()).toBe("English (browser language)");

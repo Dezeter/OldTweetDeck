@@ -78,10 +78,16 @@ async function stand(page, { dark = false, width = "medium", media = "", density
             ["four photos", withMedia(tw(109, U.e, "Четыре"), [photo(4), photo(5), photo(6), photo(7)])],
             ["video", withMedia(tw(110, U.a, "Видео с матча, финальная карта"), [photo(8, "video")])],
             ["gif", withMedia(tw(111, U.f, "когда наконец зашла ставка"), [photo(9, "animated_gif")])],
+            // a reply that is a GIF
+            ["gif reply", withMedia(tw(123, U.e, "@Badlynasty", { in_reply_to_status_id_str: "105", in_reply_to_user_id_str: "11", in_reply_to_screen_name: "Badlynasty", display_text_range: [12, 12], entities: ent({ user_mentions: [{ id_str: "11", screen_name: "Badlynasty", name: "Badlynasty", indices: [0, 11] }] }) }), [photo(9, "animated_gif")])],
             ["sensitive", withMedia(tw(112, U.b, "Осторожно, спойлеры"), [photo(10)]), { possibly_sensitive: true }],
             ["quote", tw(113, U.c, "Вот реальный пример, о котором я говорил", { is_quote_status: true, quoted_status_id_str: "1130", quoted_status: tw(1130, U.d, "Самый быстрый способ перевести деньги — через нас, благодарим за доверие") })],
             ["quote with a photo", tw(114, U.e, "Что такое?", { is_quote_status: true, quoted_status_id_str: "1140", quoted_status: withMedia(tw(1140, U.a, "Транзакция прошла за 3 секунды"), [photo(14)]) })],
             ["photo and a quote", withMedia(tw(115, U.b, "Смотрите, что нашла", { is_quote_status: true, quoted_status_id_str: "1150", quoted_status: tw(1150, U.c, "Цитируемый твит без картинки") }), [photo(3)])],
+            // a line of text by a square, a quote with a square of its own under it
+            ["video and a quote with a photo", withMedia(tw(124, U.f, "С Хэллоуином!", { is_quote_status: true, quoted_status_id_str: "1240", quoted_status: withMedia(tw(1240, U.d, "Сезон тыкв открыт."), [photo(10)]) }), [photo(8, "video")])],
+            // text longer than its square, in the tweet and in its quote
+            ["long text and a video", withMedia(tw(125, U.e, "Только что запустил задачу с телефона прямо на свой компьютер.\n\nЭто самый простой способ управлять агентами на своих машинах: пишешь задачу, и самая свободная машина её берёт, запускает в отдельной копии и показывает ход работы.\n\nРаботает на Mac и Linux", { is_quote_status: true, quoted_status_id_str: "1250", quoted_status: withMedia(tw(1250, U.a, "Я превратил старые компьютеры в парк агентов.\n\nНачни задачу на одном, передай другому, перенеси на третий. Запускай параллельно и проверяй с телефона.\n\nСобери свой парк"), [photo(4, "video")]) }), [photo(1, "video")])],
             ["link card, large", tw(116, U.a, "BiggerZ: Global Online Casino https://t.co/card", { card: card("summary_large_image", { title: "BiggerZ: Global Online Casino, Sportsbook & Prediction Markets", description: "BiggerZ brings together 6,000+ casino games, sports betting and prediction markets", domain: "biggerz.com", vanity_url: "biggerz.com", card_url: "https://t.co/card", summary_photo_image_original: img(11, 1200, 628), thumbnail_image_original: img(11, 1200, 628) }) })],
             ["link card, small", tw(117, U.d, "Статья https://t.co/card", { card: card("summary", { title: "Как работает TweetDeck в 2026 году", description: "Разбор расширения, которое возвращает старый интерфейс", domain: "habr.com", vanity_url: "habr.com", card_url: "https://t.co/card", thumbnail_image_original: img(13, 400, 400) }) })],
             ["poll", tw(118, U.e, "Какую тему вы используете?", { card: card("poll3choice_text_only", { choice1_label: "Светлую", choice1_count: "120", choice2_label: "Тёмную", choice2_count: "340", choice3_label: "Lights out", choice3_count: "88", counts_are_final: { type: "BOOLEAN", boolean_value: false }, end_datetime_utc: new Date(Date.now() + 864e5).toISOString(), duration_minutes: "1440" }) })],
@@ -139,7 +145,7 @@ async function stand(page, { dark = false, width = "medium", media = "", density
         const detail = TD.ui.template.render("status/tweet_detail", { chirp: focal, withDragHandle: false, isFavorited: false, isRetweeted: false, renderQuoted() { return ""; } });
         const detailHtml = `<div class="js-detail-container column-scroller" data-otd-label="opened tweet"><div class="js-tweet-detail tweet-detail-wrapper">${detail}</div><div class="js-tweet-replies tweet-detail-reply">${reply.render({ mediaPreviewSize: "medium" }).replace("<article ", '<article data-otd-label="reply in the opened tweet" ')}</div></div>`;
         // TweetDeck's own left bar, condensed as people keep it
-        document.body.insertAdjacentHTML("beforeend", `<div class="js-app application is-condensed" style="position:absolute;left:0;top:0;bottom:0;width:60px" data-otd-label="left bar">${TD.ui.template.render("topbar/app_header", {})}</div>`);
+        document.body.insertAdjacentHTML("beforeend", `<div class="js-app application is-condensed" style="position:absolute;left:0;top:0;bottom:0;width:60px" data-otd-label="left bar">${TD.ui.template.render("topbar/app_header", {}).replace("js-app-header pin-all app-header", "js-app-header pin-all app-header is-condensed")}</div>`);
         document.body.insertAdjacentHTML("beforeend", `<div class="js-app-content app-content" style="left:60px"><div class="js-app-columns-container app-columns-container scroll-h"><div class="js-app-columns app-columns horizontal-flow-container">${column("home", "Home", homeHtml)}${column("notif", "Notifications", notifHtml)}${column("detail", "Tweet", detailHtml)}</div></div></div>`);
         window.__detailMedia = () => {
             const box = document.querySelector(".js-tweet-detail .js-tweet-media");
@@ -173,16 +179,43 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
     };
     const out = [...article.querySelectorAll("*")].filter(el => el.offsetParent && !el.closest(".js-tweet-actions") && !clipped(el)).some(el => box(el).right > tweet.right + 0.5 || box(el).left < tweet.left - 0.5);
     const media = article.querySelector(".tweet-body > .js-media");
-    const square = media && box(media);
+    const square = media?.parentElement.classList.contains("otd-has-thumb") && box(media);
     const text = box(article.querySelector(".tweet-text"));
     const quote = box(article.querySelector(".tweet-body > .js-quote-detail"));
+    const buttons = box(article.querySelector(".tweet-actions"));
+    const body = media && box(media.parentElement);
+    const under = media && !square && box(media);
+    // the text's words: beside the square they keep 12px from it, under it they go on at the full width (a space at
+    // a line's end, TweetDeck's text being pre-wrap, hangs past it unseen)
+    const lines = !square ? [] : (() => {
+        const text = article.querySelector(".tweet-text");
+        const walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        const rects = [...text.querySelectorAll("img")].map(img => img.getBoundingClientRect());
+        for(let node; (node = walk.nextNode());) for(const word of node.data.matchAll(/\S+/g)) {
+            range.setStart(node, word.index);
+            range.setEnd(node, word.index + word[0].length);
+            rects.push(...range.getClientRects());
+        }
+        return rects.filter(r => r.width > 0 && r.height > 0);
+    })();
+    const beside = square && lines.filter(r => r.bottom > square.top + 0.5 && r.top < square.bottom - 0.5);
     return {
         label: article.dataset.otdLabel,
         out,
+        // the buttons the tweet's last line, under its text and media
+        buttonsLast: !media || !buttons || buttons.top >= Math.max(box(media).bottom, text.bottom) - 0.5,
+        // TweetDeck's own preview: under the text, the body's width, no taller than a strip
+        under: under ? [under.top >= text.bottom - 0.5, Math.abs(under.width - body.width) <= 1, under.height <= 200] : null,
         // Firefox lays out in fractions of a pixel: half a pixel either way is the same place
-        square: square ? [Math.round(square.width), Math.round(square.height), text.right <= square.left - 12 + 0.5, !quote || quote.top >= square.bottom - 0.5] : null,
+        // a quote under it, or beside it 12px from it
+        square: square ? [Math.round(square.width), Math.round(square.height), beside.every(r => r.right <= square.left - 12 + 0.5),
+            !quote || quote.top >= square.bottom - 0.5 || quote.right <= square.left - 12 + 0.5] : null,
+        // the text under the square at full width; the quote beside it
+        wrapped: square ? lines.some(r => r.top >= square.bottom && r.right > square.left) : null,
+        quoteBeside: square && quote ? quote.top < square.bottom - 0.5 : null,
         // for a failure's message
-        rects: square ? JSON.stringify({ text: [text.left, text.right, text.width], square: [square.left, square.right], body: [box(media.parentElement).left, box(media.parentElement).right], textDisplay: getComputedStyle(article.querySelector(".tweet-text")).display }) : "",
+        rects: square ? JSON.stringify({ lines: lines.filter(r => r.right > square.left - 12.5).map(r => [r.top, r.right]), square: [square.top, square.left, square.right, square.bottom], quote: quote && [quote.top, quote.right] }) : "",
     };
 }));
 
@@ -200,8 +233,16 @@ const iconPlaces = page => page.evaluate(() => {
         out[`column ${i}`] = Math.round(drawing(header.querySelector(".column-type-icon")) - mid(header.querySelector(".column-heading").getBoundingClientRect()));
     });
     document.querySelectorAll(".app-navigator .app-nav-link, .app-navigator .app-nav-tab:not(.is-hidden)").forEach(link => {
-        out[`nav ${link.dataset.title}`] = Math.round(drawing(link.querySelector(".icon")) - mid(link.getBoundingClientRect()));
+        // "Expand" has an icon for each way, one of them hidden
+        const icon = [...link.querySelectorAll(".icon")].find(i => i.getBoundingClientRect().width > 0);
+        out[`nav ${link.dataset.title}`] = Math.round(drawing(icon) - mid(link.getBoundingClientRect()));
     });
+    // the condensed bar's round search button
+    const search = document.querySelector(".app-search-fake");
+    const searchIcon = search.querySelector(".icon");
+    const searchBox = search.getBoundingClientRect(), searchIconBox = searchIcon.getBoundingClientRect();
+    out["search button circle"] = Math.round(drawing(searchIcon) - mid(searchBox));
+    out["search button across"] = Math.round(searchIconBox.left + searchIconBox.width / 2 - (searchBox.left + searchBox.width / 2));
     const action = document.querySelector('article[data-otd-label="text"] .tweet-action[rel="reply"]');
     out["reply button"] = Math.round(drawing(action.querySelector(".icon")) - mid(action.getBoundingClientRect()));
     // the hover circle of a button, with its count, in a column and in the opened tweet, round its icon
@@ -219,10 +260,12 @@ const iconPlaces = page => page.evaluate(() => {
     return out;
 });
 
-const SCRIPTS = ["src/otd-common.js", "src/modern-look.js", "src/icons.js", "src/media-layout.js", "src/self-threads.js", "src/group-notifications.js"];
+const SCRIPTS = ["src/otd-common.js", "src/modern-look.js", "src/icons.js", "src/media-layout.js", "src/self-threads.js", "src/compact-headers.js", "src/group-notifications.js"];
+// medium columns have TweetDeck's own previews under the text, super wide and flex ones the square beside it
 for(const [name, options] of Object.entries({
-    "light": {}, "dark": { dark: true }, "flex": { width: "flex" }, "dark-flex": { dark: true, width: "flex" }, "whole": { media: "whole" }, "comfortable": { density: "comfortable" },
-})) test(`every kind of tweet, ${name}: nothing sticks out, media are a square beside the text, quotes under it`, async ({ page }) => {
+    "light": {}, "dark": { dark: true }, "superwide": { width: "superwide" }, "flex": { width: "flex" }, "dark-flex": { dark: true, width: "flex" },
+    "whole": { media: "whole" }, "comfortable": { density: "comfortable" },
+})) test(`every kind of tweet, ${name}: nothing sticks out, media beside the text where there's room, else under it, buttons last`, async ({ page }) => {
     await page.setViewportSize({ width: options.width === "flex" ? 1400 : 1000, height: 3000 });
     await stand(page, options);
     await addScripts(page, ...SCRIPTS);
@@ -230,18 +273,42 @@ for(const [name, options] of Object.entries({
     await page.waitForTimeout(500);
     const tweets = await layout(page);
     expect(tweets.filter(t => t.out).map(t => t.label)).toEqual([]);
+    expect(tweets.filter(t => !t.buttonsLast).map(t => t.label)).toEqual([]);
     const squares = tweets.filter(t => t.square);
-    if(options.media === "whole") expect(squares.every(t => t.square[0] > 200)).toBe(true);
-    else {
-        expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(["thread with a photo", "photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"]));
+    const side = ["superwide", "flex"].includes(options.width) && !options.media;
+    const MEDIA = ["thread with a photo", "photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote", "video and a quote with a photo", "long text and a video"];
+    if(side) {
+        expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(MEDIA));
         for(const t of squares) expect(t.square, `${t.label} ${t.rects}`).toEqual([80, 80, true, true]);
+        // long text goes on under its square; a quote rises beside the square a line of text leaves room by, and
+        // goes under it after text as long as the square
+        const by = label => tweets.find(t => t.label === label);
+        expect([by("long text and a video").wrapped, by("long text and a video").quoteBeside, by("video and a quote with a photo").quoteBeside, by("photo and a quote").quoteBeside])
+            .toEqual([true, false, true, true]);
+        // a GIF that is a reply plays whole
+        expect(tweets.find(t => t.label === "gif reply").under).toEqual([true, true, true]);
+    } else {
+        expect(squares).toEqual([]);
+        if(!options.media) for(const t of tweets.filter(t => MEDIA.includes(t.label))) expect(t.under, t.label).toEqual([true, true, true]);
     }
     // icons where TweetDeck's font put them: a column's on its title's line, the left bar's in their buttons
     const places = await iconPlaces(page);
     expect(Object.keys(places)).toEqual(expect.arrayContaining(["column favorite circle", "opened tweet favorite circle"]));
     for(const [where, off] of Object.entries(places)) expect(Math.abs(off), where).toBeLessThanOrEqual(where.endsWith("circle") || where.endsWith("across") ? 1 : where.startsWith("column") ? 5 : 2);
+    // "↩ @Dezeter" for "Replying to @Dezeter": under the name in a medium column, on its line in a wide one; a
+    // notification of my own tweet without my name over it
+    expect(await page.evaluate(() => {
+        const replies = document.querySelector('article[data-otd-label="reply"] .other-replies');
+        const name = document.querySelector('article[data-otd-label="reply"] .tweet-header .fullname').getBoundingClientRect();
+        const line = replies.getBoundingClientRect();
+        const own = [...document.querySelectorAll('[data-column="notif"] article')].filter(a => a.offsetParent && a.querySelector(".activity-header") && a.querySelector(".js-tweet > .tweet-header"))
+            .map(a => [a.dataset.otdLabel, a.querySelector(".js-tweet > .tweet-header").offsetParent !== null]);
+        return { icon: !!replies.querySelector(".otd-reply-icon"), words: getComputedStyle(replies.querySelector(".otd-reply-words")).position, onNameLine: Math.abs((line.top + line.bottom) / 2 - (name.top + name.bottom) / 2) < 6,
+            own: [own.some(([label]) => label === "like, grouped"), own.some(([label]) => label === "retweet"), own.filter(([, shown]) => shown).length] };
+    })).toEqual({ icon: true, words: "absolute", onNameLine: options.width === "flex",
+        own: [true, true, 0] });
     // of several photos in TweetDeck's grid, the first fills the square, "+N" for the rest
-    if(options.media !== "whole") expect(await page.evaluate(() => ["two photos", "three photos", "four photos"].map(label => {
+    if(side) expect(await page.evaluate(() => ["two photos", "three photos", "four photos"].map(label => {
         const media = document.querySelector(`article[data-otd-label="${label}"] .tweet-body > .js-media`);
         const square = media.getBoundingClientRect();
         const shown = [...media.querySelectorAll(".media-image")].map(image => image.getBoundingClientRect()).filter(r => r.width > 0);
@@ -252,11 +319,11 @@ for(const [name, options] of Object.entries({
         const link = article.querySelector(".js-show-this-thread p")?.getBoundingClientRect();
         const text = article.querySelector(".tweet-text").getBoundingClientRect();
         const buttons = article.querySelector(".tweet-actions").getBoundingClientRect();
-        const square = document.documentElement.classList.contains("otd-media-thumb") && article.querySelector(".tweet-body > .js-media")?.getBoundingClientRect();
+        const square = article.querySelector(".otd-has-thumb > .js-media")?.getBoundingClientRect();
         return [article.dataset.otdLabel, !!link && link.top >= text.bottom - 0.5 && link.bottom <= buttons.top + 0.5 && (!square || link.right <= square.left - 12 + 0.5)];
     }));
     expect(threads).toEqual([["thread", true], ["thread with a photo", true]]);
     // a hairline round a square
-    if(options.media !== "whole") expect(await page.$eval('article[data-otd-label="photo, landscape"] .tweet-body > .js-media', el => getComputedStyle(el).outlineWidth)).toBe("1px");
+    if(side) expect(await page.$eval('article[data-otd-label="photo, landscape"] .tweet-body > .js-media', el => getComputedStyle(el).outlineWidth)).toBe("1px");
     if(process.env.SPECIMENS_OUT) await shoot(page, name);
 });
