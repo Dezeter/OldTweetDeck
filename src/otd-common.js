@@ -40,6 +40,8 @@
             label: { ru: "Показывать свой ответ сразу после отправки", en: "Show your reply right after sending it" } },
         { key: "articles", storage: "OTDarticles", section: "tweets",
             label: { ru: "X Articles: заголовок и начало вместо ссылки, чтение в окне", en: "X Articles: title and beginning instead of the link, a reader" } },
+        { key: "smartCashtags", storage: "OTDsmartCashtags", section: "tweets",
+            label: { ru: "Тикеры как на x.com: «$Index» вместо адреса токена в тексте, под твитом карточка с ценой, изменением за сутки и графиком", en: "Tickers as on x.com: \"$Index\" instead of a token's address in the text, a card with the price, 24 h change and chart under the tweet" } },
         { key: "cleanLinks", storage: "OTDcleanLinks", section: "tweets",
             label: { ru: "Ссылки ведут прямо на сайт, а не через t.co", en: "Links go straight to the site, not through t.co" } },
         { key: "absoluteTime", storage: "OTDabsoluteTime", section: "tweets", default: false,

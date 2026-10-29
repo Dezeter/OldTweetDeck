@@ -63,6 +63,7 @@ async function main() {
             load("/src/conversation-replies.js"),
             load("/src/paste-images.js"),
             load("/src/x-articles.js"),
+            load("/src/cashtags.js"),
             load("/src/instant-replies.js"),
             load("/src/settings.js"),
             load("/src/palette.js"),

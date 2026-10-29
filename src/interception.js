@@ -186,6 +186,24 @@ function parseNoteTweet(result) {
     return { text, entities };
 }
 
+// X's smart cashtags, by tweet id, for cashtags.js (window.OTDcashtagData): the assets a tweet attaches, a card under its text each, and
+// the ones its text names by their id ("robinhood:0x…", X shows "$Index"), with their name and ticker. TweetDeck
+// keeps neither; the oldest go past 3000 tweets.
+const smartCashtags = window.OTDcashtagData = new Map();
+function rememberCashtags(result) {
+    const id = result?.legacy?.id_str || result?.rest_id;
+    if (!id) return;
+    const note = result.note_tweet?.note_tweet_results?.result || result.note_tweet?.note_tweet_results;
+    const tags = [...(note?.entity_set?.smarttags || []), ...(result.legacy?.entities?.smarttags || [])]
+        .filter(tag => tag?.tag?.rest_id && typeof tag.text === "string" && tag.text)
+        .map(tag => ({ id: String(tag.tag.rest_id), text: tag.text, name: String(tag.tag.info?.info?.name || ""), ticker: String(tag.tag.info?.info?.ticker || "") }));
+    const attached = (Array.isArray(result.cashtag_attachments) ? result.cashtag_attachments : []).map(a => a?.rest_id).filter(Boolean).map(String);
+    if (!tags.length && !attached.length) return;
+    smartCashtags.delete(id);
+    smartCashtags.set(id, { attached, tags });
+    if (smartCashtags.size > 3000) smartCashtags.delete(smartCashtags.keys().next().value);
+}
+
 function parseTweetCard(card) {
     const legacy = card?.legacy;
     if (!legacy) return;
@@ -268,6 +286,7 @@ function parseTweet(res) {
         if (!res.legacy && res.tweet) res = res.tweet;
         let tweet = res.legacy;
         if (!res.core || !tweet) return;
+        rememberCashtags(res);
         if(!tweet.id) {
             tweet.id = +tweet.id_str;
         }
@@ -329,6 +348,8 @@ function parseTweet(res) {
                 }
                 result = result.tweet;
             }
+            rememberCashtags(result);
+            rememberCashtags(result.quoted_status_result?.result?.tweet || result.quoted_status_result?.result);
             if (
                 result.quoted_status_result &&
                 result.quoted_status_result.result &&
@@ -473,6 +494,7 @@ function parseTweet(res) {
                 }
                 result = result.tweet;
             }
+            rememberCashtags(result);
             if(result && result.legacy) {
                 tweet.quoted_status = result.legacy;
                 const quotedCard = parseTweetCard(result.card);
@@ -598,6 +620,7 @@ function tweetDetailUrl(focalTweetId) {
             longform_notetweets_rich_text_read_enabled: true,
             longform_notetweets_inline_media_enabled: false,
             responsive_web_enhance_cards_enabled: false,
+            ...CASHTAG_FEATURES,
         })
     )}`;
 }
@@ -662,10 +685,13 @@ function getCurrentUserId() {
     return account?.state?.userId ?? verifiedUser?.id_str ?? localStorage.twitterAccountID;
 }
 
+// what x.com asks with its tweets for their smart cashtags (cashtag_attachments, smarttags); X leaves them out without
+const CASHTAG_FEATURES = { rweb_cashtags_enabled: true, rweb_cashtags_composer_attachment_enabled: true };
+
 function generateParams(features, variables, fieldToggles) {
     let params = new URLSearchParams();
     params.append("variables", JSON.stringify(variables));
-    params.append("features", JSON.stringify(features));
+    params.append("features", JSON.stringify({ ...features, ...CASHTAG_FEATURES }));
     if (fieldToggles) params.append("fieldToggles", JSON.stringify(fieldToggles));
 
     return params.toString();

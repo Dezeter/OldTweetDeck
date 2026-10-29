@@ -14,6 +14,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 
 - [Auto-translation](#grok-auto-translation) of tweets with Grok, to the language you choose
 - [X Articles](#x-articles) in columns and a reader for them, translated with Google Translate
+- [Smart cashtags](#smart-cashtags): "$Index" instead of a token's address in a tweet's text, as on x.com
 - [Grouped notifications](#grouped-notifications): likes, retweets and follows like on x.com
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
@@ -94,6 +95,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
+| Smart cashtags | `OTDsmartCashtags` |
 | Links straight to the site | `OTDcleanLinks` |
 | Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
 | "Redraft" in your tweet's menu | `OTDredraft` |
@@ -152,6 +154,11 @@ The emoji list is `files/emoji.json`, built from [emojibase](https://emojibase.d
 A tweet that is an X Article shows the title and the start of the text instead of the bare `x.com/i/article/…` link. Clicking it opens the whole article in a reader over most of the screen; Esc, the × button or a click outside closes it.  
 Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
 With article translation switched off in [Settings](#settings), the reader still has the button to translate.
+
+## Smart cashtags
+
+On x.com a tweet can name a token by its id, such as `robinhood:0x56910d…`, and X shows its cashtag instead. TweeXDeck does the same: the text has "$Index", TweetDeck's own cashtag link, which opens a search for it; the token's name and id are in its tooltip, in quoted tweets too. TweeXDeck asks X for these with every tweet, as x.com does.  
+A tweet can also attach a token, which x.com shows as a card under the text with its price, its change in 24 hours and a chart of that day. TweeXDeck draws that card too, once it knows the id of the query x.com uses for it.
 
 ## Grouped notifications
 
