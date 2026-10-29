@@ -1,11 +1,12 @@
 // X's smart cashtags, as x.com shows them:
-// - a token its text names by id ("robinhood:0x56910d…") is "$Index", a cashtag of TweetDeck's own, which opens
-//   TweetDeck's search for it, the token's name and id in its tooltip. By what X said of the tweet, or, as the
-//   timelines' queries TweetDeck asks are older than smart tags and leave them out, by the id's look in the text,
-//   its ticker from SmartTagAttachmentQuery: an id X has no asset for stays as it is;
+// - a token its text names by id ("robinhood:0x56910d…", "hyperliquid:native") is "$Index", a cashtag of
+//   TweetDeck's own, which opens TweetDeck's search for it, the token's name and id in its tooltip. By what X said
+//   of the tweet, or, as the timelines' queries TweetDeck asks are older than smart tags and leave them out, by the
+//   id's look in the text, its ticker from SmartTagAttachmentQuery: an id X has no asset for stays as it is;
 // - an asset the tweet attaches is a card under the text: its logo and chain, name, ticker, price, change in 24 h
 //   and a chart of that day, from X's SmartTagAttachmentQuery; a click searches its cashtag, as the text's does.
-//   It's asked as x.com asks it, for the day in 5-minute steps; without the query's id there's no card.
+//   It's asked as x.com asks it, for the day in 5-minute steps; without the query's id there's no card. When X
+//   didn't say what the tweet attaches (the timelines' queries leave that out too), the tokens its text names are.
 // interception.js keeps what X said of a tweet's cashtags (window.OTDcashtagData, by tweet id), and asks for it.
 // A card's numbers are a minute old at most, and stay as they were drawn. Loaded by injection.js after
 // otd-common.js. Switch "smartCashtags".
@@ -161,8 +162,11 @@
         }
     }
 
-    // a token's id as X writes it in a text, the chain and the contract: as grok-translate.js keeps it whole
-    const TOKEN = /(?<![\w:/])[a-z][a-z0-9_-]{1,20}:(?:0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})(?![\w/])/g;
+    // a token's id as X writes it in a text, the chain and the contract, or "native" for the chain's own coin
+    // ("hyperliquid:native"): as grok-translate.js keeps it whole
+    const TOKEN = /(?<![\w:/])[a-z][a-z0-9_-]{1,20}:(?:0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|native)(?![\w/])/g;
+    // the ids a text names, in its order, the links' aside
+    const idsIn = text => [...new Set(textNodes(text).flatMap(node => node.data.match(TOKEN) || []))];
     // its ticker and name, for as long as the page is open; asked again later when X didn't answer
     const tickers = new Map();
     function tickerOf(restId) {
@@ -176,10 +180,29 @@
     // the ids in a text that what X said of the tweet didn't tag: "$Ticker" once X says what they are
     function tagFound(text, known = []) {
         if(!text || !QUERY_ID) return;
-        const ids = new Set(textNodes(text).flatMap(node => node.data.match(TOKEN) || []));
-        for(const tag of known) ids.delete(tag.text);
-        for(const id of ids) tickerOf(id).then(tag => {
+        for(const id of idsIn(text)) if(!known.some(tag => tag.text === id)) tickerOf(id).then(tag => {
             if(tag && text.isConnected) tagText(text, [tag]);
+        });
+    }
+    // the cards under a tweet's text, two at most: the assets X says it attaches, or, when X didn't say, the tokens
+    // its text names that X has an asset for, in the text's order. Before the text's ids are links
+    function addCards(text, known) {
+        if(!text || !QUERY_ID) return;
+        const tags = known?.tags || [];
+        const put = cards => {
+            let after = text;
+            for(const [restId, tag] of cards.slice(0, 2)) {
+                const made = card(restId, tag);
+                after.after(made);
+                after = made;
+            }
+        };
+        if(known?.attached) return put(known.attached.map(restId => [restId, tags.find(tag => tag.id === restId)]));
+        Promise.all(idsIn(text).map(id => {
+            const tag = tags.find(tag => tag.text === id);
+            return tag ? [tag.id, tag] : tickerOf(id).then(found => found && [id, found]);
+        })).then(cards => {
+            if(text.isConnected) put(cards.filter(Boolean));
         });
     }
 
@@ -191,17 +214,9 @@
             const tweet = chirp?.retweetedStatus || chirp?.targetTweet || chirp;
             const known = tweet && store.get(String(tweet.id));
             const text = item.querySelector(".js-tweet-text:not(.js-quoted-tweet-text)");
+            addCards(text, known);
             tagFound(text, known?.tags);
-            if(known) {
-                tagText(text, known.tags);
-                let after = text;
-                for(const restId of QUERY_ID ? known.attached.slice(0, 2) : []) {
-                    if(!after) break;
-                    const made = card(restId, known.tags.find(tag => tag.id === restId));
-                    after.after(made);
-                    after = made;
-                }
-            }
+            if(known) tagText(text, known.tags);
             for(const quote of item.querySelectorAll(".js-quote-detail[data-tweet-id]")) {
                 const quoted = store.get(quote.dataset.tweetId);
                 tagFound(quote.querySelector(".js-quoted-tweet-text"), quoted?.tags);
@@ -238,7 +253,7 @@
         .otd-ticker-chart.is-up { stroke: #00ba7c; }
         .otd-ticker-chart.is-down { stroke: #f4212e; }
         .otd-ticker-card.is-loading .otd-ticker-line::after { content: ""; width: 72px; height: 12px; margin-top: 3px; border-radius: 6px; background: currentColor; opacity: .12; }
-        /* beside the square of media-layout.js, the card goes under it at full width, as a quote does */
-        html.otd-media-thumb .otd-has-thumb > .otd-ticker-card { clear: right; margin-right: -92px; }
+        /* beside the square of media-layout.js, the card goes under it at full width */
+        html.otd-media-thumb .otd-has-thumb > .otd-ticker-card { clear: right; }
     `);
 })();

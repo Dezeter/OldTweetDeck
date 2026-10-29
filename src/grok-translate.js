@@ -179,7 +179,8 @@
     }
 
     // --- rendering ------------------------------------------------------------
-    const TOKEN_ID = "[a-z][a-z0-9_-]{1,20}:(?:0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})";
+    // as cashtags.js finds it: the chain and the contract, or "native" for the chain's own coin
+    const TOKEN_ID = "[a-z][a-z0-9_-]{1,20}:(?:0x[0-9a-fA-F]{40}|[1-9A-HJ-NP-Za-km-z]{32,44}|native)";
     const SPLIT_RE = new RegExp(`(${TOKEN_ID}|https?:\\/\\/\\S+|@\\w{1,15}|#[\\p{L}\\p{N}_]+|\\$[A-Za-z][A-Za-z0-9_]{0,14})`, "gu");
     const IS_TOKEN = new RegExp(`^${TOKEN_ID}$`);
     const IS_LINK = new RegExp(`^(?:${TOKEN_ID}|https?:\\/\\/|@|#|\\$[A-Za-z])`, "u");
@@ -216,10 +217,13 @@
 
             if(IS_TOKEN.test(part)) {
                 // on-chain cashtags come back as "chain:contract", put the original cashtag back: the one for this
-                // token (cashtags.js keeps its id), not another cashtag of the text; without it, the id
-                const addr = part.slice(part.indexOf(":") + 1).toLowerCase();
+                // token (cashtags.js keeps its id), not another cashtag of the text; without it, the id. Else by
+                // the contract; not for a chain's own coin, which is "native" on every chain
+                const id = part.toLowerCase();
+                const addr = id.slice(id.indexOf(":") + 1);
                 const free = ctx.cash.filter(a => !ctx.cashUsed.has(a));
-                const src = free.find(a => `${a.dataset.otdToken || ""} ${a.getAttribute("href") || ""}`.toLowerCase().includes(addr));
+                const src = free.find(a => (a.dataset.otdToken || "").toLowerCase() === id)
+                    || (addr !== "native" && free.find(a => `${a.dataset.otdToken || ""} ${a.getAttribute("href") || ""}`.toLowerCase().includes(addr)));
                 if(src) { ctx.cashUsed.add(src); node.append(src.cloneNode(true)); }
                 else node.append(part);
                 continue;

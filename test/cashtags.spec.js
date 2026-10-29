@@ -21,15 +21,23 @@ test("interception.js keeps a tweet's attached assets and smart tags by its id, 
             note_tweet: { note_tweet_results: { result: { text: `this fixes it for tokens, ${TOKEN} , where`, entity_set: { smarttags: [SMARTTAG], symbols: [] } } } },
             quoted_status_result: { result: quoted } };
         const plain = { __typename: "Tweet", rest_id: "3", core: { user_results: { result: user } }, cashtag_attachments: [], legacy: legacy("3", "nothing") };
+        // as a timeline's query answers: neither
+        const unsaid = { __typename: "Tweet", rest_id: "4", core: { user_results: { result: user } }, legacy: legacy("4", `just ${TOKEN}`) };
         parseTweet(tweet);
         parseTweet(plain);
+        parseTweet(unsaid);
+        // the tweet again, from a timeline: what X said of it stays
+        parseTweet({ ...tweet, cashtag_attachments: undefined, note_tweet: undefined });
         const features = JSON.parse(new URLSearchParams(generateParams({ a: true }, { b: 1 })).get("features"));
-        return { one: window.OTDcashtagData.get("1"), two: window.OTDcashtagData.get("2"), three: window.OTDcashtagData.has("3"), features };
+        const store = window.OTDcashtagData;
+        return { one: store.get("1"), two: store.get("2"), three: store.get("3"), four: store.has("4"), features };
     }, [TOKEN, SMARTTAG]);
     const tag = { id: TOKEN, text: TOKEN, name: "The Index", ticker: "Index" };
     expect(result.one).toEqual({ attached: [TOKEN], tags: [tag] });
-    expect(result.two).toEqual({ attached: [], tags: [tag] });
-    expect(result.three).toBe(false);
+    // X didn't say what the quote attaches; it said the third tweet attaches nothing
+    expect(result.two).toEqual({ attached: null, tags: [tag] });
+    expect(result.three).toEqual({ attached: [], tags: [] });
+    expect(result.four).toBe(false);
     expect(result.features).toEqual({ a: true, rweb_cashtags_enabled: true, rweb_cashtags_composer_attachment_enabled: true });
     // TweetDetail too
     expect(await page.evaluate(() => JSON.parse(new URL(tweetDetailUrl("1")).searchParams.get("features")).rweb_cashtags_enabled)).toBe(true);
@@ -53,9 +61,10 @@ async function openColumn(page, { change = 50.4, status = 200, queryId } = {}) {
         "http://otd.test/i/api/graphql/": route => {
             const url = new URL(route.request().url());
             asked.push(url);
-            // a token X has no asset for
-            const none = JSON.parse(url.searchParams.get("variables") || "{}").assetSymbol === NONE;
-            return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(none ? { data: { finance_asset_data: null } } : ANSWER(change)) });
+            // a token X has no asset for, a chain's own coin, and The Index for any other
+            const symbol = JSON.parse(url.searchParams.get("variables") || "{}").assetSymbol;
+            const body = symbol === NONE ? { data: { finance_asset_data: null } } : symbol === NATIVE ? HYPE : ANSWER(change);
+            return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
         },
         "https://abs.twimg.com/": route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>' }),
     } });
@@ -86,6 +95,13 @@ async function openColumn(page, { change = 50.4, status = 200, queryId } = {}) {
 const card = page => page.locator('[data-key="1"] .otd-ticker-card');
 const OTHER = "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062";
 const NONE = "robinhood:0x0000000000000000000000000000000000000001";
+const NATIVE = "hyperliquid:native";
+const HYPE = (() => {
+    const answer = ANSWER(3.1);
+    Object.assign(answer.data.finance_asset_data.asset, { name: "Hyperliquid", ticker: "HYPE", logo_url: "https://abs.twimg.com/finance/v1/crypto/hyperliquid/native.png",
+        crypto: { __typename: "FinanceCryptoAsset", chain_logo_url: "https://abs.twimg.com/finance/v1/crypto/hyperliquid/native.png" } });
+    return answer;
+})();
 // a tweet in the column X's data says nothing of, as from a timeline: TweetDeck's timelines are asked with queries
 // older than smart tags, which leave them out
 const addUntagged = (page, id, text) => page.evaluate(([id, text]) => {
@@ -185,4 +201,57 @@ test("an id X has no asset for stays as the text has it", async ({ page }) => {
     await expect.poll(() => asked.some(url => JSON.parse(url.searchParams.get("variables")).assetSymbol === NONE)).toBe(true);
     await page.waitForTimeout(200);
     expect(await page.$eval('[data-key="3"] .js-tweet-text', text => [text.textContent.trim(), text.querySelectorAll("a").length])).toEqual([`not a token: ${NONE}`, 0]);
+});
+
+test("a tweet X didn't say what it attaches has a card for each token its text names that X has, two at most, in the text's order", async ({ page }) => {
+    await openColumn(page);
+    await addUntagged(page, "3", `what a day for ${NATIVE} bulls, ${NONE} aside, and ${OTHER}, ${OTHER}; ${TOKEN} too`);
+    const cards = page.locator('[data-key="3"] .otd-ticker-card');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.first()).not.toHaveClass(/is-loading/);
+    expect(await cards.evaluateAll(boxes => boxes.map(box => [box.querySelector(".otd-ticker-name").textContent, box.dataset.searchTerm, box.title]))).toEqual([
+        ["Hyperliquid", "$HYPE", `Hyperliquid · ${NATIVE}`],
+        ["The Index", "$Index", "The Index · 0x56910d4409f3a0c78c64dd8d0545ff0705389870"],
+    ]);
+    // under the text, one after the other
+    expect(await page.$eval('[data-key="3"] .js-tweet-text', text => [text.nextElementSibling.matches(".otd-ticker-card"), text.nextElementSibling.nextElementSibling.matches(".otd-ticker-card")])).toEqual([true, true]);
+    // the chain's own coin is a cashtag in the text too
+    await expect.poll(() => page.$eval('[data-key="3"] .js-tweet-text', text => text.textContent.trim())).toBe(`what a day for $HYPE bulls, ${NONE} aside, and $Index, $Index; $Index too`);
+    expect(await page.$eval('[data-key="3"] a.otd-smarttag', a => [a.title, a.dataset.otdToken])).toEqual([`Hyperliquid · ${NATIVE}`, NATIVE]);
+});
+
+test("no card for a text whose ids X has no asset for, nor for an id that's part of a word or a link", async ({ page }) => {
+    const asked = await openColumn(page);
+    await addUntagged(page, "3", `not a token: ${NONE}, nor ${NATIVE}s or https://example.com/${NATIVE}`);
+    await expect.poll(() => asked.some(url => JSON.parse(url.searchParams.get("variables")).assetSymbol === NONE)).toBe(true);
+    await page.waitForTimeout(200);
+    expect(await page.locator('[data-key="3"] .otd-ticker-card, [data-key="3"] .otd-smarttag').count()).toBe(0);
+    expect(asked.map(url => JSON.parse(url.searchParams.get("variables")).assetSymbol)).not.toContain(NATIVE);
+});
+
+test("beside the square of a tweet's photo, the card goes under it, as wide as the tweet's text", async ({ page }) => {
+    // a column with room for the square beside the text
+    await page.setViewportSize({ width: 600, height: 900 });
+    await openColumn(page);
+    await page.evaluate(OTHER => {
+        document.querySelector(".js-column").style.width = "440px";
+        const photo = { id_str: "9", type: "photo", media_url_https: "https://pbs.twimg.com/media/P9.jpg", original_info: { width: 800, height: 600 },
+            sizes: { large: { w: 800, h: 600, resize: "fit" }, medium: { w: 800, h: 600, resize: "fit" }, small: { w: 680, h: 510, resize: "fit" }, thumb: { w: 150, h: 150, resize: "crop" } },
+            url: "https://t.co/m", display_url: "pic.x.com/m", expanded_url: "https://x.com/i/status/9/photo/1", indices: [64, 77] };
+        const user = { id_str: "8", screen_name: "craghack", name: "CragHack", profile_image_url_https: "", entities: {} };
+        const text = `${OTHER} https://t.co/m`;
+        const chirp = window.__client.processTweet({ id_str: "5", full_text: text, text, created_at: new Date().toUTCString(), source: "web", user,
+            entities: { hashtags: [], user_mentions: [], symbols: [], urls: [], media: [photo] }, extended_entities: { media: [photo] } });
+        window.__chirps["5"] = chirp;
+        document.querySelector(".js-chirp-container").insertAdjacentHTML("beforeend", chirp.render({ mediaPreviewSize: "medium" }));
+    }, OTHER);
+    await page.addScriptTag({ content: read("src/media-layout.js") });
+    const box = page.locator('[data-key="5"] .otd-ticker-card');
+    await expect(box).not.toHaveClass(/is-loading/);
+    const place = await page.$eval('[data-key="5"] .tweet-body', body => {
+        const rect = el => body.querySelector(el).getBoundingClientRect();
+        const square = rect(":scope > .js-media"), card = rect(":scope > .otd-ticker-card"), text = rect(":scope > .js-tweet-text");
+        return { thumb: body.classList.contains("otd-has-thumb"), under: card.top >= square.bottom, left: card.left - text.left, right: Math.round(body.getBoundingClientRect().right - card.right) };
+    });
+    expect(place).toEqual({ thumb: true, under: true, left: 0, right: 0 });
 });
