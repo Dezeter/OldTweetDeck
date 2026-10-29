@@ -188,17 +188,21 @@ function parseNoteTweet(result) {
 
 // X's smart cashtags, by tweet id, for cashtags.js (window.OTDcashtagData): the assets a tweet attaches, a card under its text each, and
 // the ones its text names by their id ("robinhood:0x…", X shows "$Index"), with their name and ticker. TweetDeck
-// keeps neither; the oldest go past 3000 tweets.
+// keeps neither; the oldest go past 3000 tweets. "attached" is null when X didn't say (a query that leaves it out),
+// [] when it said none; what an earlier answer said stays when a later one doesn't say.
 const smartCashtags = window.OTDcashtagData = new Map();
 function rememberCashtags(result) {
     const id = result?.legacy?.id_str || result?.rest_id;
     if (!id) return;
     const note = result.note_tweet?.note_tweet_results?.result || result.note_tweet?.note_tweet_results;
-    const tags = [...(note?.entity_set?.smarttags || []), ...(result.legacy?.entities?.smarttags || [])]
+    const before = smartCashtags.get(id);
+    let tags = [...(note?.entity_set?.smarttags || []), ...(result.legacy?.entities?.smarttags || [])]
         .filter(tag => tag?.tag?.rest_id && typeof tag.text === "string" && tag.text)
         .map(tag => ({ id: String(tag.tag.rest_id), text: tag.text, name: String(tag.tag.info?.info?.name || ""), ticker: String(tag.tag.info?.info?.ticker || "") }));
-    const attached = (Array.isArray(result.cashtag_attachments) ? result.cashtag_attachments : []).map(a => a?.rest_id).filter(Boolean).map(String);
-    if (!tags.length && !attached.length) return;
+    let attached = Array.isArray(result.cashtag_attachments) ? result.cashtag_attachments.map(a => a?.rest_id).filter(Boolean).map(String) : null;
+    if (!tags.length && !attached) return;
+    if (!tags.length) tags = before?.tags || [];
+    attached = attached || before?.attached || null;
     smartCashtags.delete(id);
     smartCashtags.set(id, { attached, tags });
     if (smartCashtags.size > 3000) smartCashtags.delete(smartCashtags.keys().next().value);

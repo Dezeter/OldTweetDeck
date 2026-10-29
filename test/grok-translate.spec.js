@@ -161,6 +161,20 @@ test("a token's id Grok gives back is the text's cashtag for that token, not ano
         .toEqual([["$Index", "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062"], ["$SNP", null]]);
 });
 
+test("a chain's own coin Grok gives back is the text's cashtag for that coin: \"native\" is every chain's", async ({ page }) => {
+    await open(page, {
+        responses: { 100: R("purr-2:native — официальный мем-коин hyperliquid:native") },
+        prepare: () => {
+            const cash = (ticker, token) => `<a href="https://twitter.com/search?q=%24${ticker}" rel="hashtag" target="_blank" class="link-complex otd-smarttag" data-otd-token="${token}"><span class="hash">$</span><span class="link-complex-target">${ticker}</span></a>`;
+            document.querySelector("#a100 .js-tweet-text").innerHTML = `${cash("HYPE", "hyperliquid:native")} meets ${cash("PURR", "purr-2:native")}`;
+        },
+    });
+    await expect.poll(() => page.evaluate(() => document.querySelector("#a100 .otd-grok-tr")?.textContent), { timeout: 10000 })
+        .toBe("$PURR — официальный мем-коин $HYPE");
+    expect(await page.evaluate(() => [...document.querySelectorAll("#a100 .otd-grok-tr a")].map(a => a.dataset.otdToken)))
+        .toEqual(["purr-2:native", "hyperliquid:native"]);
+});
+
 test("translations are cached: a re-rendered tweet and a reload need no requests", async ({ page, context }) => {
     await open(page);
     await expect.poll(() => page.evaluate(() => document.querySelector("#a100 .otd-grok-tr")?.textContent), { timeout: 10000 }).toMatch(/^Привет/);
