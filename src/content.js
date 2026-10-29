@@ -10,11 +10,10 @@ window.addEventListener('message', async e => {
         // download-media.js -> background script, which saves the file; only X's media hosts
         const { url, filename } = e.data;
         if(/^https:\/\/(pbs|video)\.twimg\.com\//.test(url)) chrome.runtime.sendMessage({ action: 'download', url, filename });
-    } else if((e.data?.action === 'otdPage' || e.data?.action === 'otdReload') && e.source === window) {
-        // the load watchdog (watchdog.js) -> background script: what it saw of this page, a reload past the cache
-        const action = e.data.action;
-        chrome.runtime.sendMessage({ action }, response => {
-            if(action === 'otdPage') window.postMessage({ otdPage: response ?? null }, '*');
+    } else if(e.data?.action === 'otdPage' && e.source === window) {
+        // the load watchdog (watchdog.js) -> background script: what it saw of this page
+        chrome.runtime.sendMessage({ action: 'otdPage' }, response => {
+            window.postMessage({ otdPage: response ?? null }, '*');
         });
     } else if(e.data?.action === 'otdServiceWorker' && e.source === window) {
         // the load watchdog -> background script: keep x.com's service worker off, or let it be

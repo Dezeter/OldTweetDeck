@@ -36,6 +36,8 @@ async function stand(page, { dark = false, width = "medium", media = "", density
     await page.evaluate(([dark, width]) => {
         if(dark) document.documentElement.classList.add("dark");
         window.__account.isContributor = () => false;
+        // the counts next to the buttons, as people have them
+        TD.controller.stats.isInExperimentBucket = (experiment, bucket) => experiment === "live_engagement_in_column_8020" && bucket === "live_engagement_enabled";
         TD.settings.getColumnWidth = () => width;
         TD.settings.getTheme = () => dark ? "dark" : "light";
         TD.ui.main.updateColumnSize();
@@ -65,6 +67,9 @@ async function stand(page, { dark = false, width = "medium", media = "", density
             ["text", tw(101, U.a, "Ссылка на реферала и бонусный код: BADLY")],
             ["long text, mention, hashtag", tw(102, U.a, long, { entities: ent({ user_mentions: [{ id_str: "99", screen_name: "biggerz", name: "BiggerZ", indices: [long.indexOf("@biggerz"), long.indexOf("@biggerz") + 8] }], hashtags: [{ text: "esports", indices: [long.length - 8, long.length] }] }) })],
             ["reply", tw(103, U.c, "@Dezeter Это правда работает? Как настроить?", { in_reply_to_status_id_str: "90", in_reply_to_user_id_str: "1", in_reply_to_screen_name: "Dezeter", entities: ent({ user_mentions: [{ id_str: "1", screen_name: "Dezeter", name: "Dezeter", indices: [0, 8] }] }), display_text_range: [9, 44] })],
+            // X's self_thread, as it marked a thread's tweets: "Show this thread" under them
+            ["thread", tw(120, U.a, "Продолжение треда: вот что я хотел добавить", { in_reply_to_status_id_str: "90", in_reply_to_user_id_str: "11", in_reply_to_screen_name: "Badlynasty", self_thread: { id_str: "90" } })],
+            ["thread with a photo", withMedia(tw(121, U.a, "И ещё один кадр в тред", { in_reply_to_status_id_str: "91", in_reply_to_user_id_str: "11", in_reply_to_screen_name: "Badlynasty", self_thread: { id_str: "91" } }), [photo(1)])],
             ["retweet", { ...tw(104, U.f, "RT"), retweeted_status: tw(1040, U.b, "⭕ РАСПРОДАНО ЗА 3 ДНЯ ⭕ Привет моей удивительной семейке! Последний билет на концерт в Тбилиси ушёл сегодня утром") }],
             ["photo, landscape", withMedia(tw(105, U.a, "Закат над городом"), [photo(1)])],
             ["photo, portrait", withMedia(tw(106, U.b, "Новый постер"), [photo(2)])],
@@ -199,6 +204,18 @@ const iconPlaces = page => page.evaluate(() => {
     });
     const action = document.querySelector('article[data-otd-label="text"] .tweet-action[rel="reply"]');
     out["reply button"] = Math.round(drawing(action.querySelector(".icon")) - mid(action.getBoundingClientRect()));
+    // the hover circle of a button, with its count, in a column and in the opened tweet, round its icon
+    document.querySelectorAll('article[data-otd-label="text"] .tweet-action, [data-otd-label="opened tweet"] .js-tweet-detail .tweet-detail-action').forEach(button => {
+        const after = getComputedStyle(button, "::after");
+        if(after.content === "none") return;
+        const box = button.getBoundingClientRect();
+        const icon = button.querySelector(".icon");
+        const circle = box.top + parseFloat(after.top) + parseFloat(after.marginTop) + parseFloat(after.height) / 2;
+        const across = box.left + parseFloat(after.left) + parseFloat(after.width) / 2 - (icon.getBoundingClientRect().left + icon.getBoundingClientRect().width / 2);
+        const where = `${button.closest(".js-tweet-detail") ? "opened tweet" : "column"} ${button.getAttribute("rel")} circle`;
+        out[where] = Math.round(circle - drawing(icon));
+        out[`${where} across`] = Math.round(across);
+    });
     return out;
 });
 
@@ -216,11 +233,29 @@ for(const [name, options] of Object.entries({
     const squares = tweets.filter(t => t.square);
     if(options.media === "whole") expect(squares.every(t => t.square[0] > 200)).toBe(true);
     else {
-        expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(["photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"]));
+        expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(["thread with a photo", "photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"]));
         for(const t of squares) expect(t.square, `${t.label} ${t.rects}`).toEqual([80, 80, true, true]);
     }
     // icons where TweetDeck's font put them: a column's on its title's line, the left bar's in their buttons
-    for(const [where, off] of Object.entries(await iconPlaces(page))) expect(Math.abs(off), where).toBeLessThanOrEqual(where.startsWith("column") ? 5 : 2);
+    const places = await iconPlaces(page);
+    expect(Object.keys(places)).toEqual(expect.arrayContaining(["column favorite circle", "opened tweet favorite circle"]));
+    for(const [where, off] of Object.entries(places)) expect(Math.abs(off), where).toBeLessThanOrEqual(where.endsWith("circle") || where.endsWith("across") ? 1 : where.startsWith("column") ? 5 : 2);
+    // of several photos in TweetDeck's grid, the first fills the square, "+N" for the rest
+    if(options.media !== "whole") expect(await page.evaluate(() => ["two photos", "three photos", "four photos"].map(label => {
+        const media = document.querySelector(`article[data-otd-label="${label}"] .tweet-body > .js-media`);
+        const square = media.getBoundingClientRect();
+        const shown = [...media.querySelectorAll(".media-image")].map(image => image.getBoundingClientRect()).filter(r => r.width > 0);
+        return [label, media.dataset.otdMore, shown.length, shown.every(r => Math.abs(r.width - square.width) < 0.5 && Math.abs(r.height - square.height) < 0.5)];
+    }))).toEqual([["two photos", "+1", 1, true], ["three photos", "+2", 1, true], ["four photos", "+3", 1, true]]);
+    // "Show this thread" under the text, over the buttons, beside the square
+    const threads = await page.evaluate(() => [...document.querySelectorAll('article[data-otd-label^="thread"]')].map(article => {
+        const link = article.querySelector(".js-show-this-thread p")?.getBoundingClientRect();
+        const text = article.querySelector(".tweet-text").getBoundingClientRect();
+        const buttons = article.querySelector(".tweet-actions").getBoundingClientRect();
+        const square = document.documentElement.classList.contains("otd-media-thumb") && article.querySelector(".tweet-body > .js-media")?.getBoundingClientRect();
+        return [article.dataset.otdLabel, !!link && link.top >= text.bottom - 0.5 && link.bottom <= buttons.top + 0.5 && (!square || link.right <= square.left - 12 + 0.5)];
+    }));
+    expect(threads).toEqual([["thread", true], ["thread with a photo", true]]);
     // a hairline round a square
     if(options.media !== "whole") expect(await page.$eval('article[data-otd-label="photo, landscape"] .tweet-body > .js-media', el => getComputedStyle(el).outlineWidth)).toBe("1px");
     if(process.env.SPECIMENS_OUT) await shoot(page, name);

@@ -14,6 +14,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 
 - [Auto-translation](#grok-auto-translation) of tweets with Grok, to the language you choose
 - [X Articles](#x-articles) in columns and a reader for them, translated with Google Translate
+- [Smart cashtags](#smart-cashtags): "$Index" instead of a token's address in a tweet's text, as on x.com
 - [Grouped notifications](#grouped-notifications): likes, retweets and follows like on x.com
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
@@ -94,6 +95,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Loading all replies | `OTDloadAllReplies` |
 | Showing your reply right away | `OTDinstantReplies` |
 | X Articles | `OTDarticles` |
+| Smart cashtags | `OTDsmartCashtags` |
 | Links straight to the site | `OTDcleanLinks` |
 | Exact tweet times (off by default, `'1'` turns it on) | `OTDabsoluteTime` |
 | "Redraft" in your tweet's menu | `OTDredraft` |
@@ -153,6 +155,11 @@ A tweet that is an X Article shows the title and the start of the text instead o
 Articles in another language are translated with Google Translate (the card and the reader, with a button to switch back to the original). The language is the same as for tweet translation.  
 With article translation switched off in [Settings](#settings), the reader still has the button to translate.
 
+## Smart cashtags
+
+On x.com a tweet can name a token by its id, such as `robinhood:0x56910d…`, and X shows its cashtag instead. TweeXDeck does the same: the text has "$Index", TweetDeck's own cashtag link, which opens a search for it; the token's name and id are in its tooltip, in quoted tweets too. TweeXDeck asks X for these with every tweet, as x.com does.  
+A tweet can also attach a token, which x.com shows as a card under the text with its price, its change in 24 hours and a chart of that day. TweeXDeck draws that card too, once it knows the id of the query x.com uses for it.
+
 ## Grouped notifications
 
 Notifications are grouped the way x.com shows them: likes and retweets of the same tweet become one item with a row of avatars ("A, B and 3 others liked"), follows in a row become one, and the liked tweet is cut to three lines without media.
@@ -167,7 +174,7 @@ Tweet times can show the time and date instead of "5m": "14:05" for today, "26 �
 
 Settings → TweeXDeck → Media → "Media in columns" sets how a tweet's photos and videos show in a column:
 
-- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Several photos are TweetDeck's grid in the square (or the first one with "+2"), a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
+- **A square beside the text**, the default: an 80px square at the right, the text, "Replying to" and the buttons in a column beside it, so a tweet with a photo is about as tall as one without. Of several photos the square has the first, with "+2" for the others, a video has a play button, a GIF a "GIF" badge, sensitive media an eye to show them. A quoted tweet goes under the square at full width; its own media are a smaller square in the quote. A link card with a large picture is X's small card in a column, its picture beside the title. A click opens TweetDeck's media window as before; a click on a video opens the tweet back to full width and plays it there.
 - **Whole**: a tweet with one image shows it whole, in its own proportions, instead of TweetDeck's cropped strip; a very tall image stops at half the screen. Tweets with several images and videos keep TweetDeck's previews.
 - **A strip, as in TweetDeck**.
 
@@ -197,7 +204,7 @@ After them, **Flex**: columns that share the window, each from 310 up to 480px, 
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is. TweetDeck's "N New Tweets" over the column counts the ones that came; it, or a scroll to the top, brings them in, and with the pointer still over the column it holds still again.
 
-A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under them. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
+A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under their text, over the buttons. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
 The tab title shows what's unread: "(3) TweetDeck" for three unread direct messages, "(*) TweetDeck" when a column has new tweets.
 
@@ -241,8 +248,8 @@ A reply you send shows up in the open conversation right away, instead of after 
 
 ## When TweetDeck doesn't load
 
-If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page reloads at once, past the browser's cache and the service worker (as Ctrl+Shift+R). In Firefox x.com's policy can stay on the page after that reload although the extension took it off, when the tab had plain x.com or its service worker's answer a moment before; then the page reloads once more. x.com registers its worker again when you open x.com; if TweetDeck gets stuck this way often, switch on "Keep x.com's service worker off" in Settings → TweeXDeck → Other: the worker is removed whenever TweetDeck opens and x.com can't install it again, but X's notifications in the browser stop coming. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
-"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/TweeXDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters; where the page came from (the network, the cache or a service worker), what the extension took off it, and the page policy that blocked anything. After an automatic reload it also has the reports of the pages that got stuck. It has no cookies or tokens. The same report is under Settings → TweeXDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
+If TweetDeck hasn't started 20 seconds after the page opened, the page reloads itself once, as reloading by hand usually helps. When x.com's service worker answers TweetDeck's page from its cache, or x.com's page policy blocked the extension's scripts anyway, the worker is removed and the page loads again at once. That's a new load of TweetDeck's address with a mark the page takes off its address as it opens, not a reload: in Firefox a tab's history entry for TweetDeck that came back from plain x.com kept x.com's policy, although the extension took it off, and every reload of the entry kept it too. It's past the browser's cache too, as it's a new address. If the policy stays anyway, the page loads once more, and a last time half a minute after the first. The panel's "Reload" is the same new load. Firefox applies what extensions change in a page's headers in the order they started listening, so an extension that rewrites x.com's policy (a userscript manager letting its scripts in, say) and listens after TweeXDeck would give the page that policy back: TweeXDeck's background script listens anew before every request for TweetDeck's page, to come last, and when the policy comes back anyway the panel says another extension did it. x.com registers its worker again when you open x.com; if TweetDeck gets stuck this way often, switch on "Keep x.com's service worker off" in Settings → TweeXDeck → Other: the worker is removed whenever TweetDeck opens and x.com can't install it again, but X's notifications in the browser stop coming. When that wouldn't help (the extension's scripts were blocked or didn't load, or you aren't logged in), or TweetDeck is stuck again after it, a panel over the spinner says what most likely went wrong: x.com's page policy blocking the extension's scripts, extension files that didn't load, the `x-client-transaction-id` solver failing, X answering 401/403 (not logged in), 429 (rate limit) or other errors, requests X doesn't answer, script errors. Blocked scripts show it after 5 seconds.  
+"Copy diagnostics" copies a report for an [issue](https://github.com/Dezeter/TweeXDeck/issues): the extension version, browser, what loaded and when, TweetDeck's own steps as it started, the requests X hasn't answered yet, and X's answers without their parameters; where the page came from (the network, the cache or a service worker), what the extension took off it and what of it the page had again after every extension, and the page policy and its directive that blocked anything, with the first letters of its nonces and of x.com's own scripts' in the page, which tell whether the policy came with this load. After an automatic reload it also has the reports of the pages that got stuck. It has no cookies or tokens. The same report is under Settings → TweeXDeck → "Copy diagnostics", for problems after TweetDeck has started, such as replies or a column not loading.
 
 ## When X retires an address
 

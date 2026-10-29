@@ -1,8 +1,8 @@
 // How a tweet's photos and videos show in a column, picked in Settings → TweeXDeck → Media (OTD.MEDIA_STORAGE),
 // applied at once:
 // - "thumb", the default: a small square at the right of the text, the text, "Replying to" and the buttons in a
-//   column beside it, a quoted tweet under it at full width. Several photos are TweetDeck's grid in the square, or
-//   the first with "+2"; a video has a play badge, a GIF "GIF". A quoted tweet's media is a smaller square in the
+//   column beside it, a quoted tweet under it at full width. Of several photos the square has the first with "+2";
+//   a video has a play badge, a GIF "GIF". A quoted tweet's media is a smaller square in the
 //   quote. A click opens TweetDeck's media window as before; a video, with inline video on, opens the tweet back to
 //   full width and plays there;
 // - "whole": a single photo whole, in its own proportions and no taller than half the screen, instead of TweetDeck's
@@ -63,7 +63,7 @@
             media.dataset.otdThumb = "";
             if(media.closest(".js-tweet-detail")) continue;
             media.parentElement.classList.add(media.closest(".js-quote-detail") ? "otd-quote-thumb" : "otd-has-thumb");
-            const more = media.querySelectorAll(":scope > .js-media-preview-container").length - 1;
+            const more = media.querySelectorAll(":scope > .js-media-preview-container, :scope > [class^='media-grid-'] > .media-image-container").length - 1;
             if(more > 0) media.dataset.otdMore = `+${more}`;
             place(media);
         }
@@ -104,10 +104,10 @@
         /* whole: the strip's height becomes the image's proportion; !important over the dark theme's copy of the rule */
         html.otd-media-whole .js-media-image-link.otd-aspect { height: 0 !important; padding-top: min(50vh, var(--otd-aspect)) !important; background-size: cover; background-position: center; }
 
-        /* thumb: a column for the text, "Replying to" and the buttons (in a GIF's tweet TweetDeck's markup puts them in
-           the body), and an 80px square in the 92px kept at its right; 64px in 74px in a quote. The square floats into
-           the padding, so the column doesn't hang on how a browser fits a block beside a float */
-        html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { padding-right: 92px; }
+        /* thumb: a column for the text, "Replying to", "Show this thread" and the buttons (in a GIF's tweet TweetDeck's
+           markup puts them in the body), and an 80px square in the 92px kept at its right; 64px in 74px in a quote. The
+           square floats into the padding, so the column doesn't hang on how a browser fits a block beside a float */
+        html.otd-media-thumb .otd-has-thumb, html.otd-media-thumb .otd-has-thumb ~ .js-show-this-thread, html.otd-media-thumb .otd-has-thumb ~ .tweet-footer { padding-right: 92px; }
         html.otd-media-thumb .otd-quote-thumb { padding-right: 74px; }
         html.otd-media-thumb .otd-has-thumb > :not(.js-media):not(.js-quote-detail), html.otd-media-thumb .otd-quote-thumb > :not(.js-media) { max-width: 100%; box-sizing: border-box; }
         ${both("")} { --otd-thumb: 80px; float: right; position: relative; width: var(--otd-thumb); height: var(--otd-thumb); margin: 2px -92px 6px 0; overflow: hidden; border-radius: 12px; }
@@ -126,6 +126,11 @@
         }
         /* TweetDeck's grid of several photos is the square itself: its height, the square's margins */
         ${both(".media-grid-container")} { height: var(--otd-thumb) !important; min-height: 0 !important; }
+        /* and in it the first photo, whole, "+N" for the others, as without the grid: its halves and quarters are too
+           small to make out in a square, and an empty half was seen */
+        ${both(" > [class^='media-grid-'] > .media-image-container")} { width: 100% !important; height: 100% !important; float: none !important; }
+        ${both(" > [class^='media-grid-'] > .media-image-container ~ .media-image-container")} { display: none !important; }
+        ${both(" > [class^='media-grid-'] > .media-image-container > .media-image")} { inset: 0 !important; }
         ${both(" .media-item-gif")} { width: 100%; height: 100%; object-fit: cover; }
         /* TweetDeck's badges are for its strip; the square has its own */
         ${both(" .video-overlay")}, ${both(" .gif-badge")}, ${both(" .gif-pause")} { display: none; }
