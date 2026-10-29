@@ -3,16 +3,16 @@
 //   TweetDeck's search for it, the token's name and id in its tooltip;
 // - an asset the tweet attaches is a card under the text: its logo and chain, name, ticker, price, change in 24 h
 //   and a chart of that day, from X's SmartTagAttachmentQuery; a click searches its cashtag, as the text's does.
-//   Only with that query's id, as x.com asks it (QUERY_ID); without it there's no card.
+//   It's asked as x.com asks it, for the day in 5-minute steps; without the query's id there's no card.
 // interception.js keeps what X said of a tweet's cashtags (window.OTDcashtagData, by tweet id), and asks for it.
 // A card's numbers are a minute old at most, and stay as they were drawn. Loaded by injection.js after
 // otd-common.js. Switch "smartCashtags".
 (() => {
     if(!OTD.isOn("smartCashtags")) return;
 
-    const QUERY_ID = "";
+    const QUERY_ID = "qlU4kwL73-PXdo3qpTA4MA";
     const QUERY_PATH = `/i/api/graphql/${QUERY_ID}/SmartTagAttachmentQuery`;
-    const variables = restId => ({ rest_id: restId });
+    const variables = restId => ({ assetSymbol: restId, timeframe: "1D", candleSize: "5m" });
     const FRESH_FOR = 60000;
     const LOCALE = navigator.language || "en";
 

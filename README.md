@@ -14,7 +14,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 
 - [Auto-translation](#grok-auto-translation) of tweets with Grok, to the language you choose
 - [X Articles](#x-articles) in columns and a reader for them, translated with Google Translate
-- [Smart cashtags](#smart-cashtags): "$Index" instead of a token's address in a tweet's text, as on x.com
+- [Smart cashtags](#smart-cashtags): "$Index" instead of a token's address in a tweet's text, and a card with its price and chart, as on x.com
 - [Grouped notifications](#grouped-notifications): likes, retweets and follows like on x.com
 - [Replies to other people hidden](#replies-in-home-columns) in home columns
 - [All replies](#all-replies-in-the-tweet-view) in the tweet view, and [your sent replies](#instant-replies) shown right away
@@ -158,7 +158,7 @@ With article translation switched off in [Settings](#settings), the reader still
 ## Smart cashtags
 
 On x.com a tweet can name a token by its id, such as `robinhood:0x56910d…`, and X shows its cashtag instead. TweeXDeck does the same: the text has "$Index", TweetDeck's own cashtag link, which opens a search for it; the token's name and id are in its tooltip, in quoted tweets too. TweeXDeck asks X for these with every tweet, as x.com does.  
-A tweet can also attach a token, which x.com shows as a card under the text with its price, its change in 24 hours and a chart of that day. TweeXDeck draws that card too, once it knows the id of the query x.com uses for it.
+A tweet can also attach a token, which x.com shows as a card under the text: its logo and chain, name, ticker, price, change in 24 hours and a chart of that day. TweeXDeck draws the same card, from the same query x.com asks (`SmartTagAttachmentQuery`), green when the price went up and red when it went down; a click opens TweetDeck's search for its cashtag. Its numbers are at most a minute old when the card is drawn, and stay as they were.
 
 ## Grouped notifications
 

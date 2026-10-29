@@ -47,7 +47,7 @@ const ANSWER = change => ({ data: {
 } });
 
 // a column with a tweet that attaches the token and names it in its text, and one that only names it
-async function openColumn(page, { change = 50.4, status = 200, queryId = "q1" } = {}) {
+async function openColumn(page, { change = 50.4, status = 200, queryId } = {}) {
     const asked = [];
     await openPage(page, { routes: {
         "http://otd.test/i/api/graphql/": route => {
@@ -75,8 +75,9 @@ async function openColumn(page, { change = 50.4, status = 200, queryId = "q1" } 
         for(const chirp of chirps) container.insertAdjacentHTML("beforeend", chirp.render({ mediaPreviewSize: "medium" }));
     }, TOKEN);
     await addScripts(page, "src/otd-common.js");
-    // the query's id as x.com asks it; "" draws no card
-    await page.addScriptTag({ content: read("src/cashtags.js").replace(/const QUERY_ID = "[^"]*";/, `const QUERY_ID = ${JSON.stringify(queryId)};`) });
+    // the query's id x.com asks it with, or another; "" draws no card
+    const source = read("src/cashtags.js");
+    await page.addScriptTag({ content: queryId === undefined ? source : source.replace(/const QUERY_ID = "[^"]*";/, `const QUERY_ID = ${JSON.stringify(queryId)};`) });
     return asked;
 }
 const card = page => page.locator('[data-key="1"] .otd-ticker-card');
@@ -116,8 +117,9 @@ test("an attached asset is a card under the text: logo and chain, name, ticker, 
     });
     // one question for the token, and none for a tweet that only names it
     expect(asked).toHaveLength(1);
-    expect(asked[0].pathname).toBe("/i/api/graphql/q1/SmartTagAttachmentQuery");
-    expect(JSON.parse(asked[0].searchParams.get("variables"))).toEqual({ rest_id: "robinhood:0x56910d4409f3a0c78c64dd8d0545ff0705389870" });
+    expect(asked[0].pathname).toBe("/i/api/graphql/qlU4kwL73-PXdo3qpTA4MA/SmartTagAttachmentQuery");
+    // as x.com asks it: the asset, the day in 5-minute steps
+    expect(JSON.parse(asked[0].searchParams.get("variables"))).toEqual({ assetSymbol: "robinhood:0x56910d4409f3a0c78c64dd8d0545ff0705389870", timeframe: "1D", candleSize: "5m" });
     expect(await page.locator('[data-key="2"] .otd-ticker-card').count()).toBe(0);
 });
 
