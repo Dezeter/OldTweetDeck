@@ -56,7 +56,11 @@ const previews = page => page.evaluate(() => Object.fromEntries([...document.que
 const thumbs = page => page.evaluate(() => Object.fromEntries([...document.querySelectorAll(".js-chirp-container > article")].map(article => {
     const box = el => el && el.getBoundingClientRect();
     const media = box(article.querySelector(".tweet-body > .js-media"));
-    const text = box(article.querySelector(".tweet-text"));
+    const text = article.querySelector(".tweet-text");
+    // the text's words: its box goes on under the square
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    const words = [...range.getClientRects()].filter(r => r.width > 0);
     const footer = box(article.querySelector(".tweet-actions"));
     const tweet = box(article.querySelector(".tweet"));
     const more = article.querySelector(".tweet-body > .js-media")?.dataset.otdMore ?? null;
@@ -64,8 +68,8 @@ const thumbs = page => page.evaluate(() => Object.fromEntries([...document.query
         square: [Math.round(media.width), Math.round(media.height)],
         right: Math.round(tweet.right - media.right),
         // the text beside it, the buttons under it, the tweet's last line
-        beside: text.right <= media.left - 12 + 0.5 && footer.top >= media.bottom - 0.5,
-        top: Math.round(media.top - text.top),
+        beside: words.length > 0 && words.every(r => r.right <= media.left - 12 + 0.5) && footer.top >= media.bottom - 0.5,
+        top: Math.round(media.top - box(text).top),
         more,
     } : null];
 })));
@@ -73,7 +77,7 @@ const thumbs = page => page.evaluate(() => Object.fromEntries([...document.query
 test("media are a square beside the text: TweetDeck's first of several with \"+1\", a play badge on a video; text alone as it was", async ({ page }) => {
     await openColumn(page);
     const result = await thumbs(page);
-    const square = { square: [80, 80], right: 0, beside: true, top: 2, more: null };
+    const square = { square: [80, 80], right: 0, beside: true, top: 0, more: null };
     expect(result).toEqual({ "100": square, "200": { ...square, more: "+1" }, "301": square, "400": square, "500": null });
     expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-key="400"] .is-video'), "::after").width)).toBe("28px");
     // the second of the two is TweetDeck's, hidden
@@ -152,7 +156,12 @@ test("a video in a square opens its tweet to full width and plays there", async 
     expect(await page.evaluate(() => Math.round(document.querySelector('[data-key="400"] .otd-inline-video').getBoundingClientRect().width))).toBe(374);
 });
 
-test("a quote goes under the square, whole; a quoted tweet's media are a smaller square in it", async ({ page }) => {
+test("a quote rises beside the square after a short text, goes under it whole when it would hang over it by less than a line; a quoted tweet's media are a smaller square in it", async ({ page }) => {
+    // the page's errors, the load watchdog's report has them
+    await page.addInitScript(() => {
+        window.__errors = [];
+        window.addEventListener("error", e => window.__errors.push(e.message));
+    });
     await openColumn(page);
     const quote = await page.evaluate(() => {
         const quoted = window.__chirps["100"];
@@ -166,16 +175,36 @@ test("a quote goes under the square, whole; a quoted tweet's media are a smaller
         return true;
     });
     expect(quote).toBe(true);
-    await page.waitForTimeout(300);
-    const layout = await page.evaluate(() => {
+    const layout = () => page.evaluate(() => {
         const article = document.querySelector('[data-key="600"]');
         const box = el => el.getBoundingClientRect();
         const square = box(article.querySelector(".tweet-body > .js-media"));
         const card = box(article.querySelector(".js-quote-detail"));
         const inner = box(article.querySelector(".js-quote-detail .js-media"));
-        return { under: card.top >= square.bottom, whole: Math.round(card.width), inQuote: [Math.round(inner.width), Math.round(inner.height)] };
+        return { place: card.top >= square.bottom ? "under" : card.right <= square.left - 12 + 0.5 ? "beside" : "over", width: Math.round(card.width), inQuote: [Math.round(inner.width), Math.round(inner.height)] };
     });
-    expect(layout).toEqual({ under: true, whole: 374, inQuote: [64, 64] });
+    // "see" and the square 80px down: the quote beside it, 92px narrower
+    await expect.poll(layout).toEqual({ place: "beside", width: 282, inQuote: [64, 64] });
+    // the text longer (as a translation makes it), the square over the quote by this much
+    const overhang = px => page.evaluate(px => {
+        const article = document.querySelector('[data-key="600"]');
+        const text = article.querySelector(".tweet-text");
+        const media = article.querySelector(".tweet-body > .js-media");
+        text.style.paddingBottom = "0px";
+        const gap = Math.max(parseFloat(getComputedStyle(text).marginBottom), parseFloat(getComputedStyle(article.querySelector(".js-quote-detail")).marginTop));
+        const bottom = media.getBoundingClientRect().bottom + parseFloat(getComputedStyle(media).marginBottom);
+        text.style.paddingBottom = `${bottom - px - gap - text.getBoundingClientRect().bottom}px`;
+    }, px);
+    await overhang(10);
+    await expect.poll(layout).toEqual({ place: "under", width: 374, inQuote: [64, 64] });
+    await overhang(40);
+    await expect.poll(layout).toEqual({ place: "beside", width: 282, inQuote: [64, 64] });
+    // past the square: under it anyway
+    await overhang(-20);
+    await expect.poll(layout).toEqual({ place: "under", width: 374, inQuote: [64, 64] });
+    expect(await page.$eval('[data-key="600"] .js-quote-detail', quote => quote.classList.contains("otd-quote-under"))).toBe(false);
+    // the quote moved after the browser measured: in the next frame, not a "ResizeObserver loop" error
+    expect(await page.evaluate(() => window.__errors)).toEqual([]);
 });
 
 test("a single image shows in its own proportions, no taller than half the screen", async ({ page }) => {

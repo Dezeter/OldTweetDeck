@@ -84,6 +84,10 @@ async function stand(page, { dark = false, width = "medium", media = "", density
             ["quote", tw(113, U.c, "Вот реальный пример, о котором я говорил", { is_quote_status: true, quoted_status_id_str: "1130", quoted_status: tw(1130, U.d, "Самый быстрый способ перевести деньги — через нас, благодарим за доверие") })],
             ["quote with a photo", tw(114, U.e, "Что такое?", { is_quote_status: true, quoted_status_id_str: "1140", quoted_status: withMedia(tw(1140, U.a, "Транзакция прошла за 3 секунды"), [photo(14)]) })],
             ["photo and a quote", withMedia(tw(115, U.b, "Смотрите, что нашла", { is_quote_status: true, quoted_status_id_str: "1150", quoted_status: tw(1150, U.c, "Цитируемый твит без картинки") }), [photo(3)])],
+            // a line of text by a square, a quote with a square of its own under it
+            ["video and a quote with a photo", withMedia(tw(124, U.f, "С Хэллоуином!", { is_quote_status: true, quoted_status_id_str: "1240", quoted_status: withMedia(tw(1240, U.d, "Сезон тыкв открыт."), [photo(10)]) }), [photo(8, "video")])],
+            // text longer than its square, in the tweet and in its quote
+            ["long text and a video", withMedia(tw(125, U.e, "Только что запустил задачу с телефона прямо на свой компьютер.\n\nЭто самый простой способ управлять агентами на своих машинах: пишешь задачу, и самая свободная машина её берёт, запускает в отдельной копии и показывает ход работы.\n\nРаботает на Mac и Linux", { is_quote_status: true, quoted_status_id_str: "1250", quoted_status: withMedia(tw(1250, U.a, "Я превратил старые компьютеры в парк агентов.\n\nНачни задачу на одном, передай другому, перенеси на третий. Запускай параллельно и проверяй с телефона.\n\nСобери свой парк"), [photo(4, "video")]) }), [photo(1, "video")])],
             ["link card, large", tw(116, U.a, "BiggerZ: Global Online Casino https://t.co/card", { card: card("summary_large_image", { title: "BiggerZ: Global Online Casino, Sportsbook & Prediction Markets", description: "BiggerZ brings together 6,000+ casino games, sports betting and prediction markets", domain: "biggerz.com", vanity_url: "biggerz.com", card_url: "https://t.co/card", summary_photo_image_original: img(11, 1200, 628), thumbnail_image_original: img(11, 1200, 628) }) })],
             ["link card, small", tw(117, U.d, "Статья https://t.co/card", { card: card("summary", { title: "Как работает TweetDeck в 2026 году", description: "Разбор расширения, которое возвращает старый интерфейс", domain: "habr.com", vanity_url: "habr.com", card_url: "https://t.co/card", thumbnail_image_original: img(13, 400, 400) }) })],
             ["poll", tw(118, U.e, "Какую тему вы используете?", { card: card("poll3choice_text_only", { choice1_label: "Светлую", choice1_count: "120", choice2_label: "Тёмную", choice2_count: "340", choice3_label: "Lights out", choice3_count: "88", counts_are_final: { type: "BOOLEAN", boolean_value: false }, end_datetime_utc: new Date(Date.now() + 864e5).toISOString(), duration_minutes: "1440" }) })],
@@ -181,6 +185,21 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
     const buttons = box(article.querySelector(".tweet-actions"));
     const body = media && box(media.parentElement);
     const under = media && !square && box(media);
+    // the text's words: beside the square they keep 12px from it, under it they go on at the full width (a space at
+    // a line's end, TweetDeck's text being pre-wrap, hangs past it unseen)
+    const lines = !square ? [] : (() => {
+        const text = article.querySelector(".tweet-text");
+        const walk = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        const rects = [...text.querySelectorAll("img")].map(img => img.getBoundingClientRect());
+        for(let node; (node = walk.nextNode());) for(const word of node.data.matchAll(/\S+/g)) {
+            range.setStart(node, word.index);
+            range.setEnd(node, word.index + word[0].length);
+            rects.push(...range.getClientRects());
+        }
+        return rects.filter(r => r.width > 0 && r.height > 0);
+    })();
+    const beside = square && lines.filter(r => r.bottom > square.top + 0.5 && r.top < square.bottom - 0.5);
     return {
         label: article.dataset.otdLabel,
         out,
@@ -189,9 +208,14 @@ const layout = page => page.evaluate(() => [...document.querySelectorAll("articl
         // TweetDeck's own preview: under the text, the body's width, no taller than a strip
         under: under ? [under.top >= text.bottom - 0.5, Math.abs(under.width - body.width) <= 1, under.height <= 200] : null,
         // Firefox lays out in fractions of a pixel: half a pixel either way is the same place
-        square: square ? [Math.round(square.width), Math.round(square.height), text.right <= square.left - 12 + 0.5, !quote || quote.top >= square.bottom - 0.5] : null,
+        // a quote under it, or beside it 12px from it
+        square: square ? [Math.round(square.width), Math.round(square.height), beside.every(r => r.right <= square.left - 12 + 0.5),
+            !quote || quote.top >= square.bottom - 0.5 || quote.right <= square.left - 12 + 0.5] : null,
+        // the text under the square at full width; the quote beside it
+        wrapped: square ? lines.some(r => r.top >= square.bottom && r.right > square.left) : null,
+        quoteBeside: square && quote ? quote.top < square.bottom - 0.5 : null,
         // for a failure's message
-        rects: square ? JSON.stringify({ text: [text.left, text.right, text.width], square: [square.left, square.right], body: [box(media.parentElement).left, box(media.parentElement).right], textDisplay: getComputedStyle(article.querySelector(".tweet-text")).display }) : "",
+        rects: square ? JSON.stringify({ lines: lines.filter(r => r.right > square.left - 12.5).map(r => [r.top, r.right]), square: [square.top, square.left, square.right, square.bottom], quote: quote && [quote.top, quote.right] }) : "",
     };
 }));
 
@@ -252,10 +276,15 @@ for(const [name, options] of Object.entries({
     expect(tweets.filter(t => !t.buttonsLast).map(t => t.label)).toEqual([]);
     const squares = tweets.filter(t => t.square);
     const side = ["superwide", "flex"].includes(options.width) && !options.media;
-    const MEDIA = ["thread with a photo", "photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote"];
+    const MEDIA = ["thread with a photo", "photo, landscape", "photo, portrait", "two photos", "three photos", "four photos", "video", "gif", "sensitive", "photo and a quote", "video and a quote with a photo", "long text and a video"];
     if(side) {
         expect(squares.map(t => t.label)).toEqual(expect.arrayContaining(MEDIA));
         for(const t of squares) expect(t.square, `${t.label} ${t.rects}`).toEqual([80, 80, true, true]);
+        // long text goes on under its square; a quote rises beside the square a line of text leaves room by, and
+        // goes under it after text as long as the square
+        const by = label => tweets.find(t => t.label === label);
+        expect([by("long text and a video").wrapped, by("long text and a video").quoteBeside, by("video and a quote with a photo").quoteBeside, by("photo and a quote").quoteBeside])
+            .toEqual([true, false, true, true]);
         // a GIF that is a reply plays whole
         expect(tweets.find(t => t.label === "gif reply").under).toEqual([true, true, true]);
     } else {

@@ -4,7 +4,8 @@
 // - the action row's buttons take a 32px circle around their 18px icons, tinted on hover as on x.com;
 // - keyboard focus shows (TweetDeck takes the outline off everywhere), for the pointer it stays as it was;
 // - tweet text at line-height 1.4 instead of 1.29, @handles at 13px instead of 12, counts in tabular figures,
-//   6px between a tweet's text and its buttons instead of 3;
+//   6px between a tweet's text and its buttons instead of 3; where the browser trims text to its capitals and
+//   baseline (text-box), 9px from the name to them and from them to the buttons;
 // - a quoted tweet's text in the tweet's color, as on x.com: TweetDeck's grey is 3.6:1 in the dark theme;
 // - a notification's "Name retweeted" / "Name liked" on one line: a 20px avatar, the name, the action in grey,
 //   a long name cut with "…" (TweetDeck's wraps the action under a 24px avatar).
@@ -58,6 +59,17 @@
         html.otd-modern ${ACTIONS.split(", ").map(s => `${s}:focus-visible`).join(", ")} { outline-offset: 6px; border-radius: 50%; }
 
         html.otd-modern .stream-item .js-tweet-text.tweet-text, html.otd-modern .tweet-detail .js-tweet-text.tweet-text, html.otd-modern .quoted-tweet .js-quoted-tweet-text { line-height: 1.4; }
+        /* tweet text from the top of its capitals to its baseline (CSS text-box, Chrome 133, Firefox 154): the space
+           round it is the margins', not the font's, so its first line lines up with a square beside it, and the
+           name, the text and the buttons are 9px apart. TweetDeck's text is overflow: hidden, which would cut
+           what's past those lines, the tails of "у" and "р"; it breaks long words anyway. Not a liked tweet's three
+           lines in a notification, cut with "…" */
+        @supports (text-box: trim-both cap alphabetic) {
+            html.otd-modern .stream-item:not(.otd-notif-compact) .js-tweet-text.tweet-text, html.otd-modern .tweet-detail .js-tweet-text.tweet-text, html.otd-modern .quoted-tweet .js-quoted-tweet-text {
+                text-box: trim-both cap alphabetic; overflow: visible; margin-top: 4px;
+            }
+            html.otd-modern .stream-item:not(.otd-notif-compact) .js-tweet-text.tweet-text, html.otd-modern .tweet-detail .js-tweet-text.tweet-text { margin-bottom: 8px; }
+        }
         html.otd-modern .tweet-header .account-inline .username { font-size: 13px; }
         html.otd-modern .tweet-footer, html.dark.otd-modern .tweet-footer { margin-top: 6px; }
         html.otd-modern .quoted-tweet, html.dark.otd-modern .quoted-tweet { color: inherit; }
