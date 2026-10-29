@@ -51,8 +51,11 @@ async function openColumn(page, { change = 50.4, status = 200, queryId } = {}) {
     const asked = [];
     await openPage(page, { routes: {
         "http://otd.test/i/api/graphql/": route => {
-            asked.push(new URL(route.request().url()));
-            return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(ANSWER(change)) });
+            const url = new URL(route.request().url());
+            asked.push(url);
+            // a token X has no asset for
+            const none = JSON.parse(url.searchParams.get("variables") || "{}").assetSymbol === NONE;
+            return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(none ? { data: { finance_asset_data: null } } : ANSWER(change)) });
         },
         "https://abs.twimg.com/": route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"/>' }),
     } });
@@ -81,6 +84,16 @@ async function openColumn(page, { change = 50.4, status = 200, queryId } = {}) {
     return asked;
 }
 const card = page => page.locator('[data-key="1"] .otd-ticker-card');
+const OTHER = "robinhood:0x88ad8ddf1e3898412146a534538d418c6f8a9062";
+const NONE = "robinhood:0x0000000000000000000000000000000000000001";
+// a tweet in the column X's data says nothing of, as from a timeline: TweetDeck's timelines are asked with queries
+// older than smart tags, which leave them out
+const addUntagged = (page, id, text) => page.evaluate(([id, text]) => {
+    const user = { id_str: "8", screen_name: "craghack", name: "CragHack", profile_image_url_https: "", entities: {} };
+    const chirp = window.__client.processTweet({ id_str: id, full_text: text, text, created_at: new Date().toUTCString(), source: "web", user, entities: { hashtags: [], user_mentions: [], symbols: [], urls: [] } });
+    window.__chirps[id] = chirp;
+    document.querySelector(".js-chirp-container").insertAdjacentHTML("beforeend", chirp.render({ mediaPreviewSize: "medium" }));
+}, [id, text]);
 
 test("a token's id in the text is its cashtag, TweetDeck's own link, the name and id in its tooltip", async ({ page }) => {
     await openColumn(page);
@@ -148,4 +161,28 @@ test("switched off, the text and the tweet stay as TweetDeck draws them", async 
     await page.waitForTimeout(200);
     expect(await page.locator(".otd-smarttag, .otd-ticker-card").count()).toBe(0);
     expect(asked).toHaveLength(0);
+});
+
+test("a token's id that X's data doesn't tag is its cashtag too, its ticker from SmartTagAttachmentQuery, each time it's there", async ({ page }) => {
+    const asked = await openColumn(page);
+    await addUntagged(page, "3", `talking about ${OTHER} and why ${OTHER} is better`);
+    const link = page.locator('[data-key="3"] a.otd-smarttag');
+    await expect(link).toHaveCount(2);
+    expect(await page.$eval('[data-key="3"] .js-tweet-text', text => text.textContent.trim())).toBe("talking about $Index and why $Index is better");
+    expect(await link.first().evaluate(a => [a.getAttribute("rel"), a.title, a.dataset.otdToken])).toEqual(["hashtag", `The Index · ${OTHER}`, OTHER]);
+    // asked once for it, as x.com asks it
+    const forIt = asked.filter(url => JSON.parse(url.searchParams.get("variables")).assetSymbol === OTHER);
+    expect(forIt.map(url => url.pathname)).toEqual(["/i/api/graphql/qlU4kwL73-PXdo3qpTA4MA/SmartTagAttachmentQuery"]);
+    // a second tweet with it: no new question
+    await addUntagged(page, "4", `again ${OTHER}`);
+    await expect(page.locator('[data-key="4"] a.otd-smarttag')).toHaveCount(1);
+    expect(asked.filter(url => JSON.parse(url.searchParams.get("variables")).assetSymbol === OTHER)).toHaveLength(1);
+});
+
+test("an id X has no asset for stays as the text has it", async ({ page }) => {
+    const asked = await openColumn(page);
+    await addUntagged(page, "3", `not a token: ${NONE}`);
+    await expect.poll(() => asked.some(url => JSON.parse(url.searchParams.get("variables")).assetSymbol === NONE)).toBe(true);
+    await page.waitForTimeout(200);
+    expect(await page.$eval('[data-key="3"] .js-tweet-text', text => [text.textContent.trim(), text.querySelectorAll("a").length])).toEqual([`not a token: ${NONE}`, 0]);
 });
