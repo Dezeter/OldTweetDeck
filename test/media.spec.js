@@ -99,6 +99,22 @@ test("in a column without room for the square, TweetDeck's own preview under the
     await expect.poll(look).toEqual(all("preview"));
 });
 
+test("a column's small previews fill the square, as its medium ones do", async ({ page }) => {
+    await openColumn(page);
+    await page.evaluate(() => {
+        const chirp = window.__chirps["100"];
+        document.querySelector(".js-chirp-container").innerHTML = chirp.render({ mediaPreviewSize: "small" });
+    });
+    // TweetDeck's small preview is half the tweet's width
+    expect(await page.locator('[data-key="100"] .js-media-image-link.media-size-small').count()).toBe(1);
+    await expect.poll(() => page.evaluate(() => {
+        const box = el => el.getBoundingClientRect();
+        const square = box(document.querySelector('[data-key="100"] .tweet-body > .js-media'));
+        const image = box(document.querySelector('[data-key="100"] .js-media-image-link'));
+        return [Math.round(square.width), Math.round(square.height), Math.round(image.width), Math.round(image.height), Math.round(image.left - square.left)];
+    })).toEqual([80, 80, 80, 80, 0]);
+});
+
 test("a GIF that is a reply plays whole, as TweetDeck shows it; a GIF of a tweet is a square", async ({ page }) => {
     await openColumn(page);
     await page.evaluate(() => {

@@ -160,8 +160,9 @@
         html.otd-media-thumb .otd-has-thumb > .js-quote-detail { clear: right; margin-right: -92px; }
         ${both(" > .js-media-preview-container")} { width: 100%; height: 100%; min-height: 0 !important; margin: 0 !important; }
         ${both(" > .js-media-preview-container ~ .js-media-preview-container")} { display: none; }
+        /* the square's width too: a column's "small" previews are half as wide as the tweet */
         ${both(" .media-item")}, ${both(" .media-grid-container")} {
-            height: var(--otd-thumb) !important; min-height: 0 !important; padding-top: 0 !important; margin: 0 !important; border-radius: inherit; background-size: cover; background-position: center;
+            width: 100% !important; height: var(--otd-thumb) !important; min-height: 0 !important; padding-top: 0 !important; margin: 0 !important; border-radius: inherit; background-size: cover; background-position: center;
         }
         /* TweetDeck's grid of several photos is the square itself: its height, the square's margins */
         ${both(".media-grid-container")} { height: var(--otd-thumb) !important; min-height: 0 !important; }
