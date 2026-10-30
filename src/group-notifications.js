@@ -147,8 +147,9 @@
         .otd-notif-group .otd-notif-avatars a { display: block; line-height: 0; }
         .otd-notif-group .otd-notif-avatars img { width: 24px; height: 24px; border-radius: 50%; }
         .otd-notif-group .otd-notif-more { align-self: center; font-size: 12px; color: #8899a6; }
-        /* paragraphs run together, otherwise a blank line eats one of the three */
-        .otd-notif-compact .tweet-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; max-height: 4.5em; white-space: normal !important; }
+        /* paragraphs run together, otherwise a blank line eats one of the three; cut also where media-layout.js lets
+           the text beside a media square run over (its media are hidden here) */
+        .otd-notif-compact .tweet-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden !important; max-height: 4.5em; white-space: normal !important; }
         .otd-notif-compact .tweet-text .otd-grok-para { display: inline; margin: 0; }
         .otd-notif-compact .tweet-text .otd-grok-para::after { content: " "; }
         .otd-notif-compact .js-media, .otd-notif-compact .js-media-preview-container, .otd-notif-compact .js-card-container, .otd-notif-compact .js-quote-detail { display: none !important; }
