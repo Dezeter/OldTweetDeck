@@ -260,7 +260,7 @@ const iconPlaces = page => page.evaluate(() => {
     return out;
 });
 
-const SCRIPTS = ["src/otd-common.js", "src/modern-look.js", "src/icons.js", "src/media-layout.js", "src/self-threads.js", "src/compact-headers.js", "src/group-notifications.js"];
+const SCRIPTS = ["src/otd-common.js", "src/modern-look.js", "src/theme.js", "src/icons.js", "src/media-layout.js", "src/self-threads.js", "src/compact-headers.js", "src/group-notifications.js"];
 // medium columns have TweetDeck's own previews under the text, super wide and flex ones the square beside it
 for(const [name, options] of Object.entries({
     "light": {}, "dark": { dark: true }, "superwide": { width: "superwide" }, "flex": { width: "flex" }, "dark-flex": { dark: true, width: "flex" },
@@ -323,6 +323,19 @@ for(const [name, options] of Object.entries({
         return [article.dataset.otdLabel, !!link && link.top >= text.bottom - 0.5 && link.bottom <= buttons.top + 0.5 && (!square || link.right <= square.left - 12 + 0.5)];
     }));
     expect(threads).toEqual([["thread", true], ["thread with a photo", true]]);
+    // the dark theme calm: no frame in TweetDeck's blue or its grey-blue, a quote on a shade of its own
+    if(options.dark) expect(await page.evaluate(() => {
+        const frames = new Set();
+        for(const el of document.querySelectorAll(".js-app *, .js-app-content *")) {
+            if(!el.getClientRects().length) continue;
+            const style = getComputedStyle(el);
+            for(const side of ["Top", "Right", "Bottom", "Left"]) {
+                if(parseFloat(style[`border${side}Width`]) > 0 && style[`border${side}Style`] !== "none") frames.add(style[`border${side}Color`]);
+            }
+        }
+        const quote = getComputedStyle(document.querySelector('article[data-otd-label="quote"] .quoted-tweet'));
+        return { blue: ["rgb(29, 161, 242)", "rgb(56, 68, 77)", "rgb(61, 84, 102)"].filter(color => frames.has(color)), quote: [quote.borderTopColor, quote.backgroundColor] };
+    })).toEqual({ blue: [], quote: ["rgba(0, 0, 0, 0)", "rgba(255, 255, 255, 0.04)"] });
     // a hairline round a square
     if(side) expect(await page.$eval('article[data-otd-label="photo, landscape"] .tweet-body > .js-media', el => getComputedStyle(el).outlineWidth)).toBe("1px");
     if(process.env.SPECIMENS_OUT) await shoot(page, name);

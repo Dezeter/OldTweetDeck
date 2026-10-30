@@ -206,7 +206,7 @@
         ${M[1]} { --otd-thumb: 64px; margin: 0 0 6px 10px; border-radius: 10px; }
         /* a hairline round it, as on x.com: a dark picture on the dark theme doesn't melt into the column */
         ${both("")} { outline: 1px solid rgba(15, 20, 25, .1); outline-offset: -1px; }
-        ${["html.dark.otd-media-thumb .otd-has-thumb > .js-media", "html.dark.otd-media-thumb .otd-quote-thumb > .js-media"].join(", ")} { outline-color: rgba(255, 255, 255, .14); }
+        ${["html.dark.otd-media-thumb .otd-has-thumb > .js-media", "html.dark.otd-media-thumb .otd-quote-thumb > .js-media"].join(", ")} { outline-color: var(--otd-media-edge, rgba(255, 255, 255, .14)); }
         /* in a quote, its author's line cut short with "…" beside the square: TweetDeck's is a box as wide as the
            names, which wider than the room beside the square would go under it */
         html.otd-media-thumb .otd-quote-thumb > .tweet-header > .account-link, html.otd-media-thumb .otd-quote-thumb > .tweet-header .nbfc { display: block; }

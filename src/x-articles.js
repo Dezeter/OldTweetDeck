@@ -440,15 +440,15 @@
     OTD.addStyle(`
         .otd-article-link { display: none !important; }
         .otd-article-card { margin: 6px 0 4px; padding: 8px 10px; border: 1px solid rgba(136, 153, 166, .4); border-radius: 12px; cursor: pointer; }
-        .otd-article-card:hover { border-color: #1da1f2; }
+        .otd-article-card:hover { border-color: var(--otd-accent, #1da1f2); }
         .otd-article-card .otd-article-card-title { font-weight: bold; margin-bottom: 4px; }
         .otd-article-card .otd-article-card-preview { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; }
-        .otd-article-card .otd-article-card-hint { margin-top: 6px; font-size: 12px; color: #1da1f2; }
+        .otd-article-card .otd-article-card-hint { margin-top: 6px; font-size: 12px; color: var(--otd-accent, #1da1f2); }
 
         /* two classes deep: the dark theme repeats TweetDeck's element rules under html.dark */
         .otd-article-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .6); }
         .otd-article-overlay .otd-article-panel { position: relative; display: flex; flex-direction: column; width: min(960px, 94vw); height: 92vh; overflow: hidden; border-radius: 14px; background: #fff; color: #14171a; box-shadow: 0 8px 40px rgba(0, 0, 0, .5); }
-        .otd-article-dark .otd-article-panel { background: #15202b; color: #fff; }
+        .otd-article-dark .otd-article-panel { background: var(--otd-panel, #15202b); color: var(--otd-text, #fff); }
         .otd-article-overlay .otd-article-close { position: absolute; top: 10px; right: 14px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(136, 153, 166, .2); color: inherit; font-size: 24px; line-height: 36px; cursor: pointer; }
         .otd-article-overlay .otd-article-close:hover { background: rgba(136, 153, 166, .4); }
         .otd-article-overlay .otd-article-scroll { flex: 1; overflow-y: auto; outline: none; padding: 40px 24px 56px; }
@@ -463,18 +463,18 @@
         .otd-article-overlay .otd-article-body ul { list-style: disc; }
         .otd-article-overlay .otd-article-body ol { list-style: decimal; }
         .otd-article-overlay .otd-article-body li { margin: 4px 0; }
-        .otd-article-overlay .otd-article-body blockquote { margin: 16px 0; padding: 2px 0 2px 16px; border-left: 3px solid #1da1f2; color: #8899a6; }
+        .otd-article-overlay .otd-article-body blockquote { margin: 16px 0; padding: 2px 0 2px 16px; border-left: 3px solid var(--otd-accent, #1da1f2); color: var(--otd-text-2, #8899a6); }
         .otd-article-overlay .otd-article-body pre { margin: 0 0 14px; padding: 12px 14px; border-radius: 8px; background: rgba(136, 153, 166, .15); white-space: pre-wrap; font-size: 14px; line-height: 1.5; }
         .otd-article-overlay .otd-article-body figure { margin: 20px 0; }
         .otd-article-overlay .otd-article-body figure img { display: block; max-width: 100%; margin: 0 auto 8px; border-radius: 10px; }
         .otd-article-overlay .otd-article-body hr { margin: 28px 0; border: 0; border-top: 1px solid rgba(136, 153, 166, .4); }
-        .otd-article-overlay .otd-article-body a { color: #1da1f2; }
+        .otd-article-overlay .otd-article-body a { color: var(--otd-accent, #1da1f2); }
         .otd-article-overlay .otd-article-body b { font-weight: bold; }
         .otd-article-overlay .otd-article-body i { font-style: italic; }
-        .otd-article-overlay .otd-article-body .otd-article-byline { margin-bottom: 28px; font-size: 14px; color: #8899a6; }
-        .otd-article-overlay .otd-article-body .otd-article-translate { margin-left: 12px; padding: 0; border: 0; background: none; color: #1da1f2; font: inherit; cursor: pointer; }
+        .otd-article-overlay .otd-article-body .otd-article-byline { margin-bottom: 28px; font-size: 14px; color: var(--otd-text-2, #8899a6); }
+        .otd-article-overlay .otd-article-body .otd-article-translate { margin-left: 12px; padding: 0; border: 0; background: none; color: var(--otd-accent, #1da1f2); font: inherit; cursor: pointer; }
         .otd-article-overlay .otd-article-body .otd-article-translate:hover { text-decoration: underline; }
-        .otd-article-overlay .otd-article-body .otd-article-translate:disabled { color: #8899a6; text-decoration: none; cursor: default; }
+        .otd-article-overlay .otd-article-body .otd-article-translate:disabled { color: var(--otd-text-2, #8899a6); text-decoration: none; cursor: default; }
         .otd-article-overlay .otd-article-body .otd-article-footer { margin-top: 32px; font-size: 14px; }
     `);
 

@@ -233,18 +233,18 @@
 
     OTD.addStyle(`
         .otd-ticker-card { display: flex; align-items: center; gap: 10px; margin: 8px 0; padding: 10px 12px; border: 1px solid #e1e8ed; border-radius: 14px; color: inherit !important; text-decoration: none !important; }
-        html.dark .otd-ticker-card { border-color: #38444d; }
+        html.dark .otd-ticker-card { border-color: transparent; background: var(--otd-raised, transparent); }
         .otd-ticker-card:hover { background: rgba(15, 20, 25, .03); }
-        html.dark .otd-ticker-card:hover { background: rgba(255, 255, 255, .03); }
+        html.dark .otd-ticker-card:hover { background: var(--otd-raised-hover, rgba(255, 255, 255, .03)); }
         .otd-ticker-logo { position: relative; flex: none; width: 36px; height: 36px; border-radius: 10px; background: #e1e8ed center / cover no-repeat; }
-        html.dark .otd-ticker-logo { background-color: #38444d; }
+        html.dark .otd-ticker-logo { background-color: var(--otd-raised-solid, #38444d); }
         .otd-ticker-chain { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; background: #fff center / cover no-repeat; box-sizing: border-box; }
-        html.dark .otd-ticker-chain { border-color: #15202b; background-color: #15202b; }
+        html.dark .otd-ticker-chain { border-color: var(--otd-panel, #15202b); background-color: var(--otd-panel, #15202b); }
         .otd-ticker-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; line-height: 18px; }
         .otd-ticker-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .otd-ticker-line { display: flex; flex-wrap: wrap; column-gap: 6px; font-size: 13px; }
         .otd-ticker-symbol { color: #536471; }
-        html.dark .otd-ticker-symbol { color: #8899a6; }
+        html.dark .otd-ticker-symbol { color: var(--otd-text-2, #8899a6); }
         .otd-ticker-price { font-weight: 700; font-variant-numeric: tabular-nums; }
         .otd-ticker-change { font-variant-numeric: tabular-nums; }
         .otd-ticker-change.is-up { color: #00ba7c; }
