@@ -7,10 +7,11 @@ const avatar = color => "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="
 
 // A notifications column rendered by TweetDeck from activity JSON: likes of tweet t1 by A, B, C with other
 // notifications in between, three follows in a row and a single like of t2
-async function openColumn(page, storage) {
+// a wider column and more of this extension's scripts, for a media square beside the text
+async function openColumn(page, storage, { width = 360, scripts = [] } = {}) {
     await openPage(page, { storage });
     await addTweetDeck(page, { css: true });
-    await page.evaluate(colors => {
+    await page.evaluate(([colors, width]) => {
         const account = { getUserID: () => "1", getKey: () => "twitter:1", getUsername: () => "Dezeter", getName: () => "Dezeter", getProfileImageURL: () => "", isPrivate: () => false };
         let n = 0;
         const user = (id, name) => ({ id_str: id, id: +id, screen_name: name.toLowerCase(), name, profile_image_url_https: colors[n++ % colors.length], entities: { description: { urls: [] }, url: { urls: [] } }, description: `bio of ${name}` });
@@ -29,14 +30,14 @@ async function openColumn(page, storage) {
         };
         window.chirps = {};
         TD.controller.columnManager = { get: key => key === "c1" ? { findChirp: k => window.chirps[k] } : null };
-        document.body.insertAdjacentHTML("beforeend", '<section class="js-column column" data-column="c1" style="width:360px;display:block"><div class="js-column-scroller column-scroller"><div class="js-chirp-container chirp-container"></div></div></section>');
+        document.body.insertAdjacentHTML("beforeend", `<section class="js-column column" data-column="c1" style="width:${width}px;display:block"><div class="js-column-scroller column-scroller"><div class="js-chirp-container chirp-container"></div></div></section>`);
         window.addChirp = (chirp, top) => {
             window.chirps[chirp.id] = chirp;
             document.querySelector(".js-chirp-container").insertAdjacentHTML(top ? "afterbegin" : "beforeend", chirp.render({ mediaPreviewSize: "medium" }));
         };
         [act("favorite", U.a, T.t1), act("follow", U.e, U.me), act("follow", U.f, U.me), act("follow", U.g, U.me), act("favorite", U.b, T.t1), act("favorite", U.d, T.t2), act("favorite", U.c, T.t1)].forEach(c => addChirp(c));
-    }, ["#e0245e", "#17bf63", "#1da1f2", "#ffad1f", "#794bc4", "#f45d22"].map(avatar));
-    await addScripts(page, "src/otd-common.js", "src/group-notifications.js");
+    }, [["#e0245e", "#17bf63", "#1da1f2", "#ffad1f", "#794bc4", "#f45d22"].map(avatar), width]);
+    await addScripts(page, "src/otd-common.js", ...scripts, "src/group-notifications.js");
     await page.waitForTimeout(400);
 }
 
@@ -86,6 +87,23 @@ test("likes of one tweet and follows in a row are grouped like on x.com", async 
     items = await view(page);
     expect(items[0]).toMatchObject({ group: false, shown: true, avatars: 0 });
     expect(items[0].header).toMatch(/Henry/);
+});
+
+test("in a column with room for a media square, the liked tweet is still cut to three lines, not over the next item", async ({ page }) => {
+    await openColumn(page, {}, { width: 460, scripts: ["src/modern-look.js", "src/media-layout.js"] });
+    const liked = await page.evaluate(() => {
+        const article = document.querySelector(".js-chirp-container > article");
+        const text = article.querySelector(".tweet-text");
+        const next = [...document.querySelectorAll(".js-chirp-container > article")].find(a => a !== article && getComputedStyle(a).display !== "none");
+        return {
+            // media-layout.js's square, though the media are hidden here
+            square: article.querySelector(".tweet-body").classList.contains("otd-has-thumb"),
+            overflow: getComputedStyle(text).overflow,
+            cut: text.scrollHeight > text.clientHeight,
+            inside: text.getBoundingClientRect().bottom <= article.getBoundingClientRect().bottom && article.getBoundingClientRect().bottom <= next.getBoundingClientRect().top + 0.5,
+        };
+    });
+    expect(liked).toEqual({ square: true, overflow: "hidden", cut: true, inside: true });
 });
 
 test("OTDgroupNotifications=0 leaves the column as it was", async ({ page }) => {
