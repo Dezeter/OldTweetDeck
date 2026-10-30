@@ -323,6 +323,15 @@ for(const [name, options] of Object.entries({
         return [article.dataset.otdLabel, !!link && link.top >= text.bottom - 0.5 && link.bottom <= buttons.top + 0.5 && (!square || link.right <= square.left - 12 + 0.5)];
     }));
     expect(threads).toEqual([["thread", true], ["thread with a photo", true]]);
+    // a like's burst of a heart on the heart, as TweetDeck puts it in on a like: in a column, with the count, and opened
+    expect(await page.evaluate(() => ['article[data-otd-label="text"] .tweet-action[rel="favorite"]', '[data-otd-label="opened tweet"] .tweet-detail-action[rel="favorite"]'].map(selector => {
+        const button = document.querySelector(selector);
+        const icon = button.querySelector(".icon").getBoundingClientRect();
+        button.insertAdjacentHTML("beforeend", '<i class="heartsprite heart-anim"></i>');
+        const burst = button.querySelector(".heartsprite").getBoundingClientRect();
+        button.querySelector(".heartsprite").remove();
+        return [Math.round(burst.left + burst.width / 2 - icon.left - icon.width / 2), Math.round(burst.top + burst.height / 2 - icon.top - icon.height / 2)];
+    }))).toEqual([[0, 0], [0, 0]]);
     // the dark theme calm: no frame in TweetDeck's blue or its grey-blue, a quote on a shade of its own
     if(options.dark) expect(await page.evaluate(() => {
         const frames = new Set();

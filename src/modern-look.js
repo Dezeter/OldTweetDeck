@@ -86,6 +86,10 @@
            an opened tweet's icon has a line taller than itself, its middle 2.6px under the icon's */
         html.otd-modern .tweet-action, html.otd-modern .tweet-detail-action { position: relative; z-index: 0; display: flow-root; }
         html.otd-modern .tweet-action .icon, html.otd-modern .tweet-detail-action .icon { line-height: 1; }
+        /* TweetDeck's burst of a heart on a like (heartsprite, 100px scaled to 47.5) is at -226% of the button's
+           width, right for a button as wide as its 18px icon; this one is a block, an opened tweet's as wide as its
+           cell, a column's as its count: the burst on the middle of the icon, at the button's top left */
+        html.otd-modern :is(.tweet-action, .tweet-detail-action) > .heartsprite { left: -41px; top: -41px; }
         html.otd-modern .tweet-action::after, html.otd-modern .tweet-detail-action::after {
             content: ""; position: absolute; z-index: -1; left: -7px; top: 50%; width: 32px; height: 32px; margin-top: -16px;
             border-radius: 50%; transition: background-color .15s;
