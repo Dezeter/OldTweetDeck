@@ -25,7 +25,7 @@ This is an independently developed fork of [OldTweetDeck by dimden](https://gith
 - [Short headers](#columns): "↩ @name" for "Replying to", your own tweet in a notification without your name over it again, a notification's icon in the avatars' column
 - [Super wide columns](#columns) of 400px, [flex columns that share the window](#columns), [columns that hold still](#columns) under the pointer, [an author's threads joined by a line](#columns), and [unread counts](#columns) in the tab title
 - [Tweet shapes while a column loads](#loading-and-empty-columns), and a plain message with a button when it's empty or X didn't answer
-- [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box
+- [Emoji and GIF pickers](#emoji-and-gifs) in the tweet box, and [long posts](#long-posts) up to 25,000 characters
 - [An explanation instead of an endless spinner](#when-tweetdeck-doesnt-load) when TweetDeck doesn't load, with a report to copy into an issue
 - [A calm dark theme](#appearance) in place of TweetDeck's dark blue, [a theme that follows the system's](#appearance), [Lights out](#appearance) in black, [a comfortable density](#appearance) and [sharp SVG icons](#appearance)
 - [A font of your choice](#font) for TweetDeck's text: Golos Text, Onest, Inter or Manrope
@@ -110,6 +110,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Pasting images | `OTDpasteImages` |
 | "Emoji" button | `OTDemojiPicker` |
 | "Find a GIF" button | `OTDgifPicker` |
+| Long posts | `OTDlongPosts` |
 | Better readability: contrast, larger buttons, keyboard focus | `OTDmodernLook` |
 | Lights out (off by default, `'1'` turns it on) | `OTDlightsOut` |
 | Theme following the system's (TweetDeck's own pick without the key) | `OTDthemeSystem`: `'1'` |
@@ -141,6 +142,10 @@ TweetDeck asks for an open tweet's replies again every minute; the extra pages a
 Ctrl+V of an image in the tweet or reply box attaches it, the same as picking it with "Add image".
 
 A quote Tweet can have images and video too, as on x.com: TweetDeck kept them apart ("Quoted Tweets cannot contain images"), which X no longer does. Such a Tweet shows the quoted one under its media, in columns and opened. A direct message still takes a Tweet or an image.
+
+## Long posts
+
+A post can be longer than 280 characters, as on x.com with X Premium: the tweet box counts up to 25,000 and lets it go. A post of up to 280 goes as before; a longer one goes the way x.com sends it, with X's `CreateNoteTweet`. Its id and the features it needs are read from x.com's own pages (its `main.js` and homepage) the first time, then kept for a day, so a new id at X doesn't break it. When X refuses the post (without Premium, for one), TweetDeck says it failed and why, and the box keeps it.
 
 ## Emoji and GIFs
 

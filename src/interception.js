@@ -852,8 +852,12 @@ function formatTwitterStyle(date) {
     return `${day} ${month} ${dayNum} ${hours}:${mins}:${secs} +0000 ${year}`;
 }
 
+// an answer of the extension's own, or X's from elsewhere (sendNoteTweet), in place of the request's
 function emulateResponse(xhr) {
-    xhr._status = 200;
+    respond(xhr, 200);
+}
+function respond(xhr, status) {
+    xhr._status = status;
     xhr._readyState = 4;
     xhr.responseHeaderOverride = {
         "content-type": () => "application/json"
@@ -868,6 +872,73 @@ function emulateResponse(xhr) {
 
     const readyStateEvent = new Event('readystatechange');
     if(xhr.onreadystatechange) xhr.onreadystatechange(readyStateEvent);
+}
+
+// Posts longer than 280 (long-posts.js lets TweetDeck's tweet box write them), as x.com sends them:
+// CreateNoteTweet, by x.com's own id of it, from its main.js, with the features the mutation names there, as x.com's
+// homepage sets them; both kept a day. X's error stays an error, for TweetDeck to keep the text and say so.
+const LONG_POST_FROM = 280;
+function weightedLength(text) {
+    try {
+        return window.twttr.txt.parseTweet(text).weightedLength;
+    } catch (e) {
+        return [...text].length;
+    }
+}
+async function noteTweetQuery() {
+    try {
+        const kept = JSON.parse(localStorage.OTDnoteTweetQuery || "null");
+        if (kept?.id && Date.now() - kept.at < 864e5) return kept;
+    } catch (e) {}
+    let html = "", main;
+    // a logged out homepage can be X's newer app; /i/jf/ is still the old one
+    for (const path of ["/", "/i/jf/"]) {
+        html = await fetch(`https://${location.hostname}${path}`, { credentials: "include" }).then(res => res.text());
+        main = html.match(/https:\/\/abs\.twimg\.com\/responsive-web\/client-web(?:-legacy)?\/main\.[\w-]+\.js/)?.[0];
+        if (main) break;
+    }
+    if (!main) throw new Error("no main.js on x.com's homepage");
+    const res = await fetch(main);
+    if (!res.ok) throw new Error(`${main}: HTTP ${res.status}`);
+    const op = (await res.text()).match(/queryId:"([\w-]+)",operationName:"CreateNoteTweet",operationType:"mutation",metadata:\{featureSwitches:\[([^\]]*)\]/);
+    if (!op) throw new Error("no CreateNoteTweet in x.com's main.js");
+    // the homepage's default, then the user's own value of each: the last one written
+    const features = {};
+    for (const [, name] of op[2].matchAll(/"(\w+)"/g)) {
+        const values = [...html.matchAll(new RegExp(`"${name}":\\{"value":(true|false)`, "g"))];
+        features[name] = values.length ? values[values.length - 1][1] === "true" : false;
+    }
+    const query = { id: op[1], features, at: Date.now() };
+    localStorage.OTDnoteTweetQuery = JSON.stringify(query);
+    return query;
+}
+// the tweet a mutation's answer has, whatever X calls the mutation's field: create_tweet, notetweet_create
+const createdTweet = data => Object.values(data?.data || {}).find(v => v?.tweet_results?.result)?.tweet_results.result;
+async function sendNoteTweet(xhr, body) {
+    let status = 0, text = "", url = "";
+    try {
+        const query = await noteTweetQuery();
+        const path = `/i/api/graphql/${query.id}/CreateNoteTweet`;
+        url = `https://${location.hostname}${path}`;
+        const headers = { ...xhr.modReqHeaders };
+        if (window.solveChallenge) headers["x-client-transaction-id"] = await solveChallenge(path, "POST");
+        document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "request", id: xhr.otdId, method: "POST", url }) }));
+        const res = await fetch(url, { method: "POST", headers, credentials: "include", body: JSON.stringify({ variables: JSON.parse(body).variables, features: query.features, queryId: query.id }) });
+        status = res.status;
+        text = await res.text();
+        // an id X has dropped: asked again next time
+        if (status === 400 || status === 404) delete localStorage.OTDnoteTweetQuery;
+    } catch (e) {
+        console.error("CreateNoteTweet", e);
+        text = JSON.stringify({ errors: [{ code: 0, message: String(e?.message || e) }] });
+    }
+    if (url) document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "response", id: xhr.otdId, method: "POST", url, status }) }));
+    xhr.storage.noteTweet = text;
+    let posted = false;
+    try {
+        posted = !!createdTweet(JSON.parse(text));
+    } catch (e) {}
+    respond(xhr, posted ? 200 : status >= 400 ? status : 403);
 }
 
 let counter = 0;
@@ -2201,6 +2272,8 @@ const proxyRoutes = [
             if (params.attachment_url) {
                 variables.attachment_url = params.attachment_url;
             }
+            xhr.storage.long = weightedLength(params.status || "") > LONG_POST_FROM;
+            if (xhr.storage.long) variables.richtext_options = { richtext_tags: [] };
 
             return JSON.stringify({
                 variables,
@@ -2208,18 +2281,29 @@ const proxyRoutes = [
                 queryId: "oB-5XsHNAbjvARJEc8CZFw",
             });
         },
+        sendHandler: (xhr, body) => {
+            if (xhr.storage.long) return sendNoteTweet(xhr, body);
+            document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "request", id: xhr.otdId, method: "POST", url: xhr.modUrl }) }));
+            xhr.send(body);
+        },
         afterRequest: (xhr) => {
             let data;
             try {
-                data = JSON.parse(xhr.responseText);
+                data = JSON.parse(xhr.storage.noteTweet ?? xhr.responseText);
             } catch (e) {
                 console.error(e);
                 return {};
             }
+            const result = createdTweet(data);
+            // X's errors as TweetDeck reads them, v1.1's
+            if (xhr.storage.noteTweet !== undefined && !result) {
+                return { errors: (data?.errors || [{ code: 0, message: "" }]).map(e => ({ code: e.code ?? 0, message: e.message || "" })) };
+            }
             if (data.errors && data.errors[0]) {
                 return {};
             }
-            let tweet = parseTweet(data.data.create_tweet.tweet_results.result);
+            if (!result) return {};
+            let tweet = parseTweet(result);
             return tweet;
         },
     },
