@@ -142,6 +142,45 @@ test("Lights out: the calm dark theme in black, with a hairline round a column; 
     expect(await page.$$("#otd-lights-out")).toHaveLength(1);
 });
 
+// Firefox: injection.js is a content script there, and the <style> it puts TweetDeck's CSS in is closed to the page
+const closeTweetDecksSheet = () => {
+    const sheet = [...document.styleSheets].sort((a, b) => b.cssRules.length - a.cssRules.length)[0];
+    Object.defineProperty(sheet, "cssRules", { get() { throw new DOMException("The operation is insecure.", "SecurityError"); } });
+};
+// what theme.js tells the load watchdog
+const listen = () => {
+    window.__theme = [];
+    document.addEventListener("otd-diagnostic", e => JSON.parse(e.detail).kind === "theme" && window.__theme.push(JSON.parse(e.detail).text));
+};
+test("TweetDeck's CSS closed to the page, as in Firefox: the calm theme and Lights out from its text", async ({ page }) => {
+    await open(page, { dark: true, before: [`(${listen})(); (${closeTweetDecksSheet})();`] });
+    expect(await colors(page)).toEqual(CALM);
+    await page.evaluate(() => OTD.setOn("lightsOut", true));
+    expect(await colors(page)).toMatchObject({ column: "rgb(0, 0, 0)", item: "rgb(0, 0, 0)", app: "rgb(0, 0, 0)" });
+    expect(await page.evaluate(() => window.__theme)).toEqual([
+        expect.stringMatching(/^[1-9]\d{2} twins of TweetDeck's rules, its CSS read from its text$/),
+        expect.stringMatching(/^[1-9]\d{2} twins of TweetDeck's rules, [1-9]\d+ for Lights out, its CSS read from its text$/),
+    ]);
+});
+
+test("TweetDeck's CSS after theme.js: the twins once TweetDeck is ready, after it", async ({ page }) => {
+    // TweetDeck's sheet out until TD.ready
+    const takeOut = () => {
+        window.__tdStyle = [...document.styleSheets].sort((a, b) => b.cssRules.length - a.cssRules.length)[0].ownerNode;
+        window.__tdStyle.remove();
+    };
+    await open(page, { dark: true, before: [`(${listen})(); (${takeOut})();`] });
+    expect((await page.evaluate(() => window.__theme))[0]).toBe("0 twins of TweetDeck's rules");
+    await page.evaluate(() => {
+        document.head.append(window.__tdStyle);
+        OTD.jQuery()(document).trigger("TD.ready.otd-twins");
+    });
+    // the pointer off the tweets: the page's change has it over one, at 0, 0
+    await page.mouse.move(5, 700);
+    expect(await colors(page)).toEqual(CALM);
+    expect((await page.evaluate(() => window.__theme))[1]).toMatch(/^[1-9]\d{2} twins of TweetDeck's rules$/);
+});
+
 test("Lights out leaves the light theme alone", async ({ page }) => {
     await open(page, { storage: { OTDlightsOut: "1" } });
     expect(await colors(page)).toMatchObject({ column: "rgb(255, 255, 255)", item: "rgb(255, 255, 255)" });
