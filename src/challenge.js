@@ -203,30 +203,70 @@ function reportSolver(ok, text) {
     document.dispatchEvent(new CustomEvent('otd-diagnostic', { detail: JSON.stringify({ kind: 'solver', ok, text }) }));
 }
 
-let solverInit = initSolver();
-solverInit.catch(e => {
-    console.error('Solver init error:', e);
-    reportSolver(false, String(e));
+// The solver is made again, as a reload of the page makes it: a while after it failed, rather than never, and when X
+// keeps answering 404, which it answers to ids it doesn't take, with ones from x.com's homepage as it is now. Until
+// a new one is ready, the one there is goes on. Made once, a failure or a key X stopped taking left every request
+// to X without an answer until a reload.
+const SOLVER_RETRY = 30 * 1000;
+const SOLVER_REMAKE = 5 * 60 * 1000;
+const SOLVER_NOT_FOUND = 3;
+let solver = null, solverInit = null, solverRetryAt = 0, solverRemadeAt = 0, solverNotFound = 0;
+function makeSolver() {
+    let made = solverInit = initSolver();
+    made.then(ready => {
+        solver = ready;
+    }, e => {
+        console.error('Solver init error:', e);
+        reportSolver(false, String(e));
+        solverRetryAt = Date.now() + SOLVER_RETRY;
+    }).finally(() => {
+        if(solverInit === made) solverInit = null;
+    });
+    return made;
+}
+makeSolver();
+// X's answers, as interception.js tells the load watchdog of them: 404s one after another, nothing fine between
+document.addEventListener('otd-diagnostic', e => {
+    let entry;
+    try {
+        entry = JSON.parse(e.detail);
+    } catch(err) {
+        return;
+    }
+    if(entry.kind !== 'response' || !entry.status) return;
+    if(entry.status !== 404) {
+        if(entry.status < 400) solverNotFound = 0;
+        return;
+    }
+    if(++solverNotFound < SOLVER_NOT_FOUND || !solver || solverInit || Date.now() - solverRemadeAt < SOLVER_REMAKE) return;
+    solverNotFound = 0;
+    solverRemadeAt = Date.now();
+    console.warn(`X answered 404 ${SOLVER_NOT_FOUND} times in a row: making the transaction id solver again`);
+    makeSolver();
 });
 
 async function solveChallenge(path, method) {
-    let solver, timeout;
-    try {
-        solver = await Promise.race([
-            solverInit,
-            new Promise((resolve, reject) => timeout = setTimeout(reject, 20000, 'Solver timed out')),
-        ]);
-    } catch(e) {
-        throw typeof e === 'string' ? e : 'Solver errored';
-    } finally {
-        clearTimeout(timeout);
+    if(!solver && !solverInit && Date.now() >= solverRetryAt) makeSolver();
+    let current = solver, timeout;
+    if(!current) {
+        if(!solverInit) throw 'Solver errored';
+        try {
+            current = await Promise.race([
+                solverInit,
+                new Promise((resolve, reject) => timeout = setTimeout(reject, 20000, 'Solver timed out')),
+            ]);
+        } catch(e) {
+            throw typeof e === 'string' ? e : 'Solver errored';
+        } finally {
+            clearTimeout(timeout);
+        }
     }
 
     let time = Math.floor((Date.now() - 1682924400 * 1000) / 1000);
     let timeBytes = [time & 0xff, (time >> 8) & 0xff, (time >> 16) & 0xff, (time >> 24) & 0xff];
-    let data = new TextEncoder().encode(`${method}!${path}!${time}obfiowerehiring${solver.animationKey}`);
+    let data = new TextEncoder().encode(`${method}!${path}!${time}obfiowerehiring${current.animationKey}`);
     let hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
     let random = Math.floor(Math.random() * 256);
-    let bytes = [random, ...[...solver.keyBytes, ...timeBytes, ...hash.slice(0, 16), 3].map(b => b ^ random)];
+    let bytes = [random, ...[...current.keyBytes, ...timeBytes, ...hash.slice(0, 16), 3].map(b => b ^ random)];
     return btoa(String.fromCharCode(...bytes)).replace(/=/g, '');
 }

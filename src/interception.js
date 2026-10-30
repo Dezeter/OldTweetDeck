@@ -55,6 +55,52 @@ let timings = {
 }
 let refreshInterval = localStorage.OTDrefreshInterval ? parseInt(localStorage.OTDrefreshInterval) : 35000;
 
+// Top cursors: what a column's new tweets are asked with, by the newest tweet TweetDeck has (its since_id). As x.com
+// does, an answer with nothing new gives the next one. A cursor X answered with an error, or that brought nothing
+// for TOP_CURSOR_QUIET, isn't asked with again: without one X answers with its newest tweets, as after a reload, and
+// its answer gives a new cursor. Kept, a cursor X stopped taking left a column without new tweets until a reload.
+const TOP_CURSOR_QUIET = 5 * 60 * 1000;
+const topCursorSince = {};
+function topCursor(key) {
+    if(cursors[key] && Date.now() - (topCursorSince[key] ?? 0) > TOP_CURSOR_QUIET) forgetTopCursor(key);
+    return cursors[key];
+}
+// a cursor that brought tweets, or the next one of a cursor that brought nothing (renew)
+function keepTopCursor(key, value, renew) {
+    cursors[key] = value;
+    if(!renew || !topCursorSince[key]) topCursorSince[key] = Date.now();
+}
+function forgetTopCursor(key) {
+    delete cursors[key];
+    delete topCursorSince[key];
+}
+// a request with a top cursor X doesn't answer, or answers with an error status
+function watchTopCursor(xhr) {
+    const key = xhr.storage.topKey;
+    if(key) xhr.addEventListener("loadend", () => {
+        if(xhr.status < 200 || xhr.status >= 300) forgetTopCursor(key);
+    });
+}
+// an answer with no tweets to a request with a top cursor: X's next cursor if it gave one, none without a timeline
+function nothingNew(xhr, entries) {
+    reportPoll(xhr, 0);
+    const key = xhr.storage.topKey;
+    if(!key) return [];
+    if(!entries) forgetTopCursor(key);
+    else {
+        const next = findTopCursor(entries);
+        if(next) keepTopCursor(key, next, true);
+    }
+    return [];
+}
+const findTopCursor = entries => entries.find(e => e.entryId.startsWith("sq-cursor-top-") || e.entryId.startsWith("cursor-top-"))?.content?.value;
+// for the load watchdog (watchdog.js): what a column's request for its new tweets brought, once a request
+function reportPoll(xhr, tweets) {
+    if(!xhr.storage.poll || xhr.storage.reported) return;
+    xhr.storage.reported = true;
+    document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "poll", feed: xhr.storage.poll, tweets, cursor: !!xhr.storage.topKey }) }));
+}
+
 function exportState() {
 	const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify({
@@ -971,11 +1017,13 @@ const proxyRoutes = [
                     }
                 }
                 if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`home-${user_id}-${bn}-top`]) {
-                        variables.cursor = cursors[`home-${user_id}-${bn}-top`];
+                    xhr.storage.poll = "home";
+                    let key = `home-${user_id}-${BigInt(since_id)}-top`;
+                    if (topCursor(key)) {
+                        variables.cursor = cursors[key];
                         xhr.storage.cursor = true;
                         xhr.storage.since_id = since_id;
+                        xhr.storage.topKey = key;
                     }
                 }
                 xhr.modUrl = `${NEW_API}/cWF3cqWadLlIXA6KJWhcew/HomeLatestTimeline?${generateParams(
@@ -1003,6 +1051,7 @@ const proxyRoutes = [
             if(xhr.storage.cancelled) {
                 emulateResponse(xhr);
             } else {
+                watchTopCursor(xhr);
                 xhr.send(data);
             }
         },
@@ -1027,22 +1076,23 @@ const proxyRoutes = [
                 data = JSON.parse(xhr.responseText);
             } catch (e) {
                 console.error(e);
-                return [];
+                return nothingNew(xhr);
             }
-            if (data.errors && data.errors[0]) {
-                return [];
+            // errors beside the timeline are X's about some of its tweets (one it couldn't get); the rest is there
+            let instructions = data?.data?.home?.home_timeline_urt?.instructions;
+            if (!instructions) {
+                return nothingNew(xhr);
             }
-            let instructions = data.data.home.home_timeline_urt.instructions;
             let entries = instructions.find((i) => i.type === "TimelineAddEntries");
             if (!entries) {
-                return [];
+                return nothingNew(xhr, []);
             }
             entries = entries.entries;
             let tweets = [];
             for (let e of entries) {
                 // thats a lot of trash https://lune.dimden.dev/0bf524e52eb.png
                 if (e.entryId.startsWith("tweet-")) {
-                    let res = e.content.itemContent.tweet_results.result;
+                    let res = e.content.itemContent?.tweet_results?.result;
                     let tweet = parseTweet(res);
                     if (!tweet) continue;
                     if (
@@ -1064,7 +1114,7 @@ const proxyRoutes = [
                             (item.entryId.startsWith("tweet-") || item.entryId.includes("-tweet-")) &&
                             !item.entryId.includes("promoted")
                         ) {
-                            let res = item.item.itemContent.tweet_results.result;
+                            let res = item.item?.itemContent?.tweet_results?.result;
                             let tweet = parseTweet(res);
                             if (!tweet) continue;
                             if (
@@ -1102,7 +1152,7 @@ const proxyRoutes = [
                 }
             }
 
-            if (tweets.length === 0) return tweets;
+            if (tweets.length === 0) return nothingNew(xhr, entries);
 
             // i didn't know they return tweets unsorted???
             tweets.sort(
@@ -1125,17 +1175,16 @@ const proxyRoutes = [
                 cursors[`home-${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] =
                     bottomCursor.content.value;
             }
-            let topCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
-            if (topCursor) {
-                if(tweets[0]) cursors[`home-${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`home-${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
+            let top = findTopCursor(entries);
+            if (top) {
+                if(tweets[0]) keepTopCursor(`home-${xhr.storage.user_id}-${tweets[0].id_str}-top`, top);
+                if(tweets[1]) keepTopCursor(`home-${xhr.storage.user_id}-${tweets[1].id_str}-top`, top);
+                // the one asked with moves on too, as on x.com: TweetDeck asks with it again when what came is older
+                if(xhr.storage.topKey) keepTopCursor(xhr.storage.topKey, top, true);
             }
 
             xhr.storage.data = tweets;
+            reportPoll(xhr, tweets.length);
 
             return tweets;
         },
@@ -1163,10 +1212,12 @@ const proxyRoutes = [
                     }
                 }
                 if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`list-${list_id}-${bn}-top`]) {
-                        variables.cursor = cursors[`list-${list_id}-${bn}-top`];
+                    xhr.storage.poll = "list";
+                    let key = `list-${list_id}-${BigInt(since_id)}-top`;
+                    if (topCursor(key)) {
+                        variables.cursor = cursors[key];
                         xhr.storage.cursor = true;
+                        xhr.storage.topKey = key;
                     }
                 }
                 variables.listId = list_id;
@@ -1202,6 +1253,7 @@ const proxyRoutes = [
             if(xhr.storage.cancelled) {
                 emulateResponse(xhr);
             } else {
+                watchTopCursor(xhr);
                 xhr.send(data);
             }
         },
@@ -1214,12 +1266,12 @@ const proxyRoutes = [
                 data = JSON.parse(xhr.responseText);
             } catch (e) {
                 console.error(e);
-                return [];
+                return nothingNew(xhr);
             }
-            let list = data?.data?.list?.tweets_timeline?.timeline?.instructions?.find(
-                (i) => i.type === "TimelineAddEntries"
-            );
-            if (!list) return [];
+            let instructions = data?.data?.list?.tweets_timeline?.timeline?.instructions;
+            if (!instructions) return nothingNew(xhr);
+            let list = instructions.find((i) => i.type === "TimelineAddEntries");
+            if (!list) return nothingNew(xhr, []);
             list = list.entries;
             let tweets = [];
             for (let e of list) {
@@ -1243,7 +1295,7 @@ const proxyRoutes = [
                 }
             }
 
-            if (tweets.length === 0) return tweets;
+            if (tweets.length === 0) return nothingNew(xhr, list);
 
             tweets = tweets.filter(t => !t.user.muting && !t.user.blocking);
 
@@ -1261,15 +1313,14 @@ const proxyRoutes = [
                 cursors[`list-${xhr.storage.list_id}-${tweets[tweets.length - 1].id_str}`] =
                     bottomCursor.content.value;
             }
-            let topCursor = list.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
-            if (topCursor) {
-                if(tweets[0]) cursors[`list-${xhr.storage.list_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`list-${xhr.storage.list_id}-${tweets[1].id_str}-top`] = topCursor;
+            let top = findTopCursor(list);
+            if (top) {
+                if(tweets[0]) keepTopCursor(`list-${xhr.storage.list_id}-${tweets[0].id_str}-top`, top);
+                if(tweets[1]) keepTopCursor(`list-${xhr.storage.list_id}-${tweets[1].id_str}-top`, top);
+                // the one asked with moves on too, as on x.com: TweetDeck asks with it again when what came is older
+                if(xhr.storage.topKey) keepTopCursor(xhr.storage.topKey, top, true);
             }
+            reportPoll(xhr, tweets.length);
 
             return tweets;
         },
@@ -1329,10 +1380,12 @@ const proxyRoutes = [
                     }
                 }
                 if (since_id) {
-                    let bn = BigInt(params.get("since_id"));
-                    if (cursors[`${variables.userId}-${bn}-top`]) {
-                        variables.cursor = cursors[`${variables.userId}-${bn}-top`];
+                    xhr.storage.poll = "user";
+                    let key = `${variables.userId}-${BigInt(since_id)}-top`;
+                    if (topCursor(key)) {
+                        variables.cursor = cursors[key];
                         xhr.storage.cursor = true;
+                        xhr.storage.topKey = key;
                     }
                 }
                 xhr.storage.user_id = variables.userId;
@@ -1370,6 +1423,7 @@ const proxyRoutes = [
             if(xhr.storage.cancelled) {
                 emulateResponse(xhr);
             } else {
+                watchTopCursor(xhr);
                 xhr.send(data);
             }
         },
@@ -1382,12 +1436,13 @@ const proxyRoutes = [
                 data = JSON.parse(xhr.responseText);
             } catch (e) {
                 console.error(e);
-                return [];
+                return nothingNew(xhr);
             }
             let instructions = data?.data?.user?.result?.timeline_v2?.timeline?.instructions;
-            let entries = instructions?.find((e) => e.type === "TimelineAddEntries");
+            if (!instructions) return nothingNew(xhr);
+            let entries = instructions.find((e) => e.type === "TimelineAddEntries");
             if (!entries) {
-                return [];
+                return nothingNew(xhr, []);
             }
             entries = entries.entries;
             let tweets = [];
@@ -1413,7 +1468,7 @@ const proxyRoutes = [
                 }
             }
 
-            if (tweets.length === 0) return tweets;
+            if (tweets.length === 0) return nothingNew(xhr, entries);
 
             // i didn't know they return tweets unsorted???
             tweets.sort(
@@ -1428,14 +1483,12 @@ const proxyRoutes = [
             if (bottomCursor) {
                 cursors[`${xhr.storage.user_id}-${tweets[tweets.length - 1].id_str}`] = bottomCursor;
             }
-            let topCursor = entries.find(
-                (e) =>
-                    e.entryId.startsWith("sq-cursor-top-") ||
-                    e.entryId.startsWith("cursor-top-")
-            )?.content?.value;
-            if (topCursor) {
-                if(tweets[0]) cursors[`${xhr.storage.user_id}-${tweets[0].id_str}-top`] = topCursor;
-                if(tweets[1]) cursors[`${xhr.storage.user_id}-${tweets[1].id_str}-top`] = topCursor;
+            let top = findTopCursor(entries);
+            if (top) {
+                if(tweets[0]) keepTopCursor(`${xhr.storage.user_id}-${tweets[0].id_str}-top`, top);
+                if(tweets[1]) keepTopCursor(`${xhr.storage.user_id}-${tweets[1].id_str}-top`, top);
+                // the one asked with moves on too, as on x.com: TweetDeck asks with it again when what came is older
+                if(xhr.storage.topKey) keepTopCursor(xhr.storage.topKey, top, true);
             }
 
             let pinEntry = instructions.find((e) => e.type === "TimelinePinEntry");
@@ -1463,6 +1516,7 @@ const proxyRoutes = [
                     }
                 }
             }
+            reportPoll(xhr, tweets.length);
 
             return tweets;
         },
