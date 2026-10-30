@@ -377,3 +377,21 @@ test("switched off, no reload and no panel; the report is still there", async ({
         return report;
     })).toContain("TweetDeck: not started");
 });
+
+test("the columns' requests for new tweets: how many, without a top cursor, the last one and the last with tweets; an error's last time", async ({ page }) => {
+    await openWatched(page);
+    expect(await askReport(page)).toContain("\nColumns asking for new tweets: none yet\n");
+    const notFound = id => ({ kind: "response", id, method: "GET", url: "https://api.x.com/1.1/statuses/home_timeline.json", status: 404 });
+    await diagnostic(page, { kind: "poll", feed: "home", tweets: 3, cursor: false });
+    await page.clock.runFor(2000);
+    await diagnostic(page, { kind: "poll", feed: "home", tweets: 0, cursor: true }, notFound(1));
+    await page.clock.runFor(2000);
+    await diagnostic(page, { kind: "poll", feed: "home", tweets: 0, cursor: true }, notFound(2), { kind: "poll", feed: "list", tweets: 1, cursor: true });
+    const report = await askReport(page);
+    const home = report.match(/\nColumns asking for new tweets: \n {2}home ×3 \(1 without a top cursor\), the last at (\d+) s, the last with tweets at (\d+) s\n {2}list ×1 \(0 without a top cursor\), the last at \d+ s, the last with tweets at \d+ s\n/);
+    expect(home).not.toBeNull();
+    expect(home[1] - home[2]).toBe(4);
+    const error = report.match(/\n {2}GET api\.x\.com\/1\.1\/statuses\/home_timeline\.json — 404 ×2, first at (\d+) s, last at (\d+) s\n/);
+    expect(error).not.toBeNull();
+    expect(error[2] - error[1]).toBe(2);
+});

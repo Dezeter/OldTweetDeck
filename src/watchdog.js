@@ -97,12 +97,16 @@
             return url.split("?")[0];
         }
     }
-    // counts repeats of the same thing, remembers when it was first seen; at most 20 kinds
+    // counts repeats of the same thing, remembers when it was first and last seen; at most 20 kinds
     function tally(map, key, value) {
         const known = map.get(key);
-        if(known) known.count++;
+        if(known) {
+            known.count++;
+            known.last = Date.now();
+        }
         else if(map.size < 20) map.set(key, { ...value, count: 1, at: Date.now() });
     }
+    const times = v => `×${v.count}, first at ${seconds(v.at)}${v.last ? `, last at ${seconds(v.last)}` : ""}`;
 
     const steps = {};
     const files = [];
@@ -130,6 +134,9 @@
     let answered = 0;
     let solver = null;
     let theme = "";
+    // the columns' requests for their new tweets, by kind of column (home, list, user): how many, the last one,
+    // the last one that brought tweets, and how many went without a top cursor
+    const polls = new Map();
     let startedAt = 0;
 
     document.addEventListener("otd-diagnostic", e => {
@@ -149,6 +156,16 @@
         else if(entry.kind === "request") pending.set(entry.id, { method: String(entry.method), url: clean(entry.url), at: Date.now() });
         else if(entry.kind === "solver") solver = { ok: !!entry.ok, text: String(entry.text || ""), at: Date.now() };
         else if(entry.kind === "theme") theme = String(entry.text || "");
+        else if(entry.kind === "poll") {
+            const feed = String(entry.feed);
+            const poll = polls.get(feed) || { count: 0, at: 0, tweets: 0, cursorless: 0 };
+            if(!polls.has(feed) && polls.size >= 10) return;
+            poll.count++;
+            poll.at = Date.now();
+            if(Number(entry.tweets) > 0) poll.tweets = Date.now();
+            if(!entry.cursor) poll.cursorless++;
+            polls.set(feed, poll);
+        }
         else if(entry.kind === "response") {
             pending.delete(entry.id);
             const status = Number(entry.status);
@@ -392,16 +409,18 @@
             `Dark theme: ${theme || "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
-            ...[...csp.values()].map(v => `  ${v.directive} ${v.blocked}${v.where} ×${v.count}, first at ${seconds(v.at)}`),
+            ...[...csp.values()].map(v => `  ${v.directive} ${v.blocked}${v.where} ${times(v)}`),
             `X: ${answered} answered fine${failed.size ? ", errors:" : ""}`,
-            ...[...failed.values()].map(r => `  ${describe(r)} ×${r.count}, first at ${seconds(r.at)}`),
+            ...[...failed.values()].map(r => `  ${describe(r)} ${times(r)}`),
+            `Columns asking for new tweets: ${polls.size ? "" : "none yet"}`,
+            ...[...polls].map(([feed, p]) => `  ${feed} ×${p.count} (${p.cursorless} without a top cursor), the last at ${seconds(p.at)}, the last with tweets ${p.tweets ? `at ${seconds(p.tweets)}` : "none"}`),
             `Waiting for X: ${pending.size ? "" : "nothing"}`,
             ...waitingFor(0).map(r => `  ${r.method} ${r.url} for ${r.seconds} s`),
             `Still asked at api.x.com and answered: ${[...oldApi].map(([path, v]) => `${path} ×${v.count}`).join(", ") || "nothing"}`,
             `Moved to x.com/i/api: ${movedApi().join(", ") || "nothing"}`,
             ...moves.map(m => `  ${m.key} ${m.moved ? "moved" : "moved back"} at ${seconds(m.at)}`),
             `Script errors: ${errors.size ? "" : "none"}`,
-            ...[...errors.values()].map(v => `  ${v.text} ×${v.count}, first at ${seconds(v.at)}`),
+            ...[...errors.values()].map(v => `  ${v.text} ${times(v)}`),
         ];
         const before = session(RELOAD_REPORT);
         if(before) lines.push("", `Before the automatic reload at ${new Date(Number(session(RELOAD_AT))).toISOString()}:`, before);
