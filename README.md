@@ -90,6 +90,7 @@ The same settings are kept in `localStorage`, so they can also be changed from t
 | Hiding replies in home columns | `OTDhideHomeReplies` |
 | Grouping notifications | `OTDgroupNotifications` |
 | Holding a column under the pointer | `OTDpauseOnHover` |
+| A column that doesn't jump | `OTDsteadyColumns` |
 | An author's threads without "Replying to @author", joined by a line | `OTDselfThreads` |
 | An author's threads in a column from the first tweet down | `OTDthreadsOldestFirst` |
 | Unread in the tab title | `OTDtabTitle` |
@@ -210,6 +211,8 @@ Settings → Appearance → Column width has a fourth width after TweetDeck's na
 After them, **Flex**: columns that share the window, each from 310 up to 480px, so three columns on a wide screen don't leave half of it empty; with more columns than fit, they keep 310px and the row scrolls as before. Media in flex columns are sized as in super wide ones. The other widths stay as wide as they say.
 
 A column scrolled to the top doesn't move down with new tweets while the pointer is over it, so the tweet you're reading stays where it is. TweetDeck's "N New Tweets" over the column counts the ones that came; it, or a scroll to the top, brings them in, and with the pointer still over the column it holds still again.
+
+A column scrolled down doesn't jump either when TweetDeck adds or drops tweets above what you're reading. TweetDeck kept a column to 40 tweets, so past them every page of older tweets dropped 20 at the top, and it put the column back from the scroll position it last heard of; when that was out of date and the browser didn't keep the position itself (Firefox stops doing that for a column after many changes), the column jumped by hours of tweets. Now a column keeps 200 tweets, and after such a change the tweet that was on the screen is put back where it was.
 
 A thread, where the author replies to themselves, looks the way TweetDeck showed it before X stopped marking such tweets: no "Replying to @author" over its tweets, and "Show this thread" under their text, over the buttons. Tweets of a thread right next to each other in a column are joined by a line between the avatars and read from the first one down, the way they were written, in the place the newest of them has in the column; switched off, they stay newest on top like the rest of the column.
 
