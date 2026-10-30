@@ -8,7 +8,7 @@
     OTD.onChange(OTD.DENSITY_STORAGE, density);
 
     OTD.addStyle(`
-        html.otd-comfortable .stream-item > .item-box { padding: 12px 14px; }
+        html.otd-comfortable .stream-item > .item-box { padding: 12px 14px; --otd-item-pad-x: 14px; }
         html.otd-comfortable .tweet-header { margin-bottom: 2px; }
         html.otd-comfortable .tweet-body { margin-bottom: 4px; }
         html.otd-comfortable .tweet-footer { margin-top: 8px; }

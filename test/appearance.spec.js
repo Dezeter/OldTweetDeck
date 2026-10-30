@@ -95,9 +95,40 @@ const colors = page => page.evaluate(() => ({
     mute: getComputedStyle(document.querySelector(".tweet-timestamp")).color,
 }));
 
-test("Lights out: the dark theme in x.com's black, with TweetDeck's dark blues swapped; off, back to them", async ({ page }) => {
+const CALM = { column: "rgb(19, 20, 22)", item: "rgb(19, 20, 22)", border: "rgba(255, 255, 255, 0.06)", app: "rgb(8, 9, 10)", mute: "rgb(128, 132, 140)" };
+test("the dark theme is calm: TweetDeck's blues are neutral greys, a column a shade lighter than the app, a hairline between tweets", async ({ page }) => {
+    await open(page, { dark: true });
+    expect(await colors(page)).toEqual(CALM);
+    // TweetDeck's blue: the soft one for links, lines and icons; under white text a deeper one, 4.8:1
+    expect(await page.evaluate(() => {
+        document.body.insertAdjacentHTML("beforeend", '<a class="otd-test-link" href="#">link</a><button class="Button Button--primary otd-test-button">Tweet</button><i class="icon icon-follow-color otd-test-follow"></i>');
+        const style = selector => getComputedStyle(document.querySelector(selector));
+        return [style(".otd-test-link").color, style(".otd-test-button").backgroundColor, style(".otd-test-follow").color];
+    })).toEqual(["rgb(124, 156, 255)", "rgb(68, 102, 238)", "rgb(124, 156, 255)"]);
+    // the tweet picked with the keys keeps its mark
+    expect(await page.evaluate(() => {
+        const item = document.querySelector(".stream-item");
+        item.classList.add("is-selected-tweet");
+        const picked = getComputedStyle(item).backgroundColor;
+        item.classList.remove("is-selected-tweet");
+        return picked;
+    })).toBe("rgb(28, 29, 31)");
+    // every rule of TweetDeck's dark theme with its blue has a twin
+    expect(await page.evaluate(() => {
+        const twins = new Set([...document.getElementById("otd-calm").sheet.cssRules].map(rule => rule.selectorText));
+        const blue = [...document.styleSheets].filter(sheet => sheet.ownerNode.id !== "otd-calm").flatMap(sheet => [...sheet.cssRules])
+            .filter(rule => rule.selectorText?.includes("html.dark") && rule.style.cssText.includes("rgb(29, 161, 242)"));
+        return [blue.length > 50, blue.filter(rule => !twins.has(rule.selectorText)).map(rule => rule.selectorText)];
+    })).toEqual([true, []]);
+    // the light theme as it was
+    await page.evaluate(() => document.documentElement.classList.remove("dark"));
+    expect(await colors(page)).toMatchObject({ column: "rgb(255, 255, 255)", item: "rgb(255, 255, 255)" });
+});
+
+test("Lights out: the calm dark theme in black, with a hairline round a column; off, the calm one again", async ({ page }) => {
     await open(page, { dark: true, storage: { OTDlightsOut: "1" } });
-    expect(await colors(page)).toEqual({ column: "rgb(0, 0, 0)", item: "rgb(0, 0, 0)", border: "rgb(47, 51, 54)", app: "rgb(22, 24, 28)", mute: "rgb(113, 118, 123)" });
+    expect(await colors(page)).toEqual({ column: "rgb(0, 0, 0)", item: "rgb(0, 0, 0)", border: "rgba(255, 255, 255, 0.1)", app: "rgb(0, 0, 0)", mute: "rgb(128, 132, 140)" });
+    expect(await page.$eval(".column-panel", el => getComputedStyle(el).boxShadow)).toBe("rgba(255, 255, 255, 0.1) 0px 0px 0px 1px inset");
     // a rule with !important keeps it
     expect(await page.evaluate(() => {
         document.body.insertAdjacentHTML("beforeend", '<div class="accounts-drawer"></div>');
@@ -105,7 +136,7 @@ test("Lights out: the dark theme in x.com's black, with TweetDeck's dark blues s
     })).toBe("rgb(0, 0, 0)");
 
     await page.evaluate(() => OTD.setOn("lightsOut", false));
-    expect(await colors(page)).toEqual({ column: "rgb(21, 32, 43)", item: "rgb(21, 32, 43)", border: "rgb(0, 0, 0)", app: "rgb(16, 23, 30)", mute: "rgb(136, 153, 166)" });
+    expect(await colors(page)).toEqual(CALM);
     await page.evaluate(() => OTD.setOn("lightsOut", true));
     expect((await colors(page)).column).toBe("rgb(0, 0, 0)");
     expect(await page.$$("#otd-lights-out")).toHaveLength(1);

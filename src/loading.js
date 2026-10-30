@@ -97,10 +97,9 @@
             background-repeat: repeat-y;
             animation: otd-skeleton 1.4s ease-in-out infinite;
         }
-        html.dark.otd-skeletons .js-chirp-container > .js-column-loading-placeholder:not(.otd-failed) { --otd-sk: #22303c; background-image:
+        html.dark.otd-skeletons .js-chirp-container > .js-column-loading-placeholder:not(.otd-failed) { --otd-sk: var(--otd-raised-solid, #22303c); background-image:
             radial-gradient(circle at 18px 18px, var(--otd-sk) 17.5px, transparent 18px), linear-gradient(var(--otd-sk) 10px, transparent 10px),
-            linear-gradient(var(--otd-sk) 9px, transparent 9px), linear-gradient(var(--otd-sk) 9px, transparent 9px), linear-gradient(#000 1px, transparent 1px); }
-        html.dark.otd-lights-out.otd-skeletons .js-chirp-container > .js-column-loading-placeholder:not(.otd-failed) { --otd-sk: #202327; }
+            linear-gradient(var(--otd-sk) 9px, transparent 9px), linear-gradient(var(--otd-sk) 9px, transparent 9px), linear-gradient(var(--otd-line, #000) 1px, transparent 1px); }
         /* "Loading…" for screen readers only */
         html.otd-skeletons .js-chirp-container > .js-column-loading-placeholder:not(.otd-failed) > p {
             position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
@@ -110,9 +109,9 @@
         /* :root over TweetDeck's html.dark rules for paragraphs and buttons */
         :root .otd-column-state { padding: 40px 24px; text-align: center; text-shadow: none; }
         :root .otd-column-state > p.otd-column-state-title { margin: 0 0 6px; font-size: 17px; font-weight: 700; line-height: 1.3; color: #0f1419; }
-        :root.dark .otd-column-state > p.otd-column-state-title { color: #f7f9f9; }
+        :root.dark .otd-column-state > p.otd-column-state-title { color: var(--otd-text, #f7f9f9); }
         :root .otd-column-state > p.otd-column-state-hint { margin: 0 0 16px; font-size: 14px; line-height: 1.4; color: #536471; }
-        :root.dark .otd-column-state > p.otd-column-state-hint { color: #8b98a5; }
+        :root.dark .otd-column-state > p.otd-column-state-hint { color: var(--otd-text-2, #8b98a5); }
         :root .otd-column-state > button.otd-column-state-action { height: auto; padding: 8px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; line-height: 1.2; }
     `);
 })();

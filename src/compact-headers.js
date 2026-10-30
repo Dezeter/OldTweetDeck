@@ -2,7 +2,10 @@
 // - "↩ @name" instead of "Replying to @name", the words kept for screen readers; in a column wide enough for both,
 //   on the line of the author's name;
 // - a notification of a like or a retweet of your own tweet (or a grouped one) without your name and handle over
-//   the tweet again: one line says who liked it, as on x.com.
+//   the tweet again: one line says who liked it, as on x.com;
+// - a notification's kind, the heart, the retweet or the follow, in the avatars' column in the middle of the item,
+//   where the column has nothing else: your own tweet's like or retweet, a follow. A follower's card goes beside
+//   it, its avatar by the name. Where the tweet shows its author's avatar, the icon stays over it.
 // Loaded by injection.js after otd-common.js. Switch "compactHeaders".
 (() => {
     if(!OTD.isOn("compactHeaders")) return;
@@ -53,6 +56,11 @@
         const author = item.querySelector(":scope > .js-stream-item-content > .js-tweet > .tweet-header .username")?.textContent.trim().toLowerCase();
         return !!account && account === author;
     }
+    function kindAside(item) {
+        const content = item.querySelector(":scope > .js-stream-item-content");
+        if(!content?.querySelector(":scope > .activity-header > .item-img:first-child .icon")) return false;
+        return item.classList.contains("otd-own-target") || !content.querySelector(":scope > .js-tweet");
+    }
 
     function scan() {
         // a column that got wider or narrower: its reply lines again
@@ -64,6 +72,7 @@
             if(item.closest(".js-tweet-detail")) continue;
             item.dataset.otdHeaders = "";
             item.classList.toggle("otd-own-target", ownTarget(item));
+            item.classList.toggle("otd-kind-aside", kindAside(item));
             place(item, wide(item.closest(".js-column")));
         }
     }
@@ -79,5 +88,14 @@
         .tweet-header.otd-reply-in-header > .account-link { flex: 0 1 auto; min-width: 0; }
         .tweet-header.otd-reply-in-header > .other-replies { flex: 0 1 auto; min-width: 0; margin: 0 auto 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
         .otd-own-target > .js-stream-item-content > .js-tweet > .tweet-header { display: none; }
+        /* the avatars' column is 36px at the item's padding (layout.js's density), the text 46px from it; TweetDeck's
+           margins of the icon's box are !important */
+        .otd-kind-aside > .js-stream-item-content { position: relative; }
+        .otd-kind-aside > .js-stream-item-content > .activity-header { padding-left: 46px; }
+        .otd-kind-aside > .js-stream-item-content > .activity-header > .item-img:first-child {
+            position: absolute; top: 0; bottom: 0; left: var(--otd-item-pad-x, 10px); width: 36px; margin: 0 !important; display: flex; align-items: center; justify-content: center;
+        }
+        .otd-kind-aside > .js-stream-item-content > .activity-header > .item-img:first-child > .icon { font-size: 20px !important; line-height: 1; }
+        .otd-kind-aside > .js-stream-item-content > .account-summary { margin-left: 46px; }
     `);
 })();

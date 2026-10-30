@@ -215,8 +215,7 @@
         #otd-palette .otd-palette { --bg: #fff; --text: #0f1419; --mute: #536471; --line: #cfd9de; --pick: #e8f5fd; --mark: #1570c4;
             box-sizing: border-box; width: 100%; max-width: 560px; max-height: 70vh; display: flex; flex-direction: column; overflow: hidden;
             background: var(--bg); color: var(--text); border-radius: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, .3); font-size: 14px; }
-        html.dark #otd-palette .otd-palette { --bg: #15202b; --text: #f7f9f9; --mute: #8b98a5; --line: #38444d; --pick: #1e2732; --mark: #1d9bf0; }
-        html.dark.otd-lights-out #otd-palette .otd-palette { --bg: #000; --text: #e7e9ea; --mute: #71767b; --line: #2f3336; --pick: #16181c; }
+        html.dark #otd-palette .otd-palette { --bg: var(--otd-raised-solid); --text: var(--otd-text); --mute: var(--otd-text-2); --line: var(--otd-line); --pick: var(--otd-raised-hover); --mark: var(--otd-accent); }
         #otd-palette .otd-palette-input { box-sizing: border-box; width: 100%; height: auto; margin: 0; padding: 14px 16px; border: 0 !important; border-bottom: 1px solid var(--line) !important; border-radius: 0;
             background: transparent !important; color: var(--text) !important; font-size: 16px; box-shadow: none !important; outline: none; }
         #otd-palette .otd-palette-input::placeholder { color: var(--mute); }

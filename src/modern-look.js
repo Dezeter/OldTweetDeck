@@ -90,11 +90,11 @@
             content: ""; position: absolute; z-index: -1; left: -7px; top: 50%; width: 32px; height: 32px; margin-top: -16px;
             border-radius: 50%; transition: background-color .15s;
         }
-        html.otd-modern .tweet-action:hover::after, html.otd-modern .tweet-detail-action:hover::after { background-color: rgba(29, 155, 240, .12); }
+        html.otd-modern .tweet-action:hover::after, html.otd-modern .tweet-detail-action:hover::after { background-color: var(--otd-accent-tint, rgba(29, 155, 240, .12)); }
         html.otd-modern .tweet-action[rel="retweet"]:hover::after, html.otd-modern .tweet-detail-action[rel="retweet"]:hover::after { background-color: rgba(23, 191, 99, .12); }
         html.otd-modern .tweet-action[rel="favorite"]:hover::after, html.otd-modern .tweet-detail-action[rel="favorite"]:hover::after { background-color: rgba(224, 36, 94, .12); }
 
-        html.otd-modern :focus-visible:not(input):not(textarea):not(select):not([contenteditable]) { outline: 2px solid #1d9bf0 !important; outline-offset: 2px; }
+        html.otd-modern :focus-visible:not(input):not(textarea):not(select):not([contenteditable]) { outline: 2px solid var(--otd-accent, #1d9bf0) !important; outline-offset: 2px; }
         html.otd-modern ${ACTIONS.split(", ").map(s => `${s}:focus-visible`).join(", ")} { outline-offset: 6px; border-radius: 50%; }
 
         /* the text, and its translation (grok-translate.js), a copy of it without TweetDeck's js- class */
@@ -119,7 +119,7 @@
         html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc {
             display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; line-height: 20px; white-space: nowrap; color: #536471;
         }
-        html.dark.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc { color: #8899a6; }
+        html.dark.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc { color: var(--otd-text-2, #8899a6); }
         /* the line and its time on one middle, not on the avatar's baseline */
         html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .nbfc,
         html.otd-modern .js-stream-item:not(.otd-notif-group) .activity-header > .tweet-timestamp { align-self: center; }

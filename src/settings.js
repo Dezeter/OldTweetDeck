@@ -304,7 +304,7 @@
         /* TweetDeck's theme, column width and font size are under "Appearance" */
         #general_settings .divider-bar, #general_settings .js-theme, #general_settings .js-column-size, #general_settings .js-font-size { display: none; }
         #general_settings .otd-general-note { margin-top: 14px; font-size: 13px; }
-        #general_settings .otd-general-note a { color: #1da1f2; }
+        #general_settings .otd-general-note a { color: var(--otd-accent, #1da1f2); }
         /* a tab's own section, or every section the search finds */
         #otd-settings:not(.is-searching) .divider-bar { display: none; }
         #otd-settings .otd-settings-section > label { display: block; margin-bottom: 4px; }
@@ -315,7 +315,7 @@
         #otd-settings .otd-setting > span { flex: 1; }
         #otd-settings .otd-setting-hint { display: block; margin-top: 1px; font-size: 12px; line-height: 1.35; }
         #otd-settings [hidden] { display: none !important; }
-        #otd-settings a { color: #1da1f2; }
+        #otd-settings a { color: var(--otd-accent, #1da1f2); }
         #otd-settings .otd-settings-search { box-sizing: border-box; width: 100%; margin: 0 0 14px; }
         #otd-settings .otd-settings-select { margin: 0 0 8px; }
         #otd-settings .otd-settings-lang { margin: 6px 0 0 30px; }

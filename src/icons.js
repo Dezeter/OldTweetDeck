@@ -1,8 +1,8 @@
 // TweetDeck's icons drawn as SVG instead of its icon font: sharp at any zoom, one stroke width, and no wait for
 // the font from X's servers. The shapes are Lucide's (lucide-static 1.63.0, ISC, some MIT from Feather; both in
 // files/icons/LICENSE), each a mask over the icon's own color, so TweetDeck's colors and states stay: a liked
-// heart is red and filled, a retweet green and bolder. Icons without a shape here (the bird, switches, badges,
-// devices) keep the font. Loaded by injection.js after otd-common.js. Switch "svgIcons", applies without a reload.
+// heart is red and filled, a retweet green and bolder. The verified badge is X's, grey; icons without a shape here
+// (the bird, switches, other badges, devices) keep the font. Loaded by injection.js after otd-common.js. Switch "svgIcons", applies without a reload.
 (() => {
     // Lucide's elements of each shape, in a 24px box, for stroke
     const SHAPES = {
@@ -84,6 +84,8 @@
         const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${style === "fill" ? "#000" : "none"}' stroke='#000' stroke-width='${style === "bold" ? 2.75 : 2}' stroke-linecap='round' stroke-linejoin='round'>${SHAPES[shape]}</svg>`;
         return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
     };
+    // X's verified badge, filled, the check cut out
+    const BADGE = `url("data:image/svg+xml,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z'/></svg>")}")`;
     const classes = Object.keys(ICONS);
     OTD.addStyle(`
         ${classes.map(name => `html.otd-svg-icons .icon-${name} { --otd-icon: ${url(...ICONS[name].split(" "))}; }`).join("\n")}
@@ -94,6 +96,11 @@
             content: ""; display: block; width: 1em; height: 1em; margin-top: calc((1lh - 1em) / 2); background-color: currentColor;
             -webkit-mask: var(--otd-icon) center / contain no-repeat; mask: var(--otd-icon) center / contain no-repeat;
         }
+        /* the verified badge in X's shape, grey as the other icons, in place of TweetDeck's blue picture */
+        html.otd-svg-icons :is(.sprite-verified, .sprite-verified-mini) {
+            background: currentColor !important; color: #536471; -webkit-mask: ${BADGE} center / contain no-repeat; mask: ${BADGE} center / contain no-repeat;
+        }
+        html.dark.otd-svg-icons :is(.sprite-verified, .sprite-verified-mini) { color: var(--otd-text-2, #8899a6); }
         /* the search button's margins are for the glyph on its text line, which put the icon 5px under the middle of
            the round button of the condensed bar: the icon in the middle of the button, on a line its own height */
         html.otd-svg-icons .app-header.is-condensed .app-search-fake { display: flex; align-items: center; justify-content: center; padding: 0 !important; }

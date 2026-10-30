@@ -138,8 +138,8 @@
         .otd-gif-panel .otd-gif-grid { columns: 2; column-gap: 4px; }
         .otd-gif-panel .otd-gif { display: block; width: 100%; margin: 0 0 4px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: rgba(136, 153, 166, .2); cursor: pointer; break-inside: avoid; }
         .otd-gif-panel .otd-gif img { display: block; width: 100%; }
-        .otd-gif-panel .otd-gif:hover { outline: 2px solid #1da1f2; }
-        .otd-gif-panel .otd-gif-more { display: block; margin: 4px auto; padding: 4px 12px; border: 0; border-radius: 14px; background: #1da1f2; color: #fff; cursor: pointer; }
+        .otd-gif-panel .otd-gif:hover { outline: 2px solid var(--otd-accent, #1da1f2); }
+        .otd-gif-panel .otd-gif-more { display: block; margin: 4px auto; padding: 4px 12px; border: 0; border-radius: 14px; background: var(--otd-accent-fill, #1da1f2); color: #fff; cursor: pointer; }
         .otd-gif-panel [hidden] { display: none; }
         /* "GIF" in a small frame, in the one-glyph icon slot */
         .otd-compose-button[data-otd-button="gif"] .otd-compose-icon { height: 14px; font-size: 7px; font-weight: bold; line-height: 11px; border: 1.5px solid currentColor; border-radius: 3px; vertical-align: -1px; }

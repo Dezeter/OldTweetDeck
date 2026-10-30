@@ -105,8 +105,8 @@ style.innerHTML = /*css*/`
     animation: opac 0.2s ease-in-out;
 }
 html.dark .otd-modal-content {
-    background-color: #15202b;
-    color: white;
+    background-color: var(--otd-panel, #15202b);
+    color: var(--otd-text, white);
 }
 .otd-notification-warning > .otd-notification-content::before {
     content: "⚠️";

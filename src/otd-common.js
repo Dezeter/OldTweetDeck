@@ -35,7 +35,7 @@
         { key: "tabTitle", storage: "OTDtabTitle", section: "columns",
             label: { ru: "Непрочитанное в заголовке вкладки: «(3) TweetDeck»", en: "Unread in the tab title: \"(3) TweetDeck\"" } },
         { key: "compactHeaders", storage: "OTDcompactHeaders", section: "columns",
-            label: { ru: "Короткие заголовки: «↩ @имя» вместо «Replying to», в широкой колонке — в строке с автором; в уведомлении о своём твите — без своего имени над ним", en: "Short headers: \"↩ @name\" instead of \"Replying to\", on the author's line in a wide column; a notification of your own tweet without your name over it" } },
+            label: { ru: "Короткие заголовки: «↩ @имя» вместо «Replying to», в широкой колонке — в строке с автором; в уведомлении о своём твите — без своего имени над ним, значок лайка, ретвита или подписки — в колонке аватаров, по центру", en: "Short headers: \"↩ @name\" instead of \"Replying to\", on the author's line in a wide column; a notification of your own tweet without your name over it, the like, retweet or follow icon in the avatars' column, in the middle" } },
         { key: "loadAllReplies", storage: "OTDloadAllReplies", section: "tweets",
             label: { ru: "Загружать все ответы при просмотре твита", en: "Load all replies when viewing a tweet" } },
         { key: "instantReplies", storage: "OTDinstantReplies", section: "tweets",
@@ -201,7 +201,7 @@
             addStyle(`
                 .otd-compose-button .otd-compose-icon { display: inline-block; box-sizing: border-box; width: 18px; margin-right: 3px; font-size: 16px; font-style: normal; line-height: 18px; text-align: center; vertical-align: -3px; }
                 .otd-compose-panel { margin: -4px 0 12px; border-radius: 8px; background: #fff; color: #14171a; overflow: hidden; }
-                html.dark .otd-compose-panel { background: #15202b; color: #fff; }
+                html.dark .otd-compose-panel { background: var(--otd-panel, #15202b); color: var(--otd-text, #fff); }
                 .otd-compose-panel[hidden] { display: none; }
                 .otd-compose-panel .otd-picker-search { display: block; box-sizing: border-box; width: calc(100% - 16px); margin: 8px; padding: 6px 8px; border: 1px solid rgba(136, 153, 166, .5); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
                 .otd-compose-panel .otd-picker-body { height: 260px; overflow-y: auto; padding: 0 6px 6px; position: relative; }

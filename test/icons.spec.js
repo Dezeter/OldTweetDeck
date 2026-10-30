@@ -61,6 +61,21 @@ test("switched off, all of TweetDeck's font is back, and on again without a relo
     expect(await look(page, "reply")).toMatchObject({ content: '"\uF151"', mask: "none" });
 });
 
+test("the verified badge is X's, grey as the other icons, in place of TweetDeck's blue picture; off, the picture again", async ({ page }) => {
+    await open(page);
+    const badge = () => page.evaluate(() => {
+        document.querySelector("#badge") || document.querySelector(".column").insertAdjacentHTML("beforeend", '<b class="fullname">Alice</b><i class="js-show-tip sprite sprite-verified-mini" id="badge"></i>');
+        const style = getComputedStyle(document.querySelector("#badge"));
+        const mask = style.maskImage || style.webkitMaskImage;
+        return { image: style.backgroundImage.startsWith("url") ? "picture" : style.backgroundImage, fill: style.backgroundColor, x: decodeURIComponent(mask).includes("M22.25 12"), size: style.width };
+    });
+    expect(await badge()).toEqual({ image: "none", fill: "rgb(83, 100, 113)", x: true, size: "16px" });
+    await page.evaluate(() => document.documentElement.classList.add("dark"));
+    expect((await badge()).fill).toBe("rgb(136, 153, 166)");
+    await page.evaluate(() => OTD.setOn("svgIcons", false));
+    expect(await badge()).toMatchObject({ image: "picture", x: false });
+});
+
 test("every class with a shape is one of TweetDeck's icons, and every shape is used", () => {
     const icons = [...source.match(/const ICONS = \{([\s\S]*?)\};/)[1].matchAll(/"([\w-]+)": "([\w-]+)(?: \w+)?"/g)];
     const shapes = [...source.match(/const SHAPES = \{([\s\S]*?)\};/)[1].matchAll(/^\s+"([\w-]+)":/gm)].map(m => m[1]);
