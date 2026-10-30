@@ -341,6 +341,8 @@ test("the extension that never started, files that didn't load, the solver and X
             xhr.send();
         }
     }), urls);
+    // theme.js's twins of TweetDeck's dark rules
+    await page.evaluate(() => document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "theme", text: "565 twins of TweetDeck's rules, its CSS read from its text" }) })));
     await page.clock.runFor(1000);
     const list = await findings(page);
     expect(list).toHaveLength(6);
@@ -354,6 +356,7 @@ test("the extension that never started, files that didn't load, the solver and X
     await panel(page).getByRole("button", { name: "Copy diagnostics" }).click();
     const report = await page.evaluate(() => window.__copied);
     expect(report).toMatch(/\nSolver: failed at \d+ s \(TypeError: [^)]*\)\n/);
+    expect(report).toContain("\nDark theme: 565 twins of TweetDeck's rules, its CSS read from its text\n");
     expect(report).toContain("\nExtension files not loaded: /src/settings.js\n");
     expect(report).toContain("\nX: 1 answered fine, errors:\n");
     expect(report).toMatch(/\n {2}GET upload\.x\.com\/1\.1\/media\/upload\.json — 401 ×1, first at \d+ s\n/);

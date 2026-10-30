@@ -129,6 +129,7 @@
     let metaPolicy = false;
     let answered = 0;
     let solver = null;
+    let theme = "";
     let startedAt = 0;
 
     document.addEventListener("otd-diagnostic", e => {
@@ -147,6 +148,7 @@
         else if(entry.kind === "startup" && startup.length < 20) startup.push({ key: String(entry.key), at: Date.now() });
         else if(entry.kind === "request") pending.set(entry.id, { method: String(entry.method), url: clean(entry.url), at: Date.now() });
         else if(entry.kind === "solver") solver = { ok: !!entry.ok, text: String(entry.text || ""), at: Date.now() };
+        else if(entry.kind === "theme") theme = String(entry.text || "");
         else if(entry.kind === "response") {
             pending.delete(entry.id);
             const status = Number(entry.status);
@@ -387,6 +389,7 @@
             ...(blockedBy ? [`Blocked by: ${blockedBy}`] : []),
             ...(policyNonces.size ? [`Nonces: the policy's ${nonces(policyNonces)}; x.com's scripts' ${nonces(pageNonces) || "none"}${pageNonces.size ? (otherLoadsPolicy() ? ", none of them in the policy: another load's policy" : ", in the policy: this load's") : ""}`] : []),
             `Solver: ${solver ? `${solver.ok ? "ready" : "failed"} at ${seconds(solver.at)} (${solver.text})` : "no news"}`,
+            `Dark theme: ${theme || "no news"}`,
             `Extension files not loaded: ${files.join(", ") || "none"}`,
             `Blocked by Content-Security-Policy: ${csp.size ? "" : "nothing"}`,
             ...[...csp.values()].map(v => `  ${v.directive} ${v.blocked}${v.where} ×${v.count}, first at ${seconds(v.at)}`),

@@ -97,13 +97,32 @@
         }
         return css;
     }
+    // In Firefox injection.js is a content script, and the <style> it puts TweetDeck's CSS in is the extension's:
+    // its rules are closed to the page (a SecurityError), its text isn't. That text, once, in a sheet of the page's
+    const copies = new WeakMap();
+    let fromText = false;
+    function rulesOf(sheet) {
+        try {
+            return sheet.cssRules;
+        } catch(e) {
+            const style = sheet.ownerNode;
+            if(style?.tagName !== "STYLE" || !window.CSSStyleSheet?.prototype.replaceSync) throw e;
+            fromText = true;
+            if(!copies.has(style)) {
+                const copy = new CSSStyleSheet();
+                copy.replaceSync(style.textContent);
+                copies.set(style, copy);
+            }
+            return copies.get(style).cssRules;
+        }
+    }
     const OURS = ["otd-calm", "otd-lights-out"];
     function twinsOfAll(colors, fills, scope) {
         let css = "";
         for(const sheet of document.styleSheets) {
             if(OURS.includes(sheet.ownerNode?.id)) continue;
             try {
-                css += twins(sheet.cssRules, colors, fills, scope);
+                css += twins(rulesOf(sheet), colors, fills, scope);
             } catch(e) {
                 // a sheet from elsewhere
             }
@@ -111,10 +130,9 @@
         return css;
     }
 
-    // the twins keep the selectors, later than TweetDeck's, so they win as Lights out's win over them
-    const calm = OTD.addStyle(twinsOfAll(CALM, CALM_FILL, "html.dark"));
+    const calm = OTD.addStyle("");
     calm.id = "otd-calm";
-    OTD.addStyle(`
+    const layout = OTD.addStyle(`
         html.dark {
             --otd-app: #08090a; --otd-panel: #131416; --otd-panel-edge: transparent;
             --otd-raised: rgba(255, 255, 255, .04); --otd-raised-hover: rgba(255, 255, 255, .06); --otd-raised-solid: #1c1d1f;
@@ -133,14 +151,17 @@
         /* layers: the app and its left bar, the columns on it with round corners, set apart by their shade */
         html.dark body, html.dark .application, html.dark .app-content, html.dark .app-columns-container, html.dark .app-columns,
         html.dark .app-header, html.dark .app-navigator { background-color: var(--otd-app) !important; }
-        html.dark .app-header-inner, html.dark .js-account-summary, html.dark .app-title { background-color: transparent !important; }
+        html.dark .app-header-inner, html.dark .js-account-summary, html.dark .app-title, html.dark .column-nav, html.dark .column-nav-item { background-color: transparent !important; }
+        html.dark .column-nav-item:hover { background-color: rgba(255, 255, 255, .04) !important; }
         html.dark .column { background-color: var(--otd-panel) !important; border-radius: 10px; }
         html.dark .column-panel { background-color: var(--otd-panel) !important; box-shadow: inset 0 0 0 1px var(--otd-panel-edge); border-radius: 10px; }
         html.dark .column-header { background-color: transparent !important; border-bottom: 1px solid var(--otd-line) !important; }
         html.dark .column-heading { color: var(--otd-text); font-weight: 600; }
         html.dark .column-header .attribution { color: var(--otd-text-3); }
-        /* TweetDeck's numbers of the columns, for its keys */
+        /* TweetDeck's numbers of the columns, for its keys; the grip to move a column, where the pointer is */
         html.dark .column-number { display: none; }
+        html.dark .column-drag-handle { opacity: 0; transition: opacity .15s; }
+        html.dark .column-header:hover .column-drag-handle { opacity: .5; }
 
         /* icons grey, the text's color under the pointer; the compose and search buttons without the blue */
         html.dark .app-header .icon, html.dark .app-navigator .icon, html.dark .column-header .icon, html.dark .column-header-link { color: var(--otd-text-2) !important; }
@@ -174,14 +195,34 @@
         html.dark, html.dark * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .14) transparent; }
     `);
 
+    // The twins keep the selectors, later than TweetDeck's, so they win as Lights out's win over them. Without
+    // TweetDeck's CSS yet, again once TweetDeck is ready, and then after it.
     let lightsOut;
+    const count = style => style?.sheet?.cssRules.length || 0;
+    function drawCalm() {
+        if(count(calm)) return;
+        calm.textContent = twinsOfAll(CALM, CALM_FILL, "html.dark");
+        calm.parentNode?.append(calm, layout, ...(lightsOut ? [lightsOut] : []));
+    }
     function drawLightsOut() {
         const on = OTD.isOn("lightsOut");
         document.documentElement.classList.toggle("otd-lights-out", on);
-        if(!on || lightsOut) return;
-        lightsOut = OTD.addStyle(twinsOfAll(LIGHTS_OUT, LIGHTS_OUT, "html.dark.otd-lights-out"));
-        lightsOut.id = "otd-lights-out";
+        if(!on || count(lightsOut)) return;
+        if(!lightsOut) {
+            lightsOut = OTD.addStyle("");
+            lightsOut.id = "otd-lights-out";
+        }
+        lightsOut.textContent = twinsOfAll(LIGHTS_OUT, LIGHTS_OUT, "html.dark.otd-lights-out");
     }
-    drawLightsOut();
-    OTD.onChange("OTDlightsOut", drawLightsOut);
+    // for the load watchdog's report
+    const report = () => document.dispatchEvent(new CustomEvent("otd-diagnostic", { detail: JSON.stringify({ kind: "theme",
+        text: `${count(calm)} twins of TweetDeck's rules${lightsOut ? `, ${count(lightsOut)} for Lights out` : ""}${fromText ? ", its CSS read from its text" : ""}` }) }));
+    const draw = () => {
+        drawCalm();
+        drawLightsOut();
+        report();
+    };
+    draw();
+    OTD.jQuery()?.(document).one("TD.ready.otd-twins", draw);
+    OTD.onChange("OTDlightsOut", draw);
 })();
